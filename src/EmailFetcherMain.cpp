@@ -18,7 +18,7 @@ int main(int argc, char** argv)
    Aws::InitAPI(options);
    {
 	   S3Get s3accessor(bucket_name);
-	   s3accessor.list();
+	   s3accessor.saveObjects("./mail");
    }
 
    Aws::ShutdownAPI(options);
