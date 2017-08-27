@@ -8,14 +8,15 @@
 #ifndef SRC_MAILDIRFORMATTER_H_
 #define SRC_MAILDIRFORMATTER_H_
 
-#include "MailFormatter.h"
+#include "Formatter.h"
 
-class MaildirFormatter: public MailFormatter {
+class MaildirFormatter: public Formatter {
 public:
 	MaildirFormatter(Aws::OFStream &strm);
 	virtual ~MaildirFormatter();
 
 private:
+	Aws::String constructName();
 };
 
 #endif /* SRC_MAILDIRFORMATTER_H_ */

@@ -16,7 +16,7 @@
 #include <aws/s3/model/GetObjectRequest.h>
 #include <fstream>
 #include <ios>
-#include "MailFormatter.h"
+#include "Formatter.h"
 
 typedef Aws::Vector<Aws::S3::Model::Object> s3object_list;
 typedef Aws::S3::Model::Object s3object;
@@ -30,9 +30,10 @@ public:
 	void listBuckets( void ) const;
 	void listObjects( void );
 	void saveObjects( const Aws::String dir );
+	void saveObjects( const Aws::String dir, Formatter &fmtr);
 	s3object_list getObjectList( void );
 	bool objSaveAs(const Aws::String key, const Aws::String path);
-	bool objSaveAs(const Aws::String key, const Aws::String path, MailFormatter &local_file);
+	bool objSaveAs(const Aws::String key, const Aws::String path, Formatter &fmtr);
 
 private:
 	Aws::S3::S3Client 	m_s3_client;
