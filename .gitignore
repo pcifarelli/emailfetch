@@ -14,3 +14,8 @@ depcomp
 install-sh
 missing
 stamp-h1
+.cproject
+.externalToolBuilders/
+.project
+.settings/
+

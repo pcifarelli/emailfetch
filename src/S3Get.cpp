@@ -34,7 +34,7 @@ void S3Get::listBuckets(void) const {
     }
 }
 
-void S3Get::listObjects() const {
+void S3Get::listObjects() {
 	s3object_list list = getObjectList();
 
 	if ( !list.empty() ) {
@@ -45,7 +45,7 @@ void S3Get::listObjects() const {
 		std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
 
-s3object_list S3Get::getObjectList( void ) const {
+s3object_list S3Get::getObjectList( void ) {
 	s3object_list list;
 	Aws::S3::Model::ListObjectsRequest objects_request;
 	objects_request.WithBucket(m_bucket_name);
@@ -61,22 +61,28 @@ s3object_list S3Get::getObjectList( void ) const {
 	return list;
 }
 
-bool S3Get::objSaveAs(Aws::String key, Aws::String path) const {
+bool S3Get::objSaveAs(const Aws::String key, const Aws::String path) {
+    Aws::OFStream local_file;
+    MailFormatter mf(local_file);
+
+    return objSaveAs(key, path, mf);
+}
+
+bool S3Get::objSaveAs(const Aws::String key, const Aws::String path, MailFormatter &local_fmt) {
 	Aws::S3::Model::GetObjectRequest object_request;
 	object_request.WithBucket(m_bucket_name).WithKey(key);
-    Aws::OFStream local_file;
 
 	auto result = m_s3_client.GetObject(object_request);
 
 	if (result.IsSuccess()) {
-		local_file.open(path.c_str(), std::ios::out | std::ios::binary);
-		local_file << result.GetResult().GetBody().rdbuf();
+		local_fmt.open(path.c_str(), std::ios::out | std::ios::binary);
+		local_fmt.getStream() << result.GetResult().GetBody().rdbuf();
 		return true;
 	}
 	return false;
 }
 
-void S3Get::saveObjects(Aws::String dir) const {
+void S3Get::saveObjects(const Aws::String dir) {
 	s3object_list list = getObjectList();
 
 	if ( !list.empty() ) {

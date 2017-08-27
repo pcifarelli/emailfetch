@@ -3,4 +3,7 @@ EmailFetcherMain.cpp~
 EmailFetcherMain.o
 Makefile.am~
 emailfetch
+MailFormatter.o
+MaildirFormatter.o
+S3Get.o
 
