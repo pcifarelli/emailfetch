@@ -33,7 +33,7 @@ public:
 	void saveObjects( const Aws::String dir, Formatter &fmtr);
 	s3object_list getObjectList( void );
 	bool objSaveAs(const Aws::String key, const Aws::String path);
-	bool objSaveAs(const Aws::String key, const Aws::String path, Formatter &fmtr);
+	bool objSaveAs(const Aws::String key, Formatter &fmtr);
 
 private:
 	Aws::S3::S3Client 	m_s3_client;

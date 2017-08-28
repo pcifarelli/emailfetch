@@ -12,7 +12,7 @@
 
 class MaildirFormatter: public Formatter {
 public:
-	MaildirFormatter(Aws::OFStream &strm);
+	MaildirFormatter(Aws::String filename);
 	virtual ~MaildirFormatter();
 
 private:

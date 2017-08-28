@@ -63,20 +63,20 @@ s3object_list S3Get::getObjectList( void ) {
 
 bool S3Get::objSaveAs(const Aws::String key, const Aws::String path) {
     Aws::OFStream local_file;
-    Formatter mf(local_file);
-
-    return objSaveAs(key, path, mf);
+    Formatter mf(path);
+    return objSaveAs(key, mf);
 }
 
-bool S3Get::objSaveAs(const Aws::String key, const Aws::String path, Formatter &local_fmt) {
+bool S3Get::objSaveAs(const Aws::String key, Formatter &local_fmt) {
 	Aws::S3::Model::GetObjectRequest object_request;
 	object_request.WithBucket(m_bucket_name).WithKey(key);
 
 	auto result = m_s3_client.GetObject(object_request);
 
 	if (result.IsSuccess()) {
-		local_fmt.open(path.c_str(), std::ios::out | std::ios::binary);
+		local_fmt.open();
 		local_fmt.getStream() << result.GetResult().GetBody().rdbuf();
+		local_fmt.close();
 		return true;
 	}
 	return false;

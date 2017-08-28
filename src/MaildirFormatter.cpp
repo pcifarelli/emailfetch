@@ -7,7 +7,7 @@
 
 #include "MaildirFormatter.h"
 
-MaildirFormatter::MaildirFormatter(Aws::OFStream &strm) : Formatter(strm) {
+MaildirFormatter::MaildirFormatter(Aws::String filename) : Formatter(filename) {
 
 }
 
