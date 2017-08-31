@@ -21,23 +21,24 @@
 typedef Aws::Vector<Aws::S3::Model::Object> s3object_list;
 typedef Aws::S3::Model::Object s3object;
 
-class S3Get {
+class S3Get
+{
 public:
-	S3Get() {};
-	S3Get(Aws::String b_name);
-	virtual ~S3Get();
+    S3Get() {};
+    S3Get(Aws::String b_name);
+    virtual ~S3Get();
 
-	void listBuckets( void ) const;
-	void listObjects( void );
-	void saveObjects( const Aws::String dir );
-	void saveObjects( const Aws::String dir, Formatter &fmtr);
-	s3object_list getObjectList( void );
-	bool objSaveAs(const Aws::String key, const Aws::String path);
-	bool objSaveAs(const Aws::String key, Formatter &fmtr);
+    void listBuckets(void) const;
+    void listObjects(void);
+    void saveObjects(const Aws::String dir);
+    void saveObjects(const Aws::String dir, Formatter &fmtr);
+    s3object_list getObjectList(void);
+    bool objSaveAs(const Aws::String key, const Aws::String path);
+    bool objSaveAs(const Aws::String key, Formatter &fmtr);
 
 private:
-	Aws::S3::S3Client 	m_s3_client;
-	Aws::String 		m_bucket_name;
+    Aws::S3::S3Client m_s3_client;
+    Aws::String m_bucket_name;
 };
 
 #endif /* SRC_S3GET_H_ */

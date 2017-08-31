@@ -10,13 +10,14 @@
 
 #include "Formatter.h"
 
-class MaildirFormatter: public Formatter {
+class MaildirFormatter: public Formatter
+{
 public:
-	MaildirFormatter(Aws::String filename);
-	virtual ~MaildirFormatter();
+    MaildirFormatter(Aws::String filename);
+    virtual ~MaildirFormatter();
 
 private:
-	Aws::String constructName();
+    Aws::String constructName();
 };
 
 #endif /* SRC_MAILDIRFORMATTER_H_ */

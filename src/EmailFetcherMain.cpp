@@ -14,16 +14,14 @@ const Aws::String bucket_name = "feed1-testaws-pcifarelli-net";
 
 int main(int argc, char** argv)
 {
-   Aws::SDKOptions options;
-   Aws::InitAPI(options);
-   {
-	   S3Get s3accessor(bucket_name);
-	   s3accessor.saveObjects("./mail");
-   }
+    Aws::SDKOptions options;
+    Aws::InitAPI(options);
+    {
+        S3Get s3accessor(bucket_name);
+        s3accessor.saveObjects("./mail");
+    }
 
-   Aws::ShutdownAPI(options);
-   return 0;
+    Aws::ShutdownAPI(options);
+    return 0;
 }
-
-
 

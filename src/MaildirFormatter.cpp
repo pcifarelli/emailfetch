@@ -7,11 +7,12 @@
 
 #include "MaildirFormatter.h"
 
-MaildirFormatter::MaildirFormatter(Aws::String filename) : Formatter(filename) {
-
+MaildirFormatter::MaildirFormatter(Aws::String filename) :
+    Formatter(filename)
+{
 }
 
-MaildirFormatter::~MaildirFormatter() {
-	// TODO Auto-generated destructor stub
+MaildirFormatter::~MaildirFormatter()
+{
 }
 

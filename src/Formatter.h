@@ -15,21 +15,28 @@
 #include <fstream>
 #include <ios>
 
-class Formatter {
+class Formatter
+{
 public:
-	Formatter(Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
-	virtual ~Formatter();
+    Formatter(Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual ~Formatter();
 
-	virtual void open(Aws::String filename,  const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
-	virtual void open(const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
-	virtual void close();
-	virtual Aws::OFStream &getStream() { return m_local_file; }
-	Aws::String getName( void ) { return m_name; }
+    virtual void open(Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual void open(const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual void close();
+    virtual Aws::OFStream &getStream()
+    {
+        return m_local_file;
+    }
+    Aws::String getName(void)
+    {
+        return m_name;
+    }
 
 private:
-	Aws::OFStream m_local_file;
-	Aws::String   m_name;		// this is just the name of the file
-	Aws::String   m_fullpath;	// this is the fullpath, including the filename
+    Aws::OFStream m_local_file;
+    Aws::String m_name;		// this is just the name of the file
+    Aws::String m_fullpath;	// this is the fullpath, including the filename
 };
 
 #endif /* SRC_MAILFORMATTER_H_ */
