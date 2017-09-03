@@ -9,6 +9,7 @@
 #include <aws/s3/model/CreateBucketRequest.h>
 
 #include "S3Get.h"
+#include "MaildirFormatter.h"
 
 const Aws::String bucket_name = "feed1-testaws-pcifarelli-net";
 
@@ -17,8 +18,9 @@ int main(int argc, char** argv)
     Aws::SDKOptions options;
     Aws::InitAPI(options);
     {
+        MaildirFormatter mfmt;
         S3Get s3accessor(bucket_name);
-        s3accessor.saveObjects("./mail");
+        s3accessor.saveObjects("./mail", mfmt);
     }
 
     Aws::ShutdownAPI(options);
