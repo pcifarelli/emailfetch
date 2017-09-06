@@ -8,4 +8,4 @@ AM_LDFLAGS = -rdynamic -Wl,-rpath,$(AWS_SDK_PATH)/lib
 
 bin_PROGRAMS = emailfetch
 emailfetch_SOURCES = EmailFetcherMain.cpp S3Get.cpp Formatter.cpp MaildirFormatter.cpp
-emailfetch_LDADD = -L$(AWS_SDK_PATH)/lib $(AWS_LIBS) -lssl -lcrypto
+emailfetch_LDADD = -L$(AWS_SDK_PATH)/lib $(AWS_LIBS)

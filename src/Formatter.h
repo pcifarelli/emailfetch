@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <aws/core/Aws.h>
+#include <aws/s3/model/Object.h>
 #include <fstream>
 #include <ios>
 
@@ -21,7 +22,7 @@ public:
     Formatter();
     virtual ~Formatter();
 
-    virtual void open(const Aws::String pathname, const Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual void open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
     virtual void close();
     virtual Aws::OFStream &getStream()
     {

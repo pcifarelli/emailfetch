@@ -12,7 +12,7 @@
 #include <string>
 #include <cstddef>
 
-Formatter::Formatter() : m_local_file(NULL)
+Formatter::Formatter() : m_local_file(NULL), m_fullpath("")
 {
 }
 
@@ -27,17 +27,18 @@ void Formatter::close()
         m_local_file.close();
 }
 
-void Formatter::open(Aws::String pathname, Aws::String name, const std::ios_base::openmode mode)
+void Formatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String filename, const std::ios_base::openmode mode)
 {
+    Aws::String c = "";
     close();
 
     std::size_t n = pathname.find_last_of('/');
     if (n != std::string::npos && n != pathname.length() - 1)
-        pathname += '/';
+        c = "/";
 
-    m_fullpath = pathname + name;
+    m_fullpath = pathname + c + filename;
 
-    m_name = name;
+    m_name = filename;
     m_local_file.open(m_fullpath.c_str(), mode);
 }
 

@@ -5,7 +5,6 @@
  *      Author: paulc
  */
 
-#include "MaildirFormatter.h"
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/socket.h>
@@ -16,9 +15,9 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <openssl/sha.h>
+#include "MaildirFormatter.h"
 
 unsigned int MaildirFormatter::m_q_sequence = 0;
-//unsigned int MaildirFormatter::m_ur = 0;
 
 MaildirFormatter::MaildirFormatter() : Formatter()
 {
@@ -37,13 +36,10 @@ MaildirFormatter::MaildirFormatter() : Formatter()
 
     m_pid = getpid();
 
-    //if (!(m_fd = ::open("/dev/urandom", O_RDONLY | O_NONBLOCK)))
-    //    std::cerr << "Unable to get random numbers" << std::endl;
 }
 
 MaildirFormatter::~MaildirFormatter()
 {
-    //::close(m_fd);
 }
 
 bool MaildirFormatter::SHA256(void* input, unsigned long length, unsigned char* md)
@@ -78,27 +74,29 @@ bool MaildirFormatter::sha256_as_str(void *input, unsigned long length, std::str
     return true;
 }
 
-int MaildirFormatter::mkname(Aws::String key, std::string &name)
+int MaildirFormatter::mkname(Aws::S3::Model::Object obj, Aws::String key, std::string &name)
 {
-    struct timeval tv;
-    struct timezone tz;
-    char usecs[7];
+    struct timeval tv = { 0, 0 };
 
-    if (gettimeofday(&tv, &tz))
-    {
-        // not much we can do here if we cant get the time.  something bad happened to the system.
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        std::cerr << "Something bad has happened; can't get time of day from the system" << std::endl;
-    }
+    std::chrono::system_clock::time_point t = obj.GetLastModified().UnderlyingTimestamp();
+    std::time_t ts = std::chrono::system_clock::to_time_t(t);
+    std::chrono::system_clock::time_point ts_m = std::chrono::system_clock::from_time_t(ts);
 
-    snprintf(usecs, sizeof(usecs), "%06ld", tv.tv_usec);
+    tv.tv_sec = ts;
+    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count();
+    //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count() << std::endl;
+
+    //std::cout << "Key: " << obj.GetKey() << std::endl;
+    //std::cout << "Size: " << obj.GetSize() << std::endl;
+    //std::cout << "LastModified: " << obj.GetLastModified().ToGmtString("%F %T") << std::endl;
+    //std::cout << "LastModified TS: " << ts << std::endl;
+    //std::cout << "ETag: " << obj.GetETag() << std::endl;
+
+    //snprintf(usecs, sizeof(usecs), "%06ld", tv.tv_usec);
+    //std::cout << tv.tv_usec << "   " << usecs << std::endl;
 
     // increment the Q for this process
     ++m_q_sequence;
-
-    //if (!(::read(m_fd, (void *) &m_ur, (size_t) sizeof(m_ur)) == sizeof(m_ur)))
-    //    std::cerr << "unable to get random number: " << m_ur << std::endl;
 
     // use the SHA256 of the object name as the random number
     std::string sha;
@@ -109,8 +107,7 @@ int MaildirFormatter::mkname(Aws::String key, std::string &name)
     }
 
     std::ostringstream out;
-    //out << tv.tv_sec << ".P" << m_pid << "Q" << m_q_sequence << "M" << tv.tv_usec << "R" << m_ur << '.' << m_host;
-    out << tv.tv_sec << ".P" << m_pid << "Q" << m_q_sequence << "M" << usecs << "R" << sha << '.' << m_host;
+    out << tv.tv_sec << ".P" << m_pid << "Q" << m_q_sequence << "R" << sha << '.' << m_host;
 
     name = out.str();
     return 0;
@@ -135,11 +132,11 @@ int MaildirFormatter::extractHash(std::string name, std::string &hash)
     return 0;
 }
 
-void MaildirFormatter::open(const Aws::String pathname, const Aws::String name, const std::ios_base::openmode mode)
+void MaildirFormatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String name, const std::ios_base::openmode mode)
 {
     std::string fname;
 
-    if (mkname(name, fname))
+    if (mkname(obj, name, fname))
         std::cerr << "Unable to construct usable name" << std::endl;
 
     std::string pname = pathname.c_str();
@@ -147,6 +144,6 @@ void MaildirFormatter::open(const Aws::String pathname, const Aws::String name, 
     if (n != std::string::npos && n != pname.length() - 1)
         pname += '/';
 
-    Formatter::open(pname.c_str(), fname.c_str(), mode);
+    Formatter::open(obj, pname.c_str(), fname.c_str(), mode);
 }
 
