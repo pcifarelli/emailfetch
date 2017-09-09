@@ -24,10 +24,11 @@ public:
 
     virtual void open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
     virtual void close();
-    virtual Aws::OFStream &getStream()
+    virtual Aws::OStream &getStream()
     {
         return m_local_file;
     }
+    virtual Aws::OStream &getStream(char *buf, size_t sz);
     Aws::String &getName(void)
     {
         return m_name;
@@ -35,6 +36,7 @@ public:
 
 private:
     Aws::OFStream m_local_file;
+    std::stringstream m_ostream;
 
 protected:
     Aws::String m_name;		// this is just the name of the file

@@ -21,6 +21,7 @@ int main(int argc, char** argv)
         MaildirFormatter mfmt;
         S3Get s3accessor(bucket_name);
         s3accessor.saveObjects("./mail", mfmt);
+        s3accessor.printObjects();
     }
 
     Aws::ShutdownAPI(options);
