@@ -42,9 +42,9 @@ void Formatter::open(const Aws::S3::Model::Object obj, const Aws::String pathnam
     m_local_file.open(m_fullpath.c_str(), mode);
 }
 
-Aws::OStream &Formatter::getStream(char *buf, size_t sz)
+Aws::OStream &Formatter::getStream(void *buf, size_t sz)
 {
-    m_ostream.rdbuf()->pubsetbuf(buf, sz);
+    m_ostream.rdbuf()->pubsetbuf((char *) buf, sz);
     return m_ostream;
 }
 

@@ -95,7 +95,7 @@ bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Aws::String dir, Aws::St
     return false;
 }
 
-bool S3Get::objGet(const Aws::S3::Model::Object obj, char *buf, size_t sz) const
+bool S3Get::objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const
 {
     Formatter fmt;
     Aws::S3::Model::GetObjectRequest object_request;
@@ -147,7 +147,7 @@ void S3Get::printObjects() const
         {
             size_t sz = s3_object.GetSize();
             char *buf = new char[sz];
-            objGet(s3_object, buf, sz);
+            objGet(s3_object, (void *) buf, sz);
             std::cout << buf << std::endl;
             delete buf;
         }

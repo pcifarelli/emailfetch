@@ -28,7 +28,7 @@ public:
     {
         return m_local_file;
     }
-    virtual Aws::OStream &getStream(char *buf, size_t sz);
+    virtual Aws::OStream &getStream(void *buf, size_t sz);
     Aws::String &getName(void)
     {
         return m_name;

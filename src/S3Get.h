@@ -40,7 +40,7 @@ public:
     // save to a file using the Formatter to open and save the file
     bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, const Aws::String name, Formatter &fmtr) const;
     // save it to a buffer
-    bool objGet(const Aws::S3::Model::Object obj, char *buf, size_t sz) const;
+    bool objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const;
 
 private:
     Aws::S3::S3Client m_s3_client;
