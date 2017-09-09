@@ -35,9 +35,9 @@ public:
     void printObjects() const;
     s3object_list getObjectList(void) const;
 
-    // save to a file using the object name as the filename
+    // save to a file in the provided directory with the given name
     bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, Aws::String name) const;
-    // save to a file using the Formatter to open the file
+    // save to a file using the Formatter to open and save the file
     bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, const Aws::String name, Formatter &fmtr) const;
     // save it to a buffer
     bool objGet(const Aws::S3::Model::Object obj, char *buf, size_t sz) const;
