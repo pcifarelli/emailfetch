@@ -25,6 +25,9 @@ public:
     // (this can be used to keep track of the objects that you have streamed elsewhere)
     // "days" - number of days back to check
     void saveNewObjects();
+    void purgeMap();                     // purge m_days back
+    void purgeMap( std::time_t secs_back );   // purge secs_back
+    void printMap();
 
 private:
     int mkdirmap(std::string dirname, time_t secs_back);
@@ -33,6 +36,12 @@ private:
     Formatter &m_fmt;
     S3Get &m_s3;
     int m_days;
-    std::unordered_map<std::string, std::string> m_filemap;
+
+    struct FileTracker
+    {
+        std::string fname;
+        std::time_t ftime;
+    };
+    std::unordered_map<std::string, FileTracker> m_filemap;
 };
 #endif /* SRC_DOWNLOADER_H_ */

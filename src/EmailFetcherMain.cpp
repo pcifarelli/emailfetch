@@ -14,7 +14,7 @@
 
 const Aws::String bucket_name = "feed1-testaws-pcifarelli-net";
 
-#define DAYS_TO_CHECK 60
+#define DAYS_TO_CHECK 16
 
 int main(int argc, char** argv)
 {
@@ -26,6 +26,15 @@ int main(int argc, char** argv)
         Downloader downl("./mail", DAYS_TO_CHECK, s3accessor, mfmt);
 
         downl.saveNewObjects();
+        downl.printMap();
+        std::cout << std::endl << "after purge: " << std::endl;
+        downl.purgeMap();
+        downl.printMap();
+
+        auto n = std::chrono::system_clock::now();
+        std::time_t now = std::chrono::system_clock::to_time_t(n);
+
+        std::cout << "now is " << now << std::endl;
 
         //s3accessor.saveObjects("./mail", mfmt);
         //s3accessor.printObjects();

@@ -47,14 +47,15 @@ void Downloader::saveNewObjects()
                 std::string fname = m_fmt.mkname(s3_object);
                 Aws::String key = m_fmt.getKey(fname.c_str());
                 std::string input = key.c_str();
-                std::unordered_map<std::string,std::string>::const_iterator got = m_filemap.find (input);
+                std::unordered_map<std::string,FileTracker>::const_iterator got = m_filemap.find (input);
 
                 if ( got == m_filemap.end() ) // not found in map
                 {
                     m_s3.objSaveAs(s3_object, m_dir, m_fmt);
                     std::string fullpath = dirname + fname;
+                    FileTracker ft = { fullpath, ts };
 
-                    std::pair<std::string,std::string> hashent (key.c_str(), fullpath);
+                    std::pair<std::string,FileTracker> hashent (key.c_str(), ft);
                     m_filemap.insert(hashent);
                 }
             }
@@ -95,8 +96,9 @@ int Downloader::mkdirmap(std::string dirname, time_t secs_back)
                         {
                             Aws::String name = fname.c_str();
                             Aws::String key = m_fmt.getKey(name);
+                            FileTracker ft = { fullpath, fstats.st_mtim.tv_sec };
 
-                            std::pair<std::string,std::string> hashent (key.c_str(), fullpath);
+                            std::pair<std::string, FileTracker> hashent (key.c_str(), ft);
                             m_filemap.insert(hashent);
                         }
                     }
@@ -113,3 +115,35 @@ int Downloader::mkdirmap(std::string dirname, time_t secs_back)
     return 0;
 }
 
+void Downloader::purgeMap( std::time_t time_limit )
+{
+    auto n = std::chrono::system_clock::now();
+    std::time_t now = std::chrono::system_clock::to_time_t(n);
+    std::vector<std::string> to_remove;
+
+    for (auto it = m_filemap.begin(); it != m_filemap.end(); ++it)
+    {
+        if (now - it->second.ftime > time_limit)
+            to_remove.push_back(it->first);
+    }
+    for (auto it = to_remove.begin(); it != to_remove.end(); ++it)
+        m_filemap.erase(*it);
+}
+
+void Downloader::purgeMap()
+{
+    std::time_t time_limit = m_days * SECONDS_PER_DAY;
+    purgeMap(time_limit);
+}
+
+void Downloader::printMap()
+{
+    std::time_t time_limit = m_days * SECONDS_PER_DAY;
+    auto n = std::chrono::system_clock::now();
+    std::time_t now = std::chrono::system_clock::to_time_t(n);
+
+    for ( auto it = m_filemap.begin(); it != m_filemap.end(); ++it )
+    {
+      std::cout << " " << it->first << ":" << it->second.ftime << std::endl;
+    }
+}
