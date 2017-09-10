@@ -42,6 +42,13 @@ MaildirFormatter::~MaildirFormatter()
 {
 }
 
+Aws::String MaildirFormatter::getKey(Aws::String filename) const
+{
+    Aws::String hash;
+    extractHash(filename, hash);
+    return hash;
+}
+
 bool MaildirFormatter::SHA256(void* input, unsigned long length, unsigned char* md)
 {
     SHA256_CTX context;
@@ -74,7 +81,7 @@ bool MaildirFormatter::sha256_as_str(void *input, unsigned long length, std::str
     return true;
 }
 
-int MaildirFormatter::mkname(Aws::S3::Model::Object obj, Aws::String key, std::string &name)
+int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key, std::string &name) const
 {
     struct timeval tv = { 0, 0 };
 
@@ -113,7 +120,7 @@ int MaildirFormatter::mkname(Aws::S3::Model::Object obj, Aws::String key, std::s
     return 0;
 }
 
-int MaildirFormatter::extractHash(std::string name, std::string &hash)
+int MaildirFormatter::extractHash(Aws::String name, Aws::String &hash)
 {
     int posf = name.find_first_of('.');
     if (posf == std::string::npos)
@@ -132,18 +139,14 @@ int MaildirFormatter::extractHash(std::string name, std::string &hash)
     return 0;
 }
 
-void MaildirFormatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String name, const std::ios_base::openmode mode)
+std::string MaildirFormatter::mkname(const Aws::S3::Model::Object obj) const
 {
+    Aws::String name = obj.GetKey();
     std::string fname;
 
-    if (mkname(obj, name, fname))
+    if (construct_name(obj, name, fname))
         std::cerr << "Unable to construct usable name" << std::endl;
 
-    std::string pname = pathname.c_str();
-    std::size_t n = pname.find_last_of('/');
-    if (n != std::string::npos && n != pname.length() - 1)
-        pname += '/';
-
-    Formatter::open(obj, pname.c_str(), fname.c_str(), mode);
+    return fname;
 }
 

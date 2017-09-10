@@ -28,23 +28,28 @@ public:
     S3Get(Aws::String b_name);
     virtual ~S3Get();
 
+    Aws::String bucketName() const { return m_bucket_name; }
     void listBuckets(void) const;
     void listObjects(void) const;
-    void saveObjects(const Aws::String dir) const;
-    void saveObjects(const Aws::String dir, Formatter &fmtr) const;
-    void printObjects() const;
-    s3object_list getObjectList(void) const;
+    void saveObjects(const Aws::String dir);
+    void saveObjects(const Aws::String dir, Formatter &fmtr);
+
+    void printObjects();
+    s3object_list &getObjectList(void);
 
     // save to a file in the provided directory with the given name
-    bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, Aws::String name) const;
+    bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir) const;
     // save to a file using the Formatter to open and save the file
-    bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, const Aws::String name, Formatter &fmtr) const;
+    bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, Formatter &fmtr) const;
     // save it to a buffer
     bool objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const;
 
 private:
+    s3object_list fetchObjectList(void);
+
     Aws::S3::S3Client m_s3_client;
     Aws::String m_bucket_name;
+    s3object_list m_object_list;
 };
 
 #endif /* SRC_S3GET_H_ */

@@ -25,15 +25,16 @@ class MaildirFormatter: public Formatter
 public:
     MaildirFormatter();
     virtual ~MaildirFormatter();
-    virtual void open(const Aws::S3::Model::Object obj, const Aws::String filename, const Aws::String name, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual std::string mkname(const Aws::S3::Model::Object obj) const;
+    virtual Aws::String getKey(Aws::String filename) const;
 
-    static int extractHash(std::string name, std::string &hash);
+    static int extractHash(Aws::String name, Aws::String &hash);
 
     static bool SHA256(void* input, unsigned long length, unsigned char* md);
     static bool sha256_as_str(void *input, unsigned long length, std::string &md);
 
 private:
-    int mkname(Aws::S3::Model::Object obj, Aws::String key, std::string &name);
+    int construct_name(Aws::S3::Model::Object obj, Aws::String key, std::string &name) const;
 
     std::string         m_host;
     pid_t               m_pid;

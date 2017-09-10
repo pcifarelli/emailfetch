@@ -9,9 +9,12 @@
 #include <aws/s3/model/CreateBucketRequest.h>
 
 #include "S3Get.h"
+#include "Downloader.h"
 #include "MaildirFormatter.h"
 
 const Aws::String bucket_name = "feed1-testaws-pcifarelli-net";
+
+#define DAYS_TO_CHECK 60
 
 int main(int argc, char** argv)
 {
@@ -20,8 +23,12 @@ int main(int argc, char** argv)
     {
         MaildirFormatter mfmt;
         S3Get s3accessor(bucket_name);
-        s3accessor.saveObjects("./mail", mfmt);
-        s3accessor.printObjects();
+        Downloader downl("./mail", DAYS_TO_CHECK, s3accessor, mfmt);
+
+        downl.saveNewObjects();
+
+        //s3accessor.saveObjects("./mail", mfmt);
+        //s3accessor.printObjects();
     }
 
     Aws::ShutdownAPI(options);

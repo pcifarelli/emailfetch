@@ -22,17 +22,17 @@ public:
     Formatter();
     virtual ~Formatter();
 
-    virtual void open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String filename, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual void open(const Aws::S3::Model::Object obj, const Aws::String pathname, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual std::string mkname(const Aws::S3::Model::Object obj) const;
     virtual void close();
-    virtual Aws::OStream &getStream()
-    {
-        return m_local_file;
-    }
+    virtual Aws::OStream &getStream() { return m_local_file; }
     virtual Aws::OStream &getStream(void *buf, size_t sz);
-    Aws::String &getName(void)
-    {
-        return m_name;
-    }
+    Aws::String &getName(void) { return m_name; }
+
+    // getKey is used to create a map of what we've already downloaded.  The key is the thing you want to use for comparisons.
+    // you are passed the object and the filename to construct the key from
+    // currently, it is not templated, because the only existing use cases are string keys
+    virtual Aws::String getKey(Aws::String filename) const;
 
 private:
     Aws::OFStream m_local_file;

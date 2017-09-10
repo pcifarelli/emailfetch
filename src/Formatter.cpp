@@ -27,8 +27,16 @@ void Formatter::close()
         m_local_file.close();
 }
 
-void Formatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const Aws::String filename, const std::ios_base::openmode mode)
+std::string Formatter::mkname(const Aws::S3::Model::Object obj) const
 {
+    return obj.GetKey().c_str();
+}
+
+void Formatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const std::ios_base::openmode mode)
+{
+    std::string name = mkname(obj);
+    Aws::String filename = name.c_str();
+
     Aws::String c = "";
     close();
 
@@ -48,4 +56,7 @@ Aws::OStream &Formatter::getStream(void *buf, size_t sz)
     return m_ostream;
 }
 
-
+Aws::String Formatter::getKey(Aws::String filename) const
+{
+    return filename;
+}

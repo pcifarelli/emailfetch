@@ -11,7 +11,7 @@
 S3Get::S3Get(Aws::String b_name)
 {
     m_bucket_name = b_name;
-
+    m_object_list = fetchObjectList();
 }
 
 S3Get::~S3Get()
@@ -42,18 +42,16 @@ void S3Get::listBuckets(void) const
 
 void S3Get::listObjects() const
 {
-    s3object_list list = getObjectList();
-
-    if (!list.empty())
+    if (!m_object_list.empty())
     {
-        for (auto const &s3_object : list)
+        for (auto const &s3_object : m_object_list)
             std::cout << "* " << s3_object.GetKey() << std::endl;
     }
     else
         std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
 
-s3object_list S3Get::getObjectList(void) const
+s3object_list S3Get::fetchObjectList(void)
 {
     s3object_list list;
     Aws::S3::Model::ListObjectsRequest objects_request;
@@ -72,13 +70,18 @@ s3object_list S3Get::getObjectList(void) const
     return list;
 }
 
-bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, Aws::String name) const
+s3object_list &S3Get::getObjectList(void)
 {
-    Formatter fmt;
-    return objSaveAs(obj, dir, name, fmt);
+    return m_object_list;
 }
 
-bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Aws::String dir, Aws::String name, Formatter &local_fmt) const
+bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir) const
+{
+    Formatter fmt;
+    return objSaveAs(obj, dir, fmt);
+}
+
+bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Aws::String dir, Formatter &local_fmt) const
 {
     Aws::S3::Model::GetObjectRequest object_request;
     object_request.WithBucket(m_bucket_name).WithKey(obj.GetKey());
@@ -87,7 +90,7 @@ bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Aws::String dir, Aws::St
 
     if (result.IsSuccess())
     {
-        local_fmt.open(obj, dir, name);
+        local_fmt.open(obj, dir);
         local_fmt.getStream() << result.GetResult().GetBody().rdbuf();
         local_fmt.close();
         return true;
@@ -111,35 +114,35 @@ bool S3Get::objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const
     return false;
 }
 
-void S3Get::saveObjects(const Aws::String dir) const
+void S3Get::saveObjects(const Aws::String dir)
 {
-    s3object_list list = getObjectList();
+    s3object_list &list = getObjectList();
 
     if (!list.empty())
     {
         for (auto const &s3_object : list)
-            objSaveAs(s3_object, dir, s3_object.GetKey());
+            objSaveAs(s3_object, dir);
     }
     else
         std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
 
-void S3Get::saveObjects(const Aws::String dir, Formatter &fmtr) const
+void S3Get::saveObjects(const Aws::String dir, Formatter &fmtr)
 {
-    s3object_list list = getObjectList();
+    s3object_list &list = getObjectList();
 
     if (!list.empty())
     {
         for (auto const &s3_object : list)
-            objSaveAs(s3_object, dir, s3_object.GetKey(), fmtr);
+            objSaveAs(s3_object, dir, fmtr);
     }
     else
         std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
 
-void S3Get::printObjects() const
+void S3Get::printObjects()
 {
-    s3object_list list = getObjectList();
+    s3object_list &list = getObjectList();
 
     if (!list.empty())
     {
@@ -155,3 +158,4 @@ void S3Get::printObjects() const
     else
         std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
+
