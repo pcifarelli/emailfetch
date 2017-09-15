@@ -20,3 +20,10 @@ stamp-h1
 .project
 .settings/
 compile
+ar-lib
+config.guess
+config.sub
+libtool
+ltmain.sh
+m4/
+

@@ -3,4 +3,7 @@
 *.cpp~
 *.h~
 *.am~
+*.la
+*.lo
 emailfetch
+.libs/
