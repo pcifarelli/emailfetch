@@ -6,7 +6,17 @@
  */
 
 #include <dirent.h>
+#include <sys/types.h>
+#include <netdb.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <aws/sqs/model/CreateQueueRequest.h>
+#include <aws/sqs/model/CreateQueueResult.h>
+#include <aws/sqs/model/GetQueueUrlRequest.h>
+#include <aws/sqs/model/GetQueueUrlResult.h>
+#include <aws/core/client/DefaultRetryStrategy.h>
+#include <aws/sqs/model/DeleteQueueRequest.h>
 
 #include "Downloader.h"
 
@@ -14,10 +24,26 @@ Downloader::Downloader(const Aws::String dir, const int days, S3Get &s3, Formatt
     m_dir(dir), m_days(days), m_s3(s3), m_fmt(fmt)
 {
     mkdirmap(dir.c_str(), days * SECONDS_PER_DAY);
+
+    // disable retries so that bad urls don't hang the exe via retry loop
+    Aws::Client::ClientConfiguration client_cfg;
+    client_cfg.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>("sqs_delete_queue", 0);
+    m_sqs = new Aws::SQS::SQSClient(client_cfg);
+
+    Aws::String hostn;
+    char host[NI_MAXHOST];
+    if (!gethostname(host, sizeof(host)))
+        hostn = host;
+    else
+        hostn = "dummy";
+
+    create_sqs_queue(m_s3.bucketName() + "-" + hostn);
 }
 
 Downloader::~Downloader()
 {
+    delete_sqs_queue();
+    delete m_sqs;
 }
 
 void Downloader::saveNewObjects()
@@ -147,3 +173,60 @@ void Downloader::printMap()
       std::cout << " " << it->first << ":" << it->second.ftime << std::endl;
     }
 }
+
+void Downloader::create_sqs_queue(Aws::String queue_name)
+{
+    Aws::SQS::Model::CreateQueueRequest cq_req;
+    cq_req.SetQueueName(queue_name);
+
+    m_queue_name = queue_name;
+
+    auto cq_out = m_sqs->CreateQueue(cq_req);
+    if (cq_out.IsSuccess())
+    {
+        std::cout << "Successfully created queue " << m_queue_name << std::endl;
+    }
+    else
+    {
+        std::cout << "Error creating queue " << m_queue_name << ": " <<
+            cq_out.GetError().GetMessage() << std::endl;
+    }
+    get_queue_url();
+}
+
+void Downloader::get_queue_url()
+{
+    Aws::SQS::Model::GetQueueUrlRequest gqu_req;
+    gqu_req.SetQueueName(m_queue_name);
+
+    auto gqu_out = m_sqs->GetQueueUrl(gqu_req);
+    if (gqu_out.IsSuccess())
+    {
+        m_queue_url = gqu_out.GetResult().GetQueueUrl();
+        std::cout << "Queue " << m_queue_name << " has url " << m_queue_url << std::endl;
+    }
+    else
+    {
+        std::cout << "Error getting url for queue " << m_queue_name << ": " <<
+            gqu_out.GetError().GetMessage() << std::endl;
+    }
+}
+
+void Downloader::delete_sqs_queue()
+{
+    Aws::SQS::Model::DeleteQueueRequest dq_req;
+    dq_req.SetQueueUrl(m_queue_url);
+
+    auto dq_out = m_sqs->DeleteQueue(dq_req);
+    if (dq_out.IsSuccess())
+    {
+        std::cout << "Successfully deleted queue with url " << m_queue_url << std::endl;
+    }
+    else
+    {
+        std::cout << "Error deleting queue " << m_queue_url << ": " <<
+            dq_out.GetError().GetMessage() << std::endl;
+    }
+}
+
+

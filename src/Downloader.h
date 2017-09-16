@@ -8,6 +8,7 @@
 #ifndef SRC_DOWNLOADER_H_
 #define SRC_DOWNLOADER_H_
 
+#include <aws/sqs/SQSClient.h>
 #include "S3Get.h"
 #include <unordered_map>
 
@@ -32,6 +33,10 @@ private:
     void purgeMap( std::time_t secs_back );   // purge secs_back
     void printMap();
 
+    void create_sqs_queue(Aws::String queue_name);
+    void get_queue_url();
+    void delete_sqs_queue();
+
     Aws::String m_dir;
     Formatter &m_fmt;
     S3Get &m_s3;
@@ -43,5 +48,10 @@ private:
         std::time_t ftime;
     };
     std::unordered_map<std::string, FileTracker> m_filemap;
+
+    Aws::String m_queue_name;
+    Aws::String m_queue_url;
+    Aws::SQS::SQSClient *m_sqs;
+
 };
 #endif /* SRC_DOWNLOADER_H_ */
