@@ -21,7 +21,7 @@ unsigned int MaildirFormatter::m_q_sequence = 0;
 
 MaildirFormatter::MaildirFormatter() : Formatter()
 {
-    char host[NI_MAXHOST], *p;
+    char host[NI_MAXHOST];
 
     if (!gethostname(host, sizeof(host)))
         m_host = host;
