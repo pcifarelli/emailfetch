@@ -36,6 +36,7 @@ public:
 
     void printObjects();
     s3object_list &getObjectList(void);
+    s3object_list refreshObjectList(void);
 
     // save to a file in the provided directory with the given name
     bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir) const;
@@ -45,8 +46,6 @@ public:
     bool objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const;
 
 private:
-    s3object_list fetchObjectList(void);
-
     Aws::S3::S3Client m_s3_client;
     Aws::String m_bucket_name;
     s3object_list m_object_list;

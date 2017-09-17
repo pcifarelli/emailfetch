@@ -11,7 +11,7 @@
 S3Get::S3Get(Aws::String b_name)
 {
     m_bucket_name = b_name;
-    m_object_list = fetchObjectList();
+    m_object_list = refreshObjectList();
 }
 
 S3Get::~S3Get()
@@ -51,7 +51,7 @@ void S3Get::listObjects() const
         std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
 
-s3object_list S3Get::fetchObjectList(void)
+s3object_list S3Get::refreshObjectList(void)
 {
     s3object_list list;
     Aws::S3::Model::ListObjectsRequest objects_request;

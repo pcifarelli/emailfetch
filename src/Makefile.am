@@ -17,5 +17,5 @@ lib_LTLIBRARIES = libs3download.la
 libs3download_la_SOURCES = S3Get.cpp Formatter.cpp Downloader.cpp
 
 emailfetch_SOURCES = EmailFetcherMain.cpp MaildirFormatter.cpp
-emailfetch_LDADD = -L$(AWS_SDK_PATH)/${AWS_LIBDIR} -ls3download $(AWS_LIBS) 
+emailfetch_LDADD = -L$(AWS_SDK_PATH)/${AWS_LIBDIR} -ls3download $(AWS_LIBS)
 

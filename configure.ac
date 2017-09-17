@@ -22,5 +22,6 @@ AC_PROG_CXX
 # Checks for library functions.
 AC_CHECK_LIB([ssl], [SSL_library_init])
 AC_CHECK_LIB([crypto], [SHA256_Init])
+AC_CHECK_LIB([pthread], [pthread_create])
 
 AC_OUTPUT(Makefile src/Makefile)

@@ -21,19 +21,23 @@
 #include <aws/sqs/model/QueueAttributeName.h>
 #include <aws/sns/model/SubscribeRequest.h>
 #include <aws/sns/model/UnsubscribeRequest.h>
+#include <aws/sqs/model/ReceiveMessageRequest.h>
+#include <aws/sqs/model/ReceiveMessageResult.h>
+#include <aws/sqs/model/DeleteMessageRequest.h>
 #include <aws/core/client/DefaultRetryStrategy.h>
 #include <aws/sqs/model/DeleteQueueRequest.h>
 
 #include "Downloader.h"
 
-Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, S3Get &s3, Formatter &fmt) :
-    m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_s3(s3), m_fmt(fmt)
+Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt) :
+    m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_fmt(fmt)
 {
     mkdirmap(dir.c_str(), days * SECONDS_PER_DAY);
 
     // disable retries so that bad urls don't hang the exe via retry loop
     Aws::Client::ClientConfiguration client_cfg;
     client_cfg.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>("sqs_delete_queue", 0);
+    client_cfg.requestTimeoutMs = SQS_REQUEST_TIMEOUT_MS;
     m_sqs = new Aws::SQS::SQSClient(client_cfg);
 
     Aws::String hostn;
@@ -45,7 +49,7 @@ Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_
 
     pid_t pid = getpid();
     std::ostringstream out;
-    out << m_s3.bucketName() << "-" << hostn << "-" << pid;
+    out << m_bucket_name << "-" << hostn << "-" << pid;
     create_sqs_queue(out.str().c_str());
     get_queue_url();
     get_queue_arn();
@@ -62,7 +66,8 @@ Downloader::~Downloader()
 
 void Downloader::saveNewObjects()
 {
-    s3object_list list = m_s3.getObjectList();
+    S3Get s3accessor(m_bucket_name);
+    s3object_list list = s3accessor.getObjectList();
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
@@ -87,15 +92,17 @@ void Downloader::saveNewObjects()
                 std::string fname = m_fmt.mkname(s3_object);
                 Aws::String key = m_fmt.getKey(fname.c_str());
                 std::string input = key.c_str();
-                std::unordered_map<std::string,FileTracker>::const_iterator got = m_filemap.find (input);
+                std::unordered_map<std::string, FileTracker>::const_iterator got = m_filemap.find(input);
 
-                if ( got == m_filemap.end() ) // not found in map
+                if (got == m_filemap.end()) // not found in map
                 {
-                    m_s3.objSaveAs(s3_object, m_dir, m_fmt);
+                    //std::cout << "saving object from s3" << std::endl;
+                    s3accessor.objSaveAs(s3_object, m_dir, m_fmt);
                     std::string fullpath = dirname + fname;
-                    FileTracker ft = { fullpath, ts };
+                    FileTracker ft =
+                    { fullpath, ts };
 
-                    std::pair<std::string,FileTracker> hashent (key.c_str(), ft);
+                    std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                     m_filemap.insert(hashent);
                 }
             }
@@ -136,9 +143,10 @@ int Downloader::mkdirmap(std::string dirname, time_t secs_back)
                         {
                             Aws::String name = fname.c_str();
                             Aws::String key = m_fmt.getKey(name);
-                            FileTracker ft = { fullpath, fstats.st_mtim.tv_sec };
+                            FileTracker ft =
+                            { fullpath, fstats.st_mtim.tv_sec };
 
-                            std::pair<std::string, FileTracker> hashent (key.c_str(), ft);
+                            std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                             m_filemap.insert(hashent);
                         }
                     }
@@ -155,7 +163,7 @@ int Downloader::mkdirmap(std::string dirname, time_t secs_back)
     return 0;
 }
 
-void Downloader::purgeMap( std::time_t time_limit )
+void Downloader::purgeMap(std::time_t time_limit)
 {
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
@@ -182,9 +190,9 @@ void Downloader::printMap()
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
 
-    for ( auto it = m_filemap.begin(); it != m_filemap.end(); ++it )
+    for (auto it = m_filemap.begin(); it != m_filemap.end(); ++it)
     {
-      std::cout << " " << it->first << ":" << it->second.ftime << std::endl;
+        std::cout << " " << it->first << ":" << it->second.ftime << std::endl;
     }
 }
 
@@ -202,8 +210,7 @@ void Downloader::create_sqs_queue(Aws::String queue_name)
     }
     else
     {
-        std::cout << "Error creating queue " << m_queue_name << ": " <<
-            cq_out.GetError().GetMessage() << std::endl;
+        std::cout << "Error creating queue " << m_queue_name << ": " << cq_out.GetError().GetMessage() << std::endl;
     }
 }
 
@@ -220,8 +227,7 @@ void Downloader::get_queue_url()
     }
     else
     {
-        std::cout << "Error getting url for queue " << m_queue_name << ": " <<
-            gqu_out.GetError().GetMessage() << std::endl;
+        std::cout << "Error getting url for queue " << m_queue_name << ": " << gqu_out.GetError().GetMessage() << std::endl;
     }
 }
 
@@ -241,8 +247,7 @@ void Downloader::get_queue_arn()
     }
     else
     {
-        std::cout << "Error getting url for queue " << m_queue_name << ": " <<
-            gqa_out.GetError().GetMessage() << std::endl;
+        std::cout << "Error getting url for queue " << m_queue_name << ": " << gqa_out.GetError().GetMessage() << std::endl;
     }
 }
 
@@ -258,26 +263,32 @@ void Downloader::delete_sqs_queue()
     }
     else
     {
-        std::cout << "Error deleting queue " << m_queue_url << ": " <<
-            dq_out.GetError().GetMessage() << std::endl;
+        std::cout << "Error deleting queue " << m_queue_url << ": " << dq_out.GetError().GetMessage() << std::endl;
     }
 }
 
 void Downloader::add_permission()
 {
     Aws::SQS::Model::SetQueueAttributesRequest apr;
-    Aws::String perm_policy =                 "{ \
+    Aws::String perm_policy =
+        "{ \
         \"Version\":\"2012-10-17\", \
         \"Statement\":[ \
             { \
-                \"Sid\":\"Policy-" + m_topic_arn + "\", \
+                \"Sid\":\"Policy-"
+            + m_topic_arn
+            + "\", \
                 \"Effect\":\"Allow\", \
                 \"Principal\":\"*\", \
                 \"Action\":\"sqs:SendMessage\", \
-                \"Resource\":\"" + m_queue_arn + "\", \
+                \"Resource\":\""
+            + m_queue_arn
+            + "\", \
                 \"Condition\":{ \
                     \"ArnEquals\":{ \
-                        \"aws:SourceArn\":\"" + m_topic_arn + "\" \
+                        \"aws:SourceArn\":\""
+            + m_topic_arn
+            + "\" \
                                 } \
                             } \
                         } \
@@ -290,8 +301,7 @@ void Downloader::add_permission()
     auto out = m_sqs->SetQueueAttributes(apr);
     if (!out.IsSuccess())
     {
-        std::cout << "Error getting url for queue " << m_queue_name << ": " <<
-            out.GetError().GetMessage() << std::endl;
+        std::cout << "Error getting url for queue " << m_queue_name << ": " << out.GetError().GetMessage() << std::endl;
     }
     else
         std::cout << "successfully added policy allowing sns topic to send messages" << std::endl;
@@ -306,15 +316,16 @@ void Downloader::subscribe_topic()
     sr.SetTopicArn(m_topic_arn);
     auto out = m_sns.Subscribe(sr);
 
-    if(out.IsSuccess())
+    if (out.IsSuccess())
     {
         m_subscription_arn = out.GetResult().GetSubscriptionArn();
-        std::cout << "successfully subscribed queue " << m_queue_arn << " to topic " << m_topic_arn << " with subscription arn " << m_subscription_arn << std::endl;
+        std::cout << "successfully subscribed queue " << m_queue_arn << " to topic " << m_topic_arn << " with subscription arn "
+            << m_subscription_arn << std::endl;
     }
     else
     {
-        std::cout << "Error subscribing queue " << m_queue_arn << " to topic " << m_topic_arn << " :" <<
-            out.GetError().GetMessage() << std::endl;
+        std::cout << "Error subscribing queue " << m_queue_arn << " to topic " << m_topic_arn << " :" << out.GetError().GetMessage()
+            << std::endl;
     }
 
 }
@@ -326,14 +337,88 @@ void Downloader::unsubscribe_topic()
     ur.SetSubscriptionArn(m_subscription_arn);
     auto out = m_sns.Unsubscribe(ur);
 
-    if(out.IsSuccess())
+    if (out.IsSuccess())
     {
         std::cout << "successfully unsubscribed queue " << m_queue_arn << " from topic " << m_topic_arn << std::endl;
     }
     else
     {
-        std::cout << "Error subscribing queue " << m_queue_arn << " to topic " << m_topic_arn << " :" <<
-            out.GetError().GetMessage() << std::endl;
+        std::cout << "Error subscribing queue " << m_queue_arn << " to topic " << m_topic_arn << " :" << out.GetError().GetMessage()
+            << std::endl;
     }
 
+}
+
+void Downloader::wait_for_message()
+{
+    Aws::SQS::Model::ReceiveMessageRequest rm_req;
+    rm_req.SetQueueUrl(m_queue_url);
+    rm_req.SetMaxNumberOfMessages(1);
+    rm_req.SetWaitTimeSeconds(SQS_WAIT_TIME); // wait this many seconds if there are no messages before returning
+
+    auto rm_out = m_sqs->ReceiveMessage(rm_req);
+    if (!rm_out.IsSuccess())
+    {
+        std::cout << "Error receiving message from queue " << m_queue_url << ": " << rm_out.GetError().GetMessage() << std::endl;
+        return;
+    }
+
+    const auto& messages = rm_out.GetResult().GetMessages();
+    if (messages.size() == 0)
+    {
+        //std::cout << "No messages received from queue " << m_queue_url << std::endl;
+        return;
+    }
+
+    const auto& message = messages[0];
+    //std::cout << "Received message:" << std::endl;
+    //std::cout << "  MessageId: " << message.GetMessageId() << std::endl;
+    //std::cout << "  ReceiptHandle: " << message.GetReceiptHandle() << std::endl;
+    //std::cout << "  Body: " << message.GetBody() << std::endl << std::endl;
+
+    Aws::SQS::Model::DeleteMessageRequest dm_req;
+    dm_req.SetQueueUrl(m_queue_url);
+    dm_req.SetReceiptHandle(message.GetReceiptHandle());
+
+    auto dm_out = m_sqs->DeleteMessage(dm_req);
+    if (dm_out.IsSuccess())
+    {
+        //std::cout << "Successfully deleted message " << message.GetMessageId() << " from queue " << m_queue_url << std::endl;
+    }
+    else
+    {
+        std::cout << "Error deleting message " << message.GetMessageId() << " from queue " << m_queue_url << ": "
+            << dm_out.GetError().GetMessage() << std::endl;
+    }
+}
+
+void Downloader::start()
+{
+    m_exit_thread = false;
+    m_exit_status = 0;
+    if (pthread_create(&m_pthread_id, NULL, Downloader::run, (void *) this))
+        std::cout << "Unable to start Downloader for " << bucketName() << std::endl;
+    else
+        std::cout << "Started downloader for " << bucketName() << std::endl;
+}
+
+void Downloader::stop()
+{
+    m_exit_thread = true;
+    int *retval;
+    std::cout << "Stopped downloader for " << bucketName() << std::endl;
+    pthread_join(m_pthread_id, (void **)&retval);
+}
+
+void *Downloader::run(void *arg)
+{
+    Downloader *thisObj = (Downloader *) arg;
+    while (1)
+    {
+        thisObj->wait_for_message();
+        thisObj->saveNewObjects();
+
+        if (thisObj->m_exit_thread)
+            pthread_exit(&thisObj->m_exit_status);
+    }
 }

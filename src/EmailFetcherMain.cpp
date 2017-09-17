@@ -4,6 +4,7 @@
  *  Created on: Aug 20, 2017
  *      Author: paulc
  */
+#include <unistd.h>
 #include <aws/core/Aws.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/CreateBucketRequest.h>
@@ -23,13 +24,11 @@ int main(int argc, char** argv)
     Aws::InitAPI(options);
     {
         MaildirFormatter mfmt;
-        S3Get s3accessor(bucket_name);
-        Downloader downl("./mail", DAYS_TO_CHECK, topic_arn, s3accessor, mfmt);
+        Downloader downl("./mail", DAYS_TO_CHECK, topic_arn, bucket_name, mfmt);
 
-        downl.saveNewObjects();
-
-        //s3accessor.saveObjects("./mail", mfmt);
-        //s3accessor.printObjects();
+        downl.start();
+        sleep(60);
+        downl.stop();
     }
 
     Aws::ShutdownAPI(options);

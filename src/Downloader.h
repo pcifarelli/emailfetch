@@ -12,23 +12,31 @@
 #include <aws/sns/SNSClient.h>
 #include "S3Get.h"
 #include <unordered_map>
+#include <pthread.h>
 
-#define SECONDS_PER_DAY 86400
+#define SECONDS_PER_DAY        86400
+#define SQS_REQUEST_TIMEOUT_MS 30000
+#define SQS_WAIT_TIME          2
 
 class Downloader
 {
 public:
     // NOTE: s3 and fmt must stay in scope
-    Downloader(const Aws::String dir, const int days, Aws::String topic_arn, S3Get &s3, Formatter &fmt);
+    Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt);
     virtual ~Downloader();
 
-    // save only the objects that not already in the directory given by dir
+    Aws::String &bucketName() { return m_bucket_name; }
+
+    void start();
+    void stop();
+
+private:
+    // save only the objects that are not already in the directory given by dir
     // NOTE: only the filename is of interest, the contents are not.  Therefore the content of the file can be empty
     // (this can be used to keep track of the objects that you have streamed elsewhere)
     // "days" - number of days back to check
     void saveNewObjects();
 
-private:
     int mkdirmap(std::string dirname, time_t secs_back);
     void purgeMap();                          // purge m_days back
     void purgeMap( std::time_t secs_back );   // purge secs_back
@@ -41,10 +49,16 @@ private:
     void add_permission();
     void subscribe_topic();
     void unsubscribe_topic();
+    void wait_for_message();
+
+    static void *run( void *thisObj );
+    pthread_t m_pthread_id;
+    bool m_exit_thread;
+    int  m_exit_status;
 
     Aws::String m_dir;
     Formatter &m_fmt;
-    S3Get &m_s3;
+    Aws::String m_bucket_name;
     int m_days;
 
     struct FileTracker
