@@ -11,17 +11,23 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <iostream>
 #include <aws/sqs/model/CreateQueueRequest.h>
 #include <aws/sqs/model/CreateQueueResult.h>
 #include <aws/sqs/model/GetQueueUrlRequest.h>
 #include <aws/sqs/model/GetQueueUrlResult.h>
+#include <aws/sqs/model/GetQueueAttributesRequest.h>
+#include <aws/sqs/model/SetQueueAttributesRequest.h>
+#include <aws/sqs/model/QueueAttributeName.h>
+#include <aws/sns/model/SubscribeRequest.h>
+#include <aws/sns/model/UnsubscribeRequest.h>
 #include <aws/core/client/DefaultRetryStrategy.h>
 #include <aws/sqs/model/DeleteQueueRequest.h>
 
 #include "Downloader.h"
 
-Downloader::Downloader(const Aws::String dir, const int days, S3Get &s3, Formatter &fmt) :
-    m_dir(dir), m_days(days), m_s3(s3), m_fmt(fmt)
+Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, S3Get &s3, Formatter &fmt) :
+    m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_s3(s3), m_fmt(fmt)
 {
     mkdirmap(dir.c_str(), days * SECONDS_PER_DAY);
 
@@ -37,11 +43,19 @@ Downloader::Downloader(const Aws::String dir, const int days, S3Get &s3, Formatt
     else
         hostn = "dummy";
 
-    create_sqs_queue(m_s3.bucketName() + "-" + hostn);
+    pid_t pid = getpid();
+    std::ostringstream out;
+    out << m_s3.bucketName() << "-" << hostn << "-" << pid;
+    create_sqs_queue(out.str().c_str());
+    get_queue_url();
+    get_queue_arn();
+    add_permission();
+    subscribe_topic();
 }
 
 Downloader::~Downloader()
 {
+    unsubscribe_topic();
     delete_sqs_queue();
     delete m_sqs;
 }
@@ -191,7 +205,6 @@ void Downloader::create_sqs_queue(Aws::String queue_name)
         std::cout << "Error creating queue " << m_queue_name << ": " <<
             cq_out.GetError().GetMessage() << std::endl;
     }
-    get_queue_url();
 }
 
 void Downloader::get_queue_url()
@@ -212,6 +225,27 @@ void Downloader::get_queue_url()
     }
 }
 
+void Downloader::get_queue_arn()
+{
+    Aws::SQS::Model::GetQueueAttributesRequest gqa_req;
+    gqa_req.SetQueueUrl(m_queue_url);
+    gqa_req.AddAttributeNames(Aws::SQS::Model::QueueAttributeName::QueueArn);
+
+    auto gqa_out = m_sqs->GetQueueAttributes(gqa_req);
+    if (gqa_out.IsSuccess())
+    {
+        auto attr = gqa_out.GetResult().GetAttributes();
+        auto it = attr.begin();
+        m_queue_arn = it->second;
+        std::cout << "Queue " << m_queue_name << " has arn " << m_queue_arn << std::endl;
+    }
+    else
+    {
+        std::cout << "Error getting url for queue " << m_queue_name << ": " <<
+            gqa_out.GetError().GetMessage() << std::endl;
+    }
+}
+
 void Downloader::delete_sqs_queue()
 {
     Aws::SQS::Model::DeleteQueueRequest dq_req;
@@ -229,4 +263,77 @@ void Downloader::delete_sqs_queue()
     }
 }
 
+void Downloader::add_permission()
+{
+    Aws::SQS::Model::SetQueueAttributesRequest apr;
+    Aws::String perm_policy =                 "{ \
+        \"Version\":\"2012-10-17\", \
+        \"Statement\":[ \
+            { \
+                \"Sid\":\"Policy-" + m_topic_arn + "\", \
+                \"Effect\":\"Allow\", \
+                \"Principal\":\"*\", \
+                \"Action\":\"sqs:SendMessage\", \
+                \"Resource\":\"" + m_queue_arn + "\", \
+                \"Condition\":{ \
+                    \"ArnEquals\":{ \
+                        \"aws:SourceArn\":\"" + m_topic_arn + "\" \
+                                } \
+                            } \
+                        } \
+                    ] \
+                }";
 
+    apr.SetQueueUrl(m_queue_url);
+    apr.AddAttributes(Aws::SQS::Model::QueueAttributeName::Policy, perm_policy);
+
+    auto out = m_sqs->SetQueueAttributes(apr);
+    if (!out.IsSuccess())
+    {
+        std::cout << "Error getting url for queue " << m_queue_name << ": " <<
+            out.GetError().GetMessage() << std::endl;
+    }
+    else
+        std::cout << "successfully added policy allowing sns topic to send messages" << std::endl;
+}
+
+void Downloader::subscribe_topic()
+{
+    Aws::SNS::Model::SubscribeRequest sr;
+
+    sr.SetProtocol("sqs");
+    sr.SetEndpoint(m_queue_arn);
+    sr.SetTopicArn(m_topic_arn);
+    auto out = m_sns.Subscribe(sr);
+
+    if(out.IsSuccess())
+    {
+        m_subscription_arn = out.GetResult().GetSubscriptionArn();
+        std::cout << "successfully subscribed queue " << m_queue_arn << " to topic " << m_topic_arn << " with subscription arn " << m_subscription_arn << std::endl;
+    }
+    else
+    {
+        std::cout << "Error subscribing queue " << m_queue_arn << " to topic " << m_topic_arn << " :" <<
+            out.GetError().GetMessage() << std::endl;
+    }
+
+}
+
+void Downloader::unsubscribe_topic()
+{
+    Aws::SNS::Model::UnsubscribeRequest ur;
+
+    ur.SetSubscriptionArn(m_subscription_arn);
+    auto out = m_sns.Unsubscribe(ur);
+
+    if(out.IsSuccess())
+    {
+        std::cout << "successfully unsubscribed queue " << m_queue_arn << " from topic " << m_topic_arn << std::endl;
+    }
+    else
+    {
+        std::cout << "Error subscribing queue " << m_queue_arn << " to topic " << m_topic_arn << " :" <<
+            out.GetError().GetMessage() << std::endl;
+    }
+
+}

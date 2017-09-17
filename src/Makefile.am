@@ -5,9 +5,10 @@ AWS_LIBDIR = lib
 AWS_LIBS = \
 	-laws-cpp-sdk-core \
 	-laws-cpp-sdk-s3 \
-	-laws-cpp-sdk-sqs
+	-laws-cpp-sdk-sqs \
+	-laws-cpp-sdk-sns
 
-AM_CXXFLAGS = -O2 -DUSE_IMPORT_EXPORT -std=c++11 -I$(AWS_SDK_PATH)/include
+AM_CXXFLAGS = -O2 -g -DUSE_IMPORT_EXPORT -std=c++11 -I$(AWS_SDK_PATH)/include
 AM_LDFLAGS = -rdynamic -Wl,-rpath,$(AWS_SDK_PATH)/${AWS_LIBDIR}
 
 bin_PROGRAMS = emailfetch

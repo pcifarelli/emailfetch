@@ -9,6 +9,7 @@
 #define SRC_DOWNLOADER_H_
 
 #include <aws/sqs/SQSClient.h>
+#include <aws/sns/SNSClient.h>
 #include "S3Get.h"
 #include <unordered_map>
 
@@ -18,7 +19,7 @@ class Downloader
 {
 public:
     // NOTE: s3 and fmt must stay in scope
-    Downloader(const Aws::String dir, const int days, S3Get &s3, Formatter &fmt);
+    Downloader(const Aws::String dir, const int days, Aws::String topic_arn, S3Get &s3, Formatter &fmt);
     virtual ~Downloader();
 
     // save only the objects that not already in the directory given by dir
@@ -35,7 +36,11 @@ private:
 
     void create_sqs_queue(Aws::String queue_name);
     void get_queue_url();
+    void get_queue_arn();
     void delete_sqs_queue();
+    void add_permission();
+    void subscribe_topic();
+    void unsubscribe_topic();
 
     Aws::String m_dir;
     Formatter &m_fmt;
@@ -51,7 +56,11 @@ private:
 
     Aws::String m_queue_name;
     Aws::String m_queue_url;
+    Aws::String m_queue_arn;
+    Aws::String m_topic_arn;
+    Aws::String m_subscription_arn;
     Aws::SQS::SQSClient *m_sqs;
+    Aws::SNS::SNSClient m_sns;
 
 };
 #endif /* SRC_DOWNLOADER_H_ */
