@@ -18,6 +18,9 @@
 #include <ios>
 #include "Formatter.h"
 
+namespace S3Downloader
+{
+
 typedef Aws::Vector<Aws::S3::Model::Object> s3object_list;
 typedef Aws::S3::Model::Object s3object;
 
@@ -51,4 +54,5 @@ private:
     s3object_list m_object_list;
 };
 
+}
 #endif /* SRC_S3GET_H_ */

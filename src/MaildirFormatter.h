@@ -20,7 +20,7 @@
 #include <ctime>
 #include <chrono>
 
-class MaildirFormatter: public Formatter
+class MaildirFormatter: public S3Downloader::Formatter
 {
 public:
     MaildirFormatter();

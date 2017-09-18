@@ -7,6 +7,8 @@
 
 #include "S3Get.h"
 
+namespace S3Downloader
+{
 
 S3Get::S3Get(Aws::String b_name)
 {
@@ -159,3 +161,4 @@ void S3Get::printObjects()
         std::cout << "Error getting objects from bucket " << m_bucket_name << std::endl;
 }
 
+}

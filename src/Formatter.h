@@ -16,6 +16,10 @@
 #include <fstream>
 #include <ios>
 
+namespace S3Downloader
+{
+
+
 class Formatter
 {
 public:
@@ -42,5 +46,7 @@ protected:
     Aws::String m_name;		// this is just the name of the file
     Aws::String m_fullpath;	// this is the fullpath, including the filename
 };
+
+}
 
 #endif /* SRC_MAILFORMATTER_H_ */

@@ -29,6 +29,9 @@
 
 #include "Downloader.h"
 
+namespace S3Downloader
+{
+
 Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt) :
     m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_fmt(fmt)
 {
@@ -407,7 +410,7 @@ void Downloader::stop()
     m_exit_thread = true;
     int *retval;
     std::cout << "Stopped downloader for " << bucketName() << std::endl;
-    pthread_join(m_pthread_id, (void **)&retval);
+    pthread_join(m_pthread_id, (void **) &retval);
 }
 
 void *Downloader::run(void *arg)
@@ -421,4 +424,6 @@ void *Downloader::run(void *arg)
         if (thisObj->m_exit_thread)
             pthread_exit(&thisObj->m_exit_status);
     }
+}
+
 }

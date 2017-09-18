@@ -18,6 +18,8 @@ const Aws::String topic_arn   = "arn:aws:sns:us-east-1:331557686640:feed1-testaw
 
 #define DAYS_TO_CHECK 60
 
+using namespace S3Downloader;
+
 int main(int argc, char** argv)
 {
     Aws::SDKOptions options;

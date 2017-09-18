@@ -14,6 +14,10 @@
 #include <unordered_map>
 #include <pthread.h>
 
+namespace S3Downloader
+{
+
+
 #define SECONDS_PER_DAY        86400
 #define SQS_REQUEST_TIMEOUT_MS 30000
 #define SQS_WAIT_TIME          2
@@ -77,4 +81,6 @@ private:
     Aws::SNS::SNSClient m_sns;
 
 };
+
+}
 #endif /* SRC_DOWNLOADER_H_ */

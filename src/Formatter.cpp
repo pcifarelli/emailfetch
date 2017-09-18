@@ -12,6 +12,10 @@
 #include <string>
 #include <cstddef>
 
+namespace S3Downloader
+{
+
+
 Formatter::Formatter() : m_local_file(NULL), m_fullpath("")
 {
 }
@@ -59,4 +63,6 @@ Aws::OStream &Formatter::getStream(void *buf, size_t sz)
 Aws::String Formatter::getKey(Aws::String filename) const
 {
     return filename;
+}
+
 }
