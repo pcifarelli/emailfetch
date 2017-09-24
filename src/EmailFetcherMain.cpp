@@ -53,6 +53,7 @@ int main(int argc, char** argv)
     sigemptyset(&termaction.sa_mask);
     sigaction(SIGTERM, &termaction, 0);
     sigaction(SIGINT, &termaction, 0);
+    sigaction(SIGQUIT, &termaction, 0);
 
     SDKOptions options;
     InitAPI(options);
