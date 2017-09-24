@@ -5,6 +5,7 @@
  *      Author: paulc
  */
 #include <unistd.h>
+#include <signal.h>
 #include <aws/core/Aws.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/CreateBucketRequest.h>
@@ -39,6 +40,11 @@ struct config_item
 typedef list<config_item> config_list;
 int get_config(const string location, config_list &config);
 
+// signal handler for TERM
+bool quittin_time = false;
+void term_sigaction(int signo, siginfo_t *sinfo, void *arg);
+
+
 int main(int argc, char** argv)
 {
     SDKOptions options;
@@ -46,6 +52,13 @@ int main(int argc, char** argv)
     {
         list<config_item> config;
         MaildirFormatter mfmt;
+
+        // setup the signal handler for TERM
+        struct sigaction termaction;
+        termaction.sa_sigaction = term_sigaction;
+        termaction.sa_flags = SA_SIGINFO;
+        sigemptyset(&termaction.sa_mask);
+        sigaction(SIGTERM, &termaction, 0);
 
         get_config("./cfg/mail.json", config);
         for (auto &item : config)
@@ -60,7 +73,8 @@ int main(int argc, char** argv)
                 cout << "Email " << item.name << " is disabled" << endl;
         }
 
-        sleep(120);
+        while (!quittin_time)
+            sleep(2);
 
         while (!config.empty())
         {
@@ -78,6 +92,11 @@ int main(int argc, char** argv)
 
     ShutdownAPI(options);
     return 0;
+}
+
+void term_sigaction(int signo, siginfo_t *, void *)
+{
+    quittin_time = true;
 }
 
 int get_config(const string location, config_list &config)
@@ -123,3 +142,4 @@ int get_config(const string location, config_list &config)
 
     return 0;
 }
+
