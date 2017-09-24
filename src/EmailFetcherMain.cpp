@@ -44,21 +44,21 @@ int get_config(const string location, config_list &config);
 bool quittin_time = false;
 void term_sigaction(int signo, siginfo_t *sinfo, void *arg);
 
-
 int main(int argc, char** argv)
 {
+    // setup the signal handler for TERM
+    struct sigaction termaction;
+    termaction.sa_sigaction = term_sigaction;
+    termaction.sa_flags = SA_SIGINFO;
+    sigemptyset(&termaction.sa_mask);
+    sigaction(SIGTERM, &termaction, 0);
+    sigaction(SIGINT, &termaction, 0);
+
     SDKOptions options;
     InitAPI(options);
     {
         list<config_item> config;
         MaildirFormatter mfmt;
-
-        // setup the signal handler for TERM
-        struct sigaction termaction;
-        termaction.sa_sigaction = term_sigaction;
-        termaction.sa_flags = SA_SIGINFO;
-        sigemptyset(&termaction.sa_mask);
-        sigaction(SIGTERM, &termaction, 0);
 
         get_config("./cfg/mail.json", config);
         for (auto &item : config)
