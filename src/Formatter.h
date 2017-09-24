@@ -32,6 +32,8 @@ public:
     virtual Aws::OStream &getStream() { return m_local_file; }
     virtual Aws::OStream &getStream(void *buf, size_t sz);
     Aws::String &getName(void) { return m_name; }
+    // call after file is saved, in case some cleanup is needed
+    virtual void clean_up() {}
 
     // getKey is used to create a map of what we've already downloaded.  The key is the thing you want to use for comparisons.
     // you are passed the object and the filename to construct the key from

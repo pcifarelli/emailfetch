@@ -13,35 +13,38 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-using boost::property_tree::ptree;
-using boost::property_tree::read_json;
-
 #include "S3Get.h"
-#include "Downloader.h"
+#include "MaildirDownloader.h"
 #include "MaildirFormatter.h"
 
 #define DAYS_TO_CHECK 60
 
 using namespace S3Downloader;
+using namespace std;
+using namespace Aws;
+using namespace boost::property_tree;
+
+using boost::property_tree::ptree;
+using boost::property_tree::read_json;
 
 struct config_item
 {
-    std::string name;
-    std::string location;
-    std::string topic_arn;
-    std::string bucket;
+    string name;
+    string location;
+    string topic_arn;
+    string bucket;
     Downloader *pdownl;
     bool enabled;
 };
-typedef std::list<config_item> config_list;
-int get_config(const std::string location, config_list &config);
+typedef list<config_item> config_list;
+int get_config(const string location, config_list &config);
 
 int main(int argc, char** argv)
 {
-    Aws::SDKOptions options;
-    Aws::InitAPI(options);
+    SDKOptions options;
+    InitAPI(options);
     {
-        std::list<config_item> config;
+        list<config_item> config;
         MaildirFormatter mfmt;
 
         get_config("./cfg/mail.json", config);
@@ -49,23 +52,23 @@ int main(int argc, char** argv)
         {
             if (item.enabled)
             {
-                item.pdownl = new Downloader(item.location.c_str(), DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), mfmt);
+                item.pdownl = new MaildirDownloader(item.location.c_str(), DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), mfmt);
                 item.pdownl->start();
-                std::cout << "Email " << item.name << " is started" << std::endl;
+                cout << "Email " << item.name << " is started" << endl;
             }
             else
-                std::cout << "Email " << item.name << " is disabled" << std::endl;
+                cout << "Email " << item.name << " is disabled" << endl;
         }
 
-        sleep(6);
+        sleep(120);
 
         while (!config.empty())
         {
             config_item &item = config.back();
-            std::cout << item.name << " stopped" << std::endl;
             if (item.enabled)
             {
                item.pdownl->stop();
+               cout << item.name << " stopped" << endl;
                if (item.enabled)
                    delete item.pdownl;
             }
@@ -73,17 +76,17 @@ int main(int argc, char** argv)
         }
     }
 
-    Aws::ShutdownAPI(options);
+    ShutdownAPI(options);
     return 0;
 }
 
-int get_config(const std::string location, config_list &config)
+int get_config(const string location, config_list &config)
 {
-    std::string jstr;
+    string jstr;
     ptree pt;
 
-    std::ifstream infile(location, std::ifstream::in);
-    std::streamsize n;
+    ifstream infile(location, ifstream::in);
+    streamsize n;
     char buf[512];
     do
     {
@@ -95,7 +98,7 @@ int get_config(const std::string location, config_list &config)
 
     try
     {
-        std::istringstream inp(jstr);
+        istringstream inp(jstr);
         read_json(inp, pt);
         boost::property_tree::ptree &mailboxes = pt.get_child("mailbox");
         for (boost::property_tree::ptree::iterator it = mailboxes.begin(); it != mailboxes.end(); it++)

@@ -36,13 +36,18 @@ public:
     void start();
     void stop();
 
-private:
+protected:
+    // override this member function to save in a different directory than you are tracking in the dirmap
+    // for example, if you are saving (staging) in one dir and then moving to another
+    virtual Aws::String &getSaveDir() { return m_dir; }
+
     // save only the objects that are not already in the directory given by dir
     // NOTE: only the filename is of interest, the contents are not.  Therefore the content of the file can be empty
     // (this can be used to keep track of the objects that you have streamed elsewhere)
     // "days" - number of days back to check
-    void saveNewObjects();
+    virtual void saveNewObjects();
 
+private:
     int mkdirmap(std::string dirname, time_t secs_back);
     void purgeMap();                          // purge m_days back
     void purgeMap( std::time_t secs_back );   // purge secs_back

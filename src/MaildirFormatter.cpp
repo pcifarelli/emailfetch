@@ -19,7 +19,8 @@
 
 unsigned int MaildirFormatter::m_q_sequence = 0;
 
-MaildirFormatter::MaildirFormatter() : Formatter()
+MaildirFormatter::MaildirFormatter() :
+    Formatter(), m_isopen(false)
 {
     char host[NI_MAXHOST];
 
@@ -40,6 +41,44 @@ MaildirFormatter::MaildirFormatter() : Formatter()
 
 MaildirFormatter::~MaildirFormatter()
 {
+    close_and_rename();
+}
+
+void MaildirFormatter::close_and_rename()
+{
+    if (m_isopen)
+    {
+        m_newpath += m_name;
+        if (::rename(m_fullpath.c_str(), m_newpath.c_str()))
+        {
+            std::cout << "Failed to rename file " << m_name << " to maildir new directory" << std::endl;
+            std::cout << "  From: " << m_fullpath << std::endl;
+            std::cout << "  To:   " << m_newpath << std::endl;
+        }
+    }
+    Formatter::close();
+    m_isopen = false;
+}
+
+void MaildirFormatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const std::ios_base::openmode mode)
+{
+    Aws::String c = "";
+    std::size_t n = pathname.find_last_of('/');
+    if (n != std::string::npos && n != pathname.length() - 1)
+        c = "/";
+
+    Aws::String tmppath = pathname + c;
+    Aws::String newpath = tmppath;
+    tmppath += "tmp/";
+    Formatter::open(obj, tmppath, mode);
+    m_isopen = true;
+    newpath += "new/";
+    m_newpath = newpath;
+}
+
+void MaildirFormatter::clean_up()
+{
+    close_and_rename();
 }
 
 Aws::String MaildirFormatter::getKey(Aws::String filename) const
@@ -52,13 +91,13 @@ Aws::String MaildirFormatter::getKey(Aws::String filename) const
 bool MaildirFormatter::SHA256(void* input, unsigned long length, unsigned char* md)
 {
     SHA256_CTX context;
-    if(!SHA256_Init(&context))
+    if (!SHA256_Init(&context))
         return false;
 
-    if(!SHA256_Update(&context, (unsigned char*)input, length))
+    if (!SHA256_Update(&context, (unsigned char*) input, length))
         return false;
 
-    if(!SHA256_Final(md, &context))
+    if (!SHA256_Final(md, &context))
         return false;
 
     return true;
@@ -67,12 +106,12 @@ bool MaildirFormatter::SHA256(void* input, unsigned long length, unsigned char* 
 bool MaildirFormatter::sha256_as_str(void *input, unsigned long length, std::string &mds)
 {
     unsigned char md[SHA256_DIGEST_LENGTH]; // 32 bytes
-    if(!SHA256(input, length, md))
+    if (!SHA256(input, length, md))
         return false;
 
     std::ostringstream out;
     char buf[3];
-    for (int i=0; i<32; i++)
+    for (int i = 0; i < 32; i++)
     {
         snprintf(buf, sizeof(buf), "%02x", md[i]);
         out << buf;
@@ -83,14 +122,15 @@ bool MaildirFormatter::sha256_as_str(void *input, unsigned long length, std::str
 
 int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key, std::string &name) const
 {
-    struct timeval tv = { 0, 0 };
+    struct timeval tv =
+    { 0, 0 };
 
     std::chrono::system_clock::time_point t = obj.GetLastModified().UnderlyingTimestamp();
     std::time_t ts = std::chrono::system_clock::to_time_t(t);
     std::chrono::system_clock::time_point ts_m = std::chrono::system_clock::from_time_t(ts);
 
     tv.tv_sec = ts;
-    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count();
+    tv.tv_usec = std::chrono::duration_cast < std::chrono::microseconds > (t - ts_m).count();
     //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count() << std::endl;
 
     //std::cout << "Key: " << obj.GetKey() << std::endl;
@@ -107,7 +147,7 @@ int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key
 
     // use the SHA256 of the object name as the random number
     std::string sha;
-    if(!sha256_as_str((void *) key.c_str(), key.length(), sha))
+    if (!sha256_as_str((void *) key.c_str(), key.length(), sha))
     {
         std::cerr << "Unable to get hash of object key " << key << std::endl;
         return -1;

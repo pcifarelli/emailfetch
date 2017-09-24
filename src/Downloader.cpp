@@ -35,6 +35,7 @@ namespace S3Downloader
 Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt) :
     m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_fmt(fmt)
 {
+    // dir is the directory we are tracking
     mkdirmap(dir.c_str(), days * SECONDS_PER_DAY);
 
     // disable retries so that bad urls don't hang the exe via retry loop
@@ -74,10 +75,10 @@ void Downloader::saveNewObjects()
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
-    std::string dirname = m_dir.c_str();
+    std::string dirname = getSaveDir().c_str();
     std::string c;
 
-    std::size_t nn = m_dir.find_last_of('/');
+    std::size_t nn = getSaveDir().find_last_of('/');
     if (nn != std::string::npos && nn != m_dir.length() - 1)
         c = "/";
 
@@ -100,13 +101,14 @@ void Downloader::saveNewObjects()
                 if (got == m_filemap.end()) // not found in map
                 {
                     //std::cout << "saving object from s3" << std::endl;
-                    s3accessor.objSaveAs(s3_object, m_dir, m_fmt);
+                    s3accessor.objSaveAs(s3_object, getSaveDir(), m_fmt);
                     std::string fullpath = dirname + fname;
                     FileTracker ft =
                     { fullpath, ts };
 
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                     m_filemap.insert(hashent);
+                    m_fmt.clean_up();
                 }
             }
         }
