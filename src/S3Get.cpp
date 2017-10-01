@@ -10,19 +10,40 @@
 namespace S3Downloader
 {
 
-S3Get::S3Get(Aws::String b_name)
+S3Get::S3Get()
 {
+   m_s3_client = new Aws::S3::S3Client;
+}
+
+S3Get::S3Get(Aws::String b_name, unsigned int timeout)
+{
+    Aws::Client::ClientConfiguration client_cfg;
+    client_cfg.requestTimeoutMs = timeout;
+    client_cfg.connectTimeoutMs = timeout;
+    m_s3_client = new Aws::S3::S3Client(client_cfg);
+    m_bucket_name = b_name;
+    m_object_list = refreshObjectList();
+}
+
+// TODO
+S3Get::S3Get(Aws::String b_name, Aws::String access_id, Aws::String secret_key, unsigned int timeout)
+{
+    Aws::Client::ClientConfiguration client_cfg;
+    client_cfg.requestTimeoutMs = timeout;
+    client_cfg.connectTimeoutMs = timeout;
+    m_s3_client = new Aws::S3::S3Client(client_cfg);
     m_bucket_name = b_name;
     m_object_list = refreshObjectList();
 }
 
 S3Get::~S3Get()
 {
+    delete m_s3_client;
 }
 
 void S3Get::listBuckets(void) const
 {
-    auto outcome = m_s3_client.ListBuckets();
+    auto outcome = m_s3_client->ListBuckets();
 
     if (outcome.IsSuccess())
     {
@@ -59,7 +80,7 @@ s3object_list S3Get::refreshObjectList(void)
     Aws::S3::Model::ListObjectsRequest objects_request;
     objects_request.WithBucket(m_bucket_name);
 
-    auto result = m_s3_client.ListObjects(objects_request);
+    auto result = m_s3_client->ListObjects(objects_request);
     if (result.IsSuccess())
     {
         list = result.GetResult().GetContents();
@@ -88,7 +109,7 @@ bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Aws::String dir, Formatt
     Aws::S3::Model::GetObjectRequest object_request;
     object_request.WithBucket(m_bucket_name).WithKey(obj.GetKey());
 
-    auto result = m_s3_client.GetObject(object_request);
+    auto result = m_s3_client->GetObject(object_request);
 
     if (result.IsSuccess())
     {
@@ -106,7 +127,7 @@ bool S3Get::objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const
     Aws::S3::Model::GetObjectRequest object_request;
     object_request.WithBucket(m_bucket_name).WithKey(obj.GetKey());
 
-    auto result = m_s3_client.GetObject(object_request);
+    auto result = m_s3_client->GetObject(object_request);
 
     if (result.IsSuccess())
     {

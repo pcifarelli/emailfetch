@@ -24,11 +24,15 @@ namespace S3Downloader
 typedef Aws::Vector<Aws::S3::Model::Object> s3object_list;
 typedef Aws::S3::Model::Object s3object;
 
+/**
+ *  The purpose of this class is to encapsulate downloading objects from AWS S3
+ */
 class S3Get
 {
 public:
-    S3Get() {};
-    S3Get(Aws::String b_name);
+    S3Get();
+    S3Get(Aws::String b_name, unsigned int timeout = 30000);
+    S3Get(Aws::String b_name, Aws::String access_id, Aws::String secret_key, unsigned int timeout = 30000);
     virtual ~S3Get();
 
     Aws::String bucketName() const { return m_bucket_name; }
@@ -49,7 +53,7 @@ public:
     bool objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const;
 
 private:
-    Aws::S3::S3Client m_s3_client;
+    Aws::S3::S3Client *m_s3_client;
     Aws::String m_bucket_name;
     s3object_list m_object_list;
 };

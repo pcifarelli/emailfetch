@@ -42,6 +42,7 @@ Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_
     Aws::Client::ClientConfiguration client_cfg;
     client_cfg.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>("sqs_delete_queue", 0);
     client_cfg.requestTimeoutMs = SQS_REQUEST_TIMEOUT_MS;
+    client_cfg.connectTimeoutMs = SQS_REQUEST_TIMEOUT_MS;
     m_sqs = new Aws::SQS::SQSClient(client_cfg);
 
     Aws::String hostn;
