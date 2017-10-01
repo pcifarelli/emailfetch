@@ -11,22 +11,30 @@
 #include <aws/s3/model/CreateBucketRequest.h>
 
 #include <iterator>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include "S3Get.h"
 #include "MaildirDownloader.h"
 #include "MaildirFormatter.h"
+
+#include "config.h"
 
 #define DAYS_TO_CHECK 60
 
 using namespace S3Downloader;
 using namespace std;
 using namespace Aws;
+
+#ifdef USE_LIBBOOST
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+
 using namespace boost::property_tree;
 
 using boost::property_tree::ptree;
 using boost::property_tree::read_json;
+#else
+#include <aws/core/utils/json/JsonSerializer.h>
+#endif
 
 struct config_item
 {
@@ -103,7 +111,6 @@ void term_sigaction(int signo, siginfo_t *, void *)
 int get_config(const string location, config_list &config)
 {
     string jstr;
-    ptree pt;
 
     ifstream infile(location, ifstream::in);
     streamsize n;
@@ -115,6 +122,9 @@ int get_config(const string location, config_list &config)
         jstr += buf;
     } while (infile.good() && n);
     infile.close();
+
+#ifdef USE_LIBBOOST
+    ptree pt;
 
     try
     {
@@ -140,6 +150,26 @@ int get_config(const string location, config_list &config)
         std::cerr << "exception = " << e.what() << std::endl;
         return -1;
     }
+#else
+    istringstream inp(jstr);
+    Utils::Json::JsonValue jv(inp);
+
+    Utils::Array<Utils::Json::JsonValue> arr = jv.GetArray("mailbox");
+
+    for (int i = 0; i < arr.GetLength(); i++)
+    {
+        config_item *pitem = new config_item;
+
+        pitem->name = arr[i].GetString("name").c_str();
+        pitem->bucket = arr[i].GetString("bucket").c_str();
+        pitem->topic_arn = arr[i].GetString("topic_arn").c_str();
+        pitem->location = arr[i].GetString("location").c_str();
+        pitem->enabled = arr[i].GetBool("enabled");
+
+        config.push_back(*pitem);
+    }
+
+#endif
 
     return 0;
 }
