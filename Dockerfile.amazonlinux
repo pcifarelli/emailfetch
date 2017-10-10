@@ -1,0 +1,38 @@
+FROM amazonlinux
+
+# set the working directory
+RUN mkdir /srv/vmail
+RUN mkdir /srv/lib
+RUN mkdir /srv/bin
+RUN mkdir /srv/cfg
+WORKDIR /srv
+
+# copy the current directory contents to the working directory
+ADD emailfetch/emailfetch /srv/bin
+ADD emailfetch/lib /srv/lib
+ADD emailfetch/cfg /srv/cfg
+
+VOLUME ["/srv/vmail"]
+
+# set the LD_LIBRARY_PATH
+ENV PATH ${PATH}:/srv/bin
+ENV LD_LIBRARY_PATH /srv/lib
+# these if you are not on an EC2 instance
+#ENV AWS_ACCESS_KEY_ID <access key id>
+#ENV AWS_SECRET_ACCESS_KEY <secret key>
+
+# install needed packages
+RUN yum update -y && yum install -y libcurl-devel openssl-devel libuuid-devel zlib-devel
+# install these for debug purposes
+RUN yum install -y busybox net-tools
+RUN yum install -y iputils
+RUN yum install -y python27-pip
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
+RUN pip install awscli --upgrade --user
+
+# run emailfetch
+ENTRYPOINT ["/srv/bin/emailfetch"]
+#if you need to debug, make this the entry point
+#ENTRYPOINT ["/bin/sh"]
+
