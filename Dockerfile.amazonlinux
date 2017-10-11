@@ -21,15 +21,16 @@ ENV LD_LIBRARY_PATH /srv/lib
 #ENV AWS_ACCESS_KEY_ID <access key id>
 #ENV AWS_SECRET_ACCESS_KEY <secret key>
 
-# install needed packages
+# install packages needed by the AWS C++ SDK
 RUN yum update -y && yum install -y libcurl-devel openssl-devel libuuid-devel zlib-devel
 # install these for debug purposes
-RUN yum install -y busybox net-tools
-RUN yum install -y iputils
-RUN yum install -y python27-pip
-RUN pip install --upgrade pip
-RUN pip install --upgrade setuptools
-RUN pip install awscli --upgrade --user
+#RUN yum install -y busybox
+#RUN yum install -y net-tools
+#RUN yum install -y iputils
+#RUN yum install -y python27-pip
+#RUN pip install --upgrade pip
+#RUN pip install --upgrade setuptools
+#RUN pip install awscli --upgrade --user
 
 # run emailfetch
 ENTRYPOINT ["/srv/bin/emailfetch"]
