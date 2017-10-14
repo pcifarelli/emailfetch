@@ -1,30 +1,29 @@
 FROM amazonlinux
 
 # set the working directory
-RUN mkdir /srv/vmail
-RUN mkdir /srv/lib
-RUN mkdir /srv/bin
-RUN mkdir /srv/cfg
-WORKDIR /srv
+WORKDIR /emailfetch
 
-# copy the current directory contents to the working directory
-ADD emailfetch/emailfetch /srv/bin
-ADD emailfetch/lib /srv/lib
-ADD emailfetch/cfg /srv/cfg
+# install needed packages
+RUN yum update -y && yum install -y libcurl-devel openssl-devel libuuid-devel zlib-devel shadow-utils binutils busybox
 
-VOLUME ["/srv/vmail"]
+RUN mkdir -p /vmail
+RUN mkdir -p /emailfetch/bin
+COPY emailfetch/emailfetch /emailfetch/bin
+ADD emailfetch/lib /emailfetch/lib
+ADD emailfetch/cfg /emailfetch/cfg
+#RUN groupadd -g 5000 vmail
+#RUN useradd -u 5000 -g 5000 vmail
+
+VOLUME ["/vmail"]
 
 # set the LD_LIBRARY_PATH
-ENV PATH ${PATH}:/srv/bin
-ENV LD_LIBRARY_PATH /srv/lib
+ENV PATH ${PATH}:/emailfetch/bin
+ENV LD_LIBRARY_PATH /emailfetch/lib
 # these if you are not on an EC2 instance
 #ENV AWS_ACCESS_KEY_ID <access key id>
 #ENV AWS_SECRET_ACCESS_KEY <secret key>
 
-# install packages needed by the AWS C++ SDK
-RUN yum update -y && yum install -y libcurl-devel openssl-devel libuuid-devel zlib-devel
 # install these for debug purposes
-#RUN yum install -y busybox
 #RUN yum install -y net-tools
 #RUN yum install -y iputils
 #RUN yum install -y python27-pip
@@ -33,7 +32,7 @@ RUN yum update -y && yum install -y libcurl-devel openssl-devel libuuid-devel zl
 #RUN pip install awscli --upgrade --user
 
 # run emailfetch
-ENTRYPOINT ["/srv/bin/emailfetch"]
+ENTRYPOINT ["/emailfetch/bin/emailfetch"]
 #if you need to debug, make this the entry point
 #ENTRYPOINT ["/bin/sh"]
 
