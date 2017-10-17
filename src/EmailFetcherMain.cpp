@@ -5,6 +5,7 @@
  *      Author: paulc
  */
 #include <unistd.h>
+#include <sys/types.h>
 #include <signal.h>
 #include <aws/core/Aws.h>
 #include <aws/s3/S3Client.h>
@@ -36,6 +37,15 @@ using boost::property_tree::read_json;
 #include <aws/core/utils/json/JsonSerializer.h>
 #endif
 
+struct program_defaults
+{
+   uid_t euser;
+   gid_t egroup;
+} defaults = {
+   5000,
+   5000
+};
+
 struct config_item
 {
     string name;
@@ -54,6 +64,13 @@ void term_sigaction(int signo, siginfo_t *sinfo, void *arg);
 
 int main(int argc, char** argv)
 {
+    // try to set the effective userid and group id
+    if (setegid(defaults.egroup))
+        cout << "Unable to set effective gid to " << defaults.egroup << endl;
+
+    if (seteuid(defaults.euser))
+        cout << "Unable to set effective uid to " << defaults.euser << endl;
+
     // setup the signal handler for TERM
     struct sigaction termaction;
     termaction.sa_sigaction = term_sigaction;
