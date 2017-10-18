@@ -25,17 +25,7 @@ using namespace S3Downloader;
 using namespace std;
 using namespace Aws;
 
-#ifdef USE_LIBBOOST
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-using namespace boost::property_tree;
-
-using boost::property_tree::ptree;
-using boost::property_tree::read_json;
-#else
 #include <aws/core/utils/json/JsonSerializer.h>
-#endif
 
 struct program_defaults
 {
@@ -80,18 +70,37 @@ int main(int argc, char** argv)
     sigaction(SIGINT, &termaction, 0);
     sigaction(SIGQUIT, &termaction, 0);
 
+    const char *default_config_file = "./cfg/emailfetch.json";
+    const char *config_file = default_config_file;
+    const char *default_mailboxconfig_file = "./cfg/mail.json";
+    const char *mailboxconfig_file = default_mailboxconfig_file;
+
+    // read the command line options
+    int option_char;
+    while ((option_char = getopt(argc, argv, "f:m:")) != -1)
+      switch (option_char)
+        {  
+           case 'm': mailboxconfig_file = optarg; break;
+           case 'f': config_file = optarg; break;
+        }
+
+    cout << "Using " << mailboxconfig_file << " for mailbox configuration" << endl;
+
+    // setup the AWS SDK
     SDKOptions options;
     InitAPI(options);
     {
-        list<config_item> config;
-        MaildirFormatter mfmt;
+        list<config_item> config; // this is our configuration
+        MaildirFormatter mfmt;    // a "formatter" is responsible for providing services to stream and save the file
 
-        get_config("./cfg/mail.json", config);
+        get_config(mailboxconfig_file, config);
         for (auto &item : config)
         {
             if (item.enabled)
             {
+                // instantiating a Downloader results in a new thread that waits on the notification
                 item.pdownl = new MaildirDownloader(item.location.c_str(), DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), mfmt);
+                // start the thread
                 item.pdownl->start();
                 cout << "Email " << item.name << " is started" << endl;
             }
@@ -99,9 +108,11 @@ int main(int argc, char** argv)
                 cout << "Email " << item.name << " is disabled" << endl;
         }
 
+        // wait until signaled to quit
         while (!quittin_time)
             sleep(2);
 
+        // cleanup the threads (wait for them)
         while (!config.empty())
         {
             config_item &item = config.back();
@@ -116,6 +127,7 @@ int main(int argc, char** argv)
         }
     }
 
+    // shutdown the AWS SDK
     ShutdownAPI(options);
     return 0;
 }
@@ -140,34 +152,6 @@ int get_config(const string location, config_list &config)
     } while (infile.good() && n);
     infile.close();
 
-#ifdef USE_LIBBOOST
-    ptree pt;
-
-    try
-    {
-        istringstream inp(jstr);
-        read_json(inp, pt);
-        boost::property_tree::ptree &mailboxes = pt.get_child("mailbox");
-        for (boost::property_tree::ptree::iterator it = mailboxes.begin(); it != mailboxes.end(); it++)
-        {
-            config_item *pitem = new config_item;
-            pitem->name = it->second.get<std::string> ("name");
-            pitem->bucket = it->second.get<std::string> ("bucket");
-            pitem->topic_arn = it->second.get<std::string> ("topic_arn");
-            pitem->location = it->second.get<std::string> ("location");
-            pitem->enabled = it->second.get<bool> ("enabled");
-            config.push_back(*pitem);
-        }
-    } catch (const boost::property_tree::ptree_error &e)
-    {
-        std::cerr << "property_tree error = " << e.what() << std::endl;
-        return -2;
-    } catch (std::exception const& e)
-    {
-        std::cerr << "exception = " << e.what() << std::endl;
-        return -1;
-    }
-#else
     istringstream inp(jstr);
     Utils::Json::JsonValue jv(inp);
 
@@ -185,8 +169,6 @@ int get_config(const string location, config_list &config)
 
         config.push_back(*pitem);
     }
-
-#endif
 
     return 0;
 }
