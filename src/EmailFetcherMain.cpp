@@ -16,6 +16,7 @@
 #include "S3Get.h"
 #include "MaildirDownloader.h"
 #include "MaildirFormatter.h"
+#include "CurlPoster.h"
 
 #include "config.h"
 
@@ -107,6 +108,13 @@ int main(int argc, char** argv)
             else
                 cout << "Email " << item.name << " is disabled" << endl;
         }
+
+        CurlPoster cp("http://10.0.1.103:8080/growler/rest/notify/My%20Laptop");
+        cp.post("{\"type\":\"SmartThings\", \
+                  \"title\":\"Secure\", \
+                  \"description\":\"this is a test\"}");
+        cout << "\nCompleted POST\n";
+        cout << cp.getResult();
 
         // wait until signaled to quit
         while (!quittin_time)

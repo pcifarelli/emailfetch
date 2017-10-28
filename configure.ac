@@ -23,5 +23,6 @@ AC_PROG_CXX
 AC_CHECK_LIB([ssl], [SSL_library_init])
 AC_CHECK_LIB([crypto], [SHA256_Init])
 AC_CHECK_LIB([pthread], [pthread_create])
+AC_CHECK_LIB([curl],[curl_global_cleanup])
 
 AC_OUTPUT(Makefile src/Makefile)
