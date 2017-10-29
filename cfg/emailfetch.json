@@ -1,17 +1,37 @@
 {
 "__comment" : "This is the config for email feeds that use AWS SES",
-"mailbox" : 
+"defaults"  :
+{
+   "user"  : "vmail",
+   "group" : "vmail"
+},
+"mailbox"   : 
    [
       { 
          "name"      : "Feed 1 Mailbox",
-         "location"  : "/vmail/public/.feed1",
+         "locations" : [ "/vmail/public/.feed1" ],
          "bucket"    : "feed1-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
          "enabled"   : true
       }, 
       { 
          "name"      : "Feed 2 Mailbox",
-         "location"  : "/vmail/testaws.pcifarelli.net/paul@testaws.pcifarelli.net/Maildir",
+         "locations" : [ 
+            "/vmail/testaws.pcifarelli.net/paul@testaws.pcifarelli.net/Maildir",
+            "https://10.51.13.4/ucdprest/publish"
+         ],
+         "bucket"    : "paul-testaws-pcifarelli-net",
+         "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
+         "type"      : "both",
+         "enabled"   : true
+      }, 
+      { 
+         "name"      : "Feed 2 Mailbox",
+         "locations" : [ 
+            "https://10.51.13.4/ucdprest/publish",
+            "https://10.51.13.5/ucdprest/publish"
+         ],
+         "workdir"   : "/vmail/slot/feed2",
          "bucket"    : "paul-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
          "enabled"   : true

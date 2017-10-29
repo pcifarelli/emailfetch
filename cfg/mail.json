@@ -1,17 +1,22 @@
 {
 "__comment" : "This is the config for email feeds that use AWS SES",
+"defaults"  :
+{
+   "user"  : "vmail",
+   "group" : "vmail"
+},
 "mailbox" : 
    [
       { 
          "name"      : "Feed 1 Mailbox",
-         "location"  : "./mail",
+         "locations" : [ "./mail" ],
          "bucket"    : "feed1-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
          "enabled"   : true
       }, 
       { 
          "name"      : "Feed 2 Mailbox",
-         "location"  : "./mail2",
+         "locations" : [ "./mail2" ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",
          "enabled"   : false
