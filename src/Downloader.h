@@ -18,28 +18,49 @@
 namespace S3Downloader
 {
 
-
 #define SECONDS_PER_DAY        86400
 #define SQS_REQUEST_TIMEOUT_MS 60000
 #define SQS_WAIT_TIME          2
 
+struct DownloaderDestination
+{
+    Aws::String destination;
+    Formatter &fmt;
+};
+
+typedef std::list<DownloaderDestination> DestinationList;
 
 class Downloader
 {
 public:
-    // NOTE: s3 and fmt must stay in scope
-    Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt);
+    // NOTE: fmtlist must stay in scope
+    Downloader(const DestinationList &dlist, const int days, Aws::String topic_arn, Aws::String bucket_name);
     virtual ~Downloader();
 
-    Aws::String &bucketName() { return m_bucket_name; }
+    Aws::String &bucketName()
+    {
+        return m_bucket_name;
+    }
 
     void start();
     void stop();
 
 protected:
-    // override this member function to save in a different directory than you are tracking in the dirmap
-    // for example, if you are saving (staging) in one dir and then moving to another
-    virtual Aws::String &getSaveDir() { return m_dir; }
+    struct FileTracker
+    {
+        std::string fname;
+        std::time_t ftime;
+    };
+
+    typedef std::unordered_map<std::string, FileTracker> FileMap;
+    class Maildestination
+    {
+    public:
+        Aws::String m_track_dir;
+        Aws::String m_save_dir;
+        Formatter  *m_fmt;
+        FileMap    *m_filemap;
+    };
 
     // save only the objects that are not already in the directory given by dir
     // NOTE: only the filename is of interest, the contents are not.  Therefore the content of the file can be empty
@@ -47,11 +68,15 @@ protected:
     // "days" - number of days back to check
     virtual void saveNewObjects();
 
+    virtual void saveNewObjects(Maildestination &md);
+
+    std::list<Maildestination *> m_mailbox_list;
+
 private:
-    int mkdirmap(std::string dirname, time_t secs_back);
-    void purgeMap();                          // purge m_days back
-    void purgeMap( std::time_t secs_back );   // purge secs_back
-    void printMap();
+    int mkdirmap(Maildestination *md, time_t secs_back);
+    void purgeMap(Maildestination &md);                          // purge m_days back
+    void purgeMap(Maildestination &md, std::time_t secs_back);   // purge secs_back
+    void printMap(Maildestination &md);
 
     void create_sqs_queue(Aws::String queue_name);
     void get_queue_url();
@@ -62,22 +87,15 @@ private:
     void unsubscribe_topic();
     void wait_for_message();
 
-    static void *run( void *thisObj );
+    static void *run(void *thisObj);
     pthread_t m_pthread_id;
     bool m_exit_thread;
-    int  m_exit_status;
+    int m_exit_status;
 
-    Aws::String m_dir;
-    Formatter &m_fmt;
+    DestinationList &m_destinations;
+
     Aws::String m_bucket_name;
     int m_days;
-
-    struct FileTracker
-    {
-        std::string fname;
-        std::time_t ftime;
-    };
-    std::unordered_map<std::string, FileTracker> m_filemap;
 
     Aws::String m_queue_name;
     Aws::String m_queue_url;
