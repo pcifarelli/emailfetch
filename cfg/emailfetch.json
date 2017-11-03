@@ -3,7 +3,12 @@
 "defaults"  :
 {
    "user"  : "vmail",
-   "group" : "vmail"
+   "group" : "vmail",
+   "UCDP"  : 
+   	{
+   		"port" : 15926,
+   		"cert" : "./cfg/ucdp_emailfetch.pem"
+    }
 },
 "mailbox"   : 
    [

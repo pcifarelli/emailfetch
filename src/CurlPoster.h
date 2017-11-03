@@ -23,6 +23,7 @@ class CurlPoster
 {
 public:
     CurlPoster(std::string url);
+    CurlPoster(std::string url);
     virtual ~CurlPoster();
     void post(std::string jstr);
     std::string getResult() const { return m_result; }

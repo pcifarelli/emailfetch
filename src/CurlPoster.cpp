@@ -10,8 +10,8 @@
 namespace S3Downloader
 {
 
-CurlPoster::CurlPoster(std::string url) :
-    m_url(url)
+CurlPoster::CurlPoster( std::string url ) :
+        m_url(url)
 {
     // TODO Auto-generated constructor stub
 
@@ -22,7 +22,7 @@ CurlPoster::~CurlPoster()
     // TODO Auto-generated destructor stub
 }
 
-size_t CurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *userp)
+size_t CurlPoster::read_callback( void *dest, size_t size, size_t nmemb, void *userp )
 {
     struct WriteThis *wt = (struct WriteThis *) userp;
     size_t buffer_size = size * nmemb;
@@ -43,7 +43,7 @@ size_t CurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *us
     return 0; /* no more data left to deliver */
 }
 
-size_t CurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+size_t CurlPoster::write_data( void *buffer, size_t size, size_t nmemb, void *userp )
 {
     CurlPoster *thisObj = (CurlPoster *) userp;
 
@@ -51,12 +51,12 @@ size_t CurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
-void CurlPoster::post(std::string jstr)
+void CurlPoster::post( std::string jstr )
 {
-   postIt(m_url.c_str(), jstr.c_str(), jstr.length());
+    postIt(m_url.c_str(), jstr.c_str(), jstr.length());
 }
 
-int CurlPoster::postIt(const char *url, const char *data, int sz)
+int CurlPoster::postIt( const char *url, const char *data, int sz )
 {
     CURL *curl;
     CURLcode res;
@@ -100,7 +100,7 @@ int CurlPoster::postIt(const char *url, const char *data, int sz)
         /* get verbose debug output please */
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
-        curl_easy_setopt (curl, CURLOPT_VERBOSE, 0L); //0 disable messages
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L); //0 disable messages
 
         /*
          If you use POST to a HTTP 1.1 server, you can send data without knowing
@@ -116,7 +116,7 @@ int CurlPoster::postIt(const char *url, const char *data, int sz)
         opts = curl_slist_append(opts, "Content-Type: application/json");
         res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, opts);
         /* use curl_slist_free_all() after the *perform() call to free this
-             list again */
+         list again */
 
         /* Perform the request, res will get the return code */
         res = curl_easy_perform(curl);
