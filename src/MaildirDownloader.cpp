@@ -16,17 +16,13 @@
 
 mode_t MaildirDownloader::m_newdirs_mode = 0700;
 
-MaildirDownloader::MaildirDownloader(const DestinationList dlist, const int days, Aws::String topic_arn, Aws::String bucket_name) :
-    Downloader(dlist, days, topic_arn, bucket_name, fmt)
+MaildirDownloader::MaildirDownloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, MaildirFormatter &fmt) :
+    m_dir(dir), m_curdir(dir + "/cur"), m_tmpdir(dir + "/tmp"), m_newdir(dir + "/new"), m_fmt(fmt),
+    Downloader(dir + "/cur", days, topic_arn, bucket_name, fmt)
 {
-    for (auto &md : m_mailbox_list)
-    {
-        MaildirDestination *md = new MaildirDestination;
-        md->
-        mkdirs(m_curdir.c_str(), m_newdirs_mode);
-        mkdirs(m_newdir.c_str(), m_newdirs_mode);
-        mkdirs(m_tmpdir.c_str(), m_newdirs_mode);
-    }
+    mkdirs(m_curdir.c_str(), m_newdirs_mode);
+    mkdirs(m_newdir.c_str(), m_newdirs_mode);
+    mkdirs(m_tmpdir.c_str(), m_newdirs_mode);
 }
 
 MaildirDownloader::~MaildirDownloader()

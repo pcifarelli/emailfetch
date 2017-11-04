@@ -32,18 +32,11 @@
 namespace S3Downloader
 {
 
-Downloader::Downloader(const DestinationList &dlist, const int days, Aws::String topic_arn, Aws::String bucket_name) :
-    m_destinations(dlist), m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt) :
+    m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_fmt(fmt)
 {
-    for (auto &dest : m_destinations)
-    {
-        Maildestination *md = new Maildestination;
-        md->m_track_dir = dest.destination;
-        md->m_save_dir = dest.destination;
-        // dir is the directory we are tracking
-        mkdirmap(md, days * SECONDS_PER_DAY);
-        m_mailbox_list.push_back(md);
-    }
+    // dir is the directory we are tracking
+    mkdirmap(dir.c_str(), days * SECONDS_PER_DAY);
 
     // disable retries so that bad urls don't hang the exe via retry loop
     Aws::Client::ClientConfiguration client_cfg;
@@ -78,24 +71,16 @@ Downloader::~Downloader()
 
 void Downloader::saveNewObjects()
 {
-    for (auto &md : m_mailbox_list)
-       saveNewObjects(*md);
-}
-
-void Downloader::saveNewObjects(Maildestination &md)
-{
     S3Get s3accessor(m_bucket_name);
     s3object_list list = s3accessor.getObjectList();
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
-
-    std::string dirname = md.m_save_dir.c_str();
+    std::string dirname = getSaveDir().c_str();
     std::string c;
 
-
-    std::size_t nn = md.m_save_dir.find_last_of('/');
-    if (nn != std::string::npos && nn != md.m_save_dir.length() - 1)
+    std::size_t nn = getSaveDir().find_last_of('/');
+    if (nn != std::string::npos && nn != m_dir.length() - 1)
         c = "/";
 
     dirname += c;
@@ -109,29 +94,29 @@ void Downloader::saveNewObjects(Maildestination &md)
 
             if (now - ts < time_limit)
             {
-                std::string fname = md.m_fmt->mkname(s3_object);
-                Aws::String key = md.m_fmt->getKey(fname.c_str());
+                std::string fname = m_fmt.mkname(s3_object);
+                Aws::String key = m_fmt.getKey(fname.c_str());
                 std::string input = key.c_str();
-                std::unordered_map<std::string, FileTracker>::const_iterator got = md.m_filemap->find(input);
+                std::unordered_map<std::string, FileTracker>::const_iterator got = m_filemap.find(input);
 
-                if (got == md.m_filemap->end()) // not found in map
+                if (got == m_filemap.end()) // not found in map
                 {
                     //std::cout << "saving object from s3" << std::endl;
-                    s3accessor.objSaveAs(s3_object, md.m_save_dir, *md.m_fmt);
+                    s3accessor.objSaveAs(s3_object, getSaveDir(), m_fmt);
                     std::string fullpath = dirname + fname;
                     FileTracker ft =
                     { fullpath, ts };
 
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
-                    md.m_filemap->insert(hashent);
-                    md.m_fmt->clean_up();
+                    m_filemap.insert(hashent);
+                    m_fmt.clean_up();
                 }
             }
         }
     }
 }
 
-int Downloader::mkdirmap(Maildestination *dest, time_t secs_back)
+int Downloader::mkdirmap(std::string dirname, time_t secs_back)
 {
     DIR *dir;
     struct dirent *ent;
@@ -141,11 +126,11 @@ int Downloader::mkdirmap(Maildestination *dest, time_t secs_back)
     std::string fullpath;
     std::string c;
 
-    std::size_t n = dest->m_track_dir.find_last_of('/');
-    if (n != std::string::npos && n != dest->m_track_dir.length() - 1)
+    std::size_t n = dirname.find_last_of('/');
+    if (n != std::string::npos && n != dirname.length() - 1)
         c = "/";
 
-    if ((dir = opendir(dest->m_track_dir.c_str())) != NULL)
+    if ((dir = opendir(dirname.c_str())) != NULL)
     {
         do
         {
@@ -153,7 +138,7 @@ int Downloader::mkdirmap(Maildestination *dest, time_t secs_back)
             if (ent)
             {
                 fname = ent->d_name;
-                fullpath = dest.m_track_dir + c + fname;
+                fullpath = dirname + c + fname;
                 if (!stat(fullpath.c_str(), &fstats))
                     if (S_ISREG(fstats.st_mode))
                     {
@@ -163,11 +148,12 @@ int Downloader::mkdirmap(Maildestination *dest, time_t secs_back)
                         if (now - fstats.st_mtim.tv_sec < secs_back)
                         {
                             Aws::String name = fname.c_str();
-                            Aws::String key = dest->m_fmt->getKey(name);
-                            FileTracker ft = { fullpath, fstats.st_mtim.tv_sec };
+                            Aws::String key = m_fmt.getKey(name);
+                            FileTracker ft =
+                            { fullpath, fstats.st_mtim.tv_sec };
 
                             std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
-                            dest->m_filemap->insert(hashent);
+                            m_filemap.insert(hashent);
                         }
                     }
             }
@@ -183,34 +169,34 @@ int Downloader::mkdirmap(Maildestination *dest, time_t secs_back)
     return 0;
 }
 
-void Downloader::purgeMap(Maildestination &md, std::time_t time_limit)
+void Downloader::purgeMap(std::time_t time_limit)
 {
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
     std::vector<std::string> to_remove;
 
-    for (auto it = md.m_filemap->begin(); it != md.m_filemap->end(); ++it)
+    for (auto it = m_filemap.begin(); it != m_filemap.end(); ++it)
     {
         if (now - it->second.ftime > time_limit)
             to_remove.push_back(it->first);
     }
     for (auto it = to_remove.begin(); it != to_remove.end(); ++it)
-        md.m_filemap->erase(*it);
+        m_filemap.erase(*it);
 }
 
-void Downloader::purgeMap(Maildestination &md)
+void Downloader::purgeMap()
 {
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
-    purgeMap(md, time_limit);
+    purgeMap(time_limit);
 }
 
-void Downloader::printMap(Maildestination &md)
+void Downloader::printMap()
 {
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
 
-    for (auto it = md.m_filemap->begin(); it != md.m_filemap->end(); ++it)
+    for (auto it = m_filemap.begin(); it != m_filemap.end(); ++it)
     {
         std::cout << " " << it->first << ":" << it->second.ftime << std::endl;
     }

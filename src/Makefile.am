@@ -20,6 +20,7 @@ bin_PROGRAMS = emailfetch
 #emailfetch_SOURCES = EmailFetcherMain.cpp MaildirFormatter.cpp MaildirDownloader.cpp
 #emailfetch_LDADD = -L$(AWS_SDK_PATH)/${AWS_LIBDIR} -ls3download $(AWS_LIBS)
 emailfetch_SOURCES = EmailFetcherMain.cpp \
+	EmailFetcherConfig.cpp \
 	UCDPFormatter.cpp \
 	MaildirFormatter.cpp \
 	MaildirDownloader.cpp \
