@@ -63,7 +63,7 @@ protected:
     static mode_t m_newdirs_mode; // mode to use to create dirs
 };
 
-typedef std::list<Formatter>     FormatterList;
+typedef std::list<S3Downloader::Formatter *>     FormatterList;
 
 }
 

@@ -23,12 +23,20 @@ namespace S3Downloader
 #define SQS_REQUEST_TIMEOUT_MS 60000
 #define SQS_WAIT_TIME          2
 
+struct FileTracker
+{
+    std::string fname;
+    std::time_t ftime;
+};
+typedef std::unordered_map<std::string, FileTracker> FileTrackerMap;
+
 
 class Downloader
 {
 public:
     // NOTE: s3 and fmt must stay in scope
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist);
     virtual ~Downloader();
 
     Aws::String &bucketName() { return m_bucket_name; }
@@ -42,9 +50,13 @@ protected:
     // (this can be used to keep track of the objects that you have streamed elsewhere)
     // "days" - number of days back to check
     virtual void saveNewObjects();
+    virtual void saveNewObjects(Formatter &fmt);
 
 private:
-    int mkdirmap(std::string dirname, time_t secs_back);
+    FileTrackerMap *m_filemap;
+
+    void init();
+    FileTrackerMap *mkdirmap(Formatter &fmt, time_t secs_back);
     void purgeMap();                          // purge m_days back
     void purgeMap( std::time_t secs_back );   // purge secs_back
     void printMap();
@@ -63,16 +75,9 @@ private:
     bool m_exit_thread;
     int  m_exit_status;
 
-    Formatter &m_fmt;
+    FormatterList *m_fmtlist;
     Aws::String m_bucket_name;
     int m_days;
-
-    struct FileTracker
-    {
-        std::string fname;
-        std::time_t ftime;
-    };
-    std::unordered_map<std::string, FileTracker> m_filemap;
 
     Aws::String m_queue_name;
     Aws::String m_queue_url;

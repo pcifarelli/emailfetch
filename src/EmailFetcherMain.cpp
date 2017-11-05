@@ -94,7 +94,8 @@ int main(int argc, char** argv)
     SDKOptions options;
     InitAPI(options);
     {
-        MaildirFormatter *mailfmt;          // a "formatter" is responsible for providing services to stream and save the file
+        S3Downloader::FormatterList     fmtlist;
+        MaildirFormatter               *mailfmt;          // a "formatter" is responsible for providing services to stream and save the file
 
         for (auto &item : mailboxconfig)
         {
@@ -108,7 +109,8 @@ int main(int argc, char** argv)
                     {
                         Aws::String dir = loc.mailbox.destination.c_str();
                         mailfmt = new MaildirFormatter(dir);
-                        item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), *mailfmt);
+                        fmtlist.push_back(mailfmt);
+                        item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), fmtlist);
 
                         // start the thread
                         item.pdownl->start();
