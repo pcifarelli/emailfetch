@@ -92,7 +92,7 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
         if (mailboxdefaults.ValueExists("publicdir"))
             defaults.mailbox_defaults.publicdir = mailboxdefaults.GetString("publicdir").c_str();
         if (mailboxdefaults.ValueExists("userdir"))
-            defaults.mailbox_defaults.publicdir = mailboxdefaults.GetString("userdir").c_str();
+            defaults.mailbox_defaults.userdir = mailboxdefaults.GetString("userdir").c_str();
     }
     if (jdefaults.ValueExists("UCDP"))
     {
@@ -104,11 +104,11 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
         if (ucdpdefaults.ValueExists("clientname"))
             defaults.UCDP_defaults.clientname = ucdpdefaults.GetString("clientname").c_str();
         if (ucdpdefaults.ValueExists("workdir"))
-            defaults.UCDP_defaults.clientname = ucdpdefaults.GetString("workdir").c_str();
+            defaults.UCDP_defaults.workdir = ucdpdefaults.GetString("workdir").c_str();
     }
 }
 
-std::string replace_all(std::string str, const std::string& from, const std::string& to) {
+string replace_all(string str, const string &from, const string &to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
         str.replace(start_pos, from.length(), to);
@@ -121,9 +121,9 @@ string create_location(string fmt, string &user, string &name, string &domainnam
 {
     string result = fmt;
 
-    replace_all( result, "%u", user);       // replace all "%u with the user's name
-    replace_all( result, "%f", name);       // replace all "%f with the feed name
-    replace_all( result, "%d", domainname); // replace all "%d with the domain name
+    result = replace_all( result, "%u", user);       // replace all "%u with the user's name
+    result = replace_all( result, "%f", name);       // replace all "%f with the feed name
+    result = replace_all( result, "%d", domainname); // replace all "%d with the domain name
 
     std::size_t n = result.find_last_of('/');
     if (n != std::string::npos && n != result.length() - 1)
@@ -134,8 +134,7 @@ string create_location(string fmt, string &user, string &name, string &domainnam
 
 string create_public_mailbox_location(program_defaults &defaults, string &name, string &domainname)
 {
-    string user = "";
-    return create_location(defaults.mailbox_defaults.publicdir, user, name, domainname);
+    return create_location(defaults.mailbox_defaults.publicdir, name, name, domainname);
 }
 
 string create_user_mailbox_location(program_defaults &defaults, string &user, string &name, string &domainname)
@@ -253,6 +252,14 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     else
                         ploc->rest.sni = true;
 
+                    if (locations[j].ValueExists("workdir"))
+                    {
+                        string fmt = locations[j].GetString("workdir").c_str();
+                        ploc->rest.workdir = create_location(fmt, ploc->mailbox.user, pitem->name, pitem->domainname);
+                    }
+                    else
+                        ploc->rest.workdir = create_location(defaults.UCDP_defaults.workdir, ploc->mailbox.user, pitem->name, pitem->domainname);
+
                     if (locations[j].ValueExists("url"))
                     {
                         string fmt = locations[j].GetString("url").c_str();
@@ -310,9 +317,8 @@ void print_config(config_list &mailboxconfig)
 {
     for (auto &item : mailboxconfig)
     {
-        cout << "CONFIG: " << item.description;
-        cout << "CONFIG: " << item.name;
-        cout << "CONFIG: " << item.domainname;
+        cout << "CONFIG: " << item.description << endl;
+        cout << "CONFIG: " << item.name << '@' << item.domainname;
         cout << (item.enabled ? " is enabled" : " is disabled");
         cout << (item.has_nonslot_workflow ? " and has non-slot workflow\n" : "\n");
         cout << "CONFIG: " << "S3 Bucket:     " << item.bucket << endl;
@@ -327,7 +333,8 @@ void print_config(config_list &mailboxconfig)
             }
             else
             {
-                cout << "CONFIG: Non-slot: " << "   user:        " << loc.mailbox.user << endl;
+                if (loc.mailbox.user != "")
+                    cout << "CONFIG: Non-slot: " << "   user:        " << loc.mailbox.user << endl;
                 cout << "CONFIG: Non-slot: " << "   destination: " << loc.mailbox.destination << endl;
             }
     }
