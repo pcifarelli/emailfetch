@@ -32,7 +32,6 @@ using namespace Aws;
 
 const char *default_config_file = "./cfg/emailfetch.json";
 #include "EmailFetcherConfig.h"
-typedef list<Formatter>     FormatterList;
 
 // signal handler for TERM
 bool quittin_time = false;
@@ -79,7 +78,7 @@ int main(int argc, char** argv)
         if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
             cout << "Unable to set effective uid to " << defaults.euser << " (" << p << ")" << endl;
         else
-            cout << "Unable to set effective uid to " << defaults.euser << " error (" << lerrno << ")" << endl;
+            cout << "Unable to set effective uid to " << defaults.euser << " errno (" << lerrno << ")" << endl;
     }
 
     // setup the signal handler for TERM
@@ -95,7 +94,7 @@ int main(int argc, char** argv)
     SDKOptions options;
     InitAPI(options);
     {
-        MaildirFormatter mailfmt;          // a "formatter" is responsible for providing services to stream and save the file
+        MaildirFormatter *mailfmt;          // a "formatter" is responsible for providing services to stream and save the file
 
         for (auto &item : mailboxconfig)
         {
@@ -107,7 +106,9 @@ int main(int argc, char** argv)
                 {
                     if (loc.type == NONSLOT)
                     {
-                        item.pdownl = new MaildirDownloader(loc.mailbox.destination.c_str(), DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), mailfmt);
+                        Aws::String dir = loc.mailbox.destination.c_str();
+                        mailfmt = new MaildirFormatter(dir);
+                        item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), *mailfmt);
 
                         // start the thread
                         item.pdownl->start();

@@ -7,7 +7,7 @@
 
 #include "UCDPFormatter.h"
 
-UCDPFormatter::UCDPFormatter()
+UCDPFormatter::UCDPFormatter(Aws::String dir) : Formatter(dir)
 {
     // TODO Auto-generated constructor stub
 

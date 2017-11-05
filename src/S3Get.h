@@ -38,17 +38,14 @@ public:
     Aws::String bucketName() const { return m_bucket_name; }
     void listBuckets(void) const;
     void listObjects(void) const;
-    void saveObjects(const Aws::String dir);
-    void saveObjects(const Aws::String dir, Formatter &fmtr);
+    void saveObjects(Formatter &fmtr);
 
     void printObjects();
     s3object_list &getObjectList(void);
     s3object_list refreshObjectList(void);
 
-    // save to a file in the provided directory with the given name
-    bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir) const;
     // save to a file using the Formatter to open and save the file
-    bool objSaveAs(const Aws::S3::Model::Object obj, const Aws::String dir, Formatter &fmtr) const;
+    bool objSaveAs(const Aws::S3::Model::Object obj, Formatter &fmtr) const;
     // save it to a buffer
     bool objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const;
 

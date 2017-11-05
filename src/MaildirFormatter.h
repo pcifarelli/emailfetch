@@ -24,15 +24,18 @@
 class MaildirFormatter: public S3Downloader::Formatter
 {
 public:
-    MaildirFormatter();
+    MaildirFormatter(Aws::String dir);
     virtual ~MaildirFormatter();
 
     // open the file
-    virtual void open(const Aws::S3::Model::Object obj, const Aws::String pathname, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
+    virtual void open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
     // makes the name of the file for this format
     virtual std::string mkname(const Aws::S3::Model::Object obj) const;
     // gets the S3 key from the filename (extracts the SHA hash for this format)
     virtual Aws::String getKey(Aws::String filename) const;
+
+    virtual Aws::String &getSaveDir()  { return m_tmpdir; }
+    virtual Aws::String &getTrackDir() { return m_curdir; }
 
     static bool SHA256(void* input, unsigned long length, unsigned char* md);
     static bool sha256_as_str(void *input, unsigned long length, std::string &md);
@@ -48,6 +51,11 @@ private:
     static unsigned int m_q_sequence;
     Aws::String         m_newpath;
     bool                m_isopen;
+
+protected:
+    Aws::String       m_curdir;
+    Aws::String       m_tmpdir;
+    Aws::String       m_newdir;
 };
 
 #endif /* SRC_MAILDIRFORMATTER_H_ */

@@ -32,11 +32,13 @@
 namespace S3Downloader
 {
 
-Downloader::Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt) :
-    m_dir(dir), m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_fmt(fmt)
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt) :
+    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_fmt(fmt)
 {
+    Aws::String trackdir = m_fmt.getTrackDir();
+
     // dir is the directory we are tracking
-    mkdirmap(dir.c_str(), days * SECONDS_PER_DAY);
+    mkdirmap(trackdir.c_str(), days * SECONDS_PER_DAY);
 
     // disable retries so that bad urls don't hang the exe via retry loop
     Aws::Client::ClientConfiguration client_cfg;
@@ -76,11 +78,11 @@ void Downloader::saveNewObjects()
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
-    std::string dirname = getSaveDir().c_str();
+    std::string dirname = m_fmt.getSaveDir().c_str();
     std::string c;
 
-    std::size_t nn = getSaveDir().find_last_of('/');
-    if (nn != std::string::npos && nn != m_dir.length() - 1)
+    std::size_t nn = dirname.find_last_of('/');
+    if (nn != std::string::npos && nn != dirname.length() - 1)
         c = "/";
 
     dirname += c;
@@ -102,10 +104,9 @@ void Downloader::saveNewObjects()
                 if (got == m_filemap.end()) // not found in map
                 {
                     //std::cout << "saving object from s3" << std::endl;
-                    s3accessor.objSaveAs(s3_object, getSaveDir(), m_fmt);
+                    s3accessor.objSaveAs(s3_object, m_fmt);
                     std::string fullpath = dirname + fname;
-                    FileTracker ft =
-                    { fullpath, ts };
+                    FileTracker ft = { fullpath, ts };
 
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                     m_filemap.insert(hashent);

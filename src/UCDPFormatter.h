@@ -13,7 +13,7 @@
 class UCDPFormatter: public S3Downloader::Formatter
 {
 public:
-    UCDPFormatter();
+    UCDPFormatter(Aws::String workdir);
     virtual ~UCDPFormatter();
 };
 

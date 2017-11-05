@@ -21,13 +21,8 @@ public:
     virtual Aws::String &getSaveDir() { return m_dir; }
 
 private:
-    static int mkdirs(std::string dirname, mode_t mode);
     Aws::String       m_dir;
-    Aws::String       m_curdir;
-    Aws::String       m_tmpdir;
-    Aws::String       m_newdir;
     MaildirFormatter &m_fmt;
-    static mode_t     m_newdirs_mode;
-};
+ };
 
 #endif /* SRC_MAILDIRDOWNLOADER_H_ */

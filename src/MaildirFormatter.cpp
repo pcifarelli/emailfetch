@@ -19,8 +19,7 @@
 
 unsigned int MaildirFormatter::m_q_sequence = 0;
 
-MaildirFormatter::MaildirFormatter() :
-    Formatter(), m_isopen(false)
+MaildirFormatter::MaildirFormatter(Aws::String dir) : Formatter(dir), m_isopen(false)
 {
     char host[NI_MAXHOST];
 
@@ -37,6 +36,17 @@ MaildirFormatter::MaildirFormatter() :
 
     m_pid = getpid();
 
+    Aws::String c = "";
+    std::size_t n = dir.find_last_of('/');
+    if (n != std::string::npos && n != dir.length() - 1)
+        c = "/";
+    m_curdir = dir + c + "cur/";
+    m_newdir = dir + c + "new/";
+    m_tmpdir = dir + c + "tmp/";
+
+    mkdirs(m_curdir.c_str(), m_newdirs_mode);
+    mkdirs(m_newdir.c_str(), m_newdirs_mode);
+    mkdirs(m_tmpdir.c_str(), m_newdirs_mode);
 }
 
 MaildirFormatter::~MaildirFormatter()
@@ -46,34 +56,37 @@ MaildirFormatter::~MaildirFormatter()
 
 void MaildirFormatter::close_and_rename()
 {
+    Aws::String newpath = m_newdir + m_name;
+    Aws::String tmppath = m_tmpdir + m_name;
+
     if (m_isopen)
     {
-        m_newpath += m_name;
-        if (::rename(m_fullpath.c_str(), m_newpath.c_str()))
+        if (::rename(tmppath.c_str(), newpath.c_str()))
         {
-            std::cout << "Failed to rename file " << m_name << " to maildir new directory" << std::endl;
-            std::cout << "  From: " << m_fullpath << std::endl;
-            std::cout << "  To:   " << m_newpath << std::endl;
+            int lerrno = errno;
+            char buf[1024], *p;
+            if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
+                std::cout << "Error: Failed to rename file " << m_name << " to maildir new directory (" << p << ")"  << std::endl;
+            else
+                std::cout << "Error: Failed to rename file " << m_name << " to maildir new directory (" << lerrno << ")"  << std::endl;
+
+            std::cout << "  From: " << tmppath << std::endl;
+            std::cout << "  To:   " << newpath << std::endl;
         }
     }
     Formatter::close();
     m_isopen = false;
 }
 
-void MaildirFormatter::open(const Aws::S3::Model::Object obj, const Aws::String pathname, const std::ios_base::openmode mode)
+void MaildirFormatter::open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode)
 {
-    Aws::String c = "";
-    std::size_t n = pathname.find_last_of('/');
-    if (n != std::string::npos && n != pathname.length() - 1)
-        c = "/";
+    std::string name = mkname(obj);
+    std::string fullpath = m_tmpdir.c_str();
+    fullpath += name;
 
-    Aws::String tmppath = pathname + c;
-    Aws::String newpath = tmppath;
-    tmppath += "tmp/";
-    Formatter::open(obj, tmppath, mode);
+    m_name = name.c_str();
+    m_local_file.open(fullpath.c_str(), mode);
     m_isopen = true;
-    newpath += "new/";
-    m_newpath = newpath;
 }
 
 void MaildirFormatter::clean_up()

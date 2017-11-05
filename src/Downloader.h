@@ -28,7 +28,7 @@ class Downloader
 {
 public:
     // NOTE: s3 and fmt must stay in scope
-    Downloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter &fmt);
     virtual ~Downloader();
 
     Aws::String &bucketName() { return m_bucket_name; }
@@ -37,10 +37,6 @@ public:
     void stop();
 
 protected:
-    // override this member function to save in a different directory than you are tracking in the dirmap
-    // for example, if you are saving (staging) in one dir and then moving to another
-    virtual Aws::String &getSaveDir() { return m_dir; }
-
     // save only the objects that are not already in the directory given by dir
     // NOTE: only the filename is of interest, the contents are not.  Therefore the content of the file can be empty
     // (this can be used to keep track of the objects that you have streamed elsewhere)
@@ -67,7 +63,6 @@ private:
     bool m_exit_thread;
     int  m_exit_status;
 
-    Aws::String m_dir;
     Formatter &m_fmt;
     Aws::String m_bucket_name;
     int m_days;

@@ -23,7 +23,6 @@ emailfetch_SOURCES = EmailFetcherMain.cpp \
 	EmailFetcherConfig.cpp \
 	UCDPFormatter.cpp \
 	MaildirFormatter.cpp \
-	MaildirDownloader.cpp \
 	S3Get.cpp \
 	Formatter.cpp \
 	Downloader.cpp \
