@@ -61,8 +61,6 @@ int main(int argc, char** argv)
     get_config(config_file, defaults, mailboxconfig);
     print_config(mailboxconfig);
 
-    exit(0);
-
     // try to set the effective userid and group id
     if (setegid(defaults.egroup))
     {
@@ -97,20 +95,25 @@ int main(int argc, char** argv)
     SDKOptions options;
     InitAPI(options);
     {
+        MaildirFormatter mailfmt;          // a "formatter" is responsible for providing services to stream and save the file
 
         for (auto &item : mailboxconfig)
         {
             if (item.enabled)
             {
-                FormatterList fmt_list;
-                MaildirFormatter mfmt;          // a "formatter" is responsible for providing services to stream and save the file
 
                 // instantiating a Downloader results in a new thread that waits on the notification
-                item.pdownl = new MaildirDownloader(item.locations.front().mailbox.destination.c_str(), DAYS_TO_CHECK,
-                    item.topic_arn.c_str(), item.bucket.c_str(), mfmt);
-                // start the thread
-                item.pdownl->start();
-                cout << "Email " << item.name << " is started" << endl;
+                for (auto &loc : item.locations)
+                {
+                    if (loc.type == NONSLOT)
+                    {
+                        item.pdownl = new MaildirDownloader(loc.mailbox.destination.c_str(), DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), mailfmt);
+
+                        // start the thread
+                        item.pdownl->start();
+                        cout << "Email for " << item.name << ", location " << (loc.type==SLOT?loc.rest.url:loc.mailbox.destination) << " is started" << endl;
+                    }
+                }
             }
             else
                 cout << "Email " << item.name << " is disabled" << endl;
