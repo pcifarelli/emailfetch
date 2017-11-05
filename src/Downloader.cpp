@@ -36,26 +36,36 @@ namespace S3Downloader
 Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
 {
-    m_fmtlist = new FormatterList();
-    m_fmtlist->push_back(fmt);
+    Tracker *pt = new Tracker;
+    pt->fmt = fmt;
+    // dir is the directory we are tracking
+    pt->filemap = mkdirmap(*pt->fmt, m_days * SECONDS_PER_DAY);
+
+    m_trackerlist.push_back(pt);
     init();
 }
 
 Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
 {
-    m_fmtlist = new FormatterList();
+    Tracker *pt;
+
     for (auto &fmt : fmtlist)
-        m_fmtlist->push_back(fmt);
+    {
+        pt = new Tracker;
+
+        pt->fmt = fmt;
+        // dir is the directory we are tracking
+        pt->filemap = mkdirmap(*pt->fmt, m_days * SECONDS_PER_DAY);
+
+        m_trackerlist.push_back(pt);
+    }
 
     init();
 }
 
 void Downloader::init()
 {
-    // dir is the directory we are tracking
-    m_filemap = mkdirmap(*m_fmtlist->front(), m_days * SECONDS_PER_DAY);
-
     // disable retries so that bad urls don't hang the exe via retry loop
     Aws::Client::ClientConfiguration client_cfg;
     client_cfg.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>("sqs_delete_queue", 0);
@@ -85,27 +95,34 @@ Downloader::~Downloader()
     unsubscribe_topic();
     delete_sqs_queue();
     delete m_sqs;
-    while (!m_fmtlist->empty())
-        m_fmtlist->pop_back();
 
-    delete m_fmtlist;
-    delete m_filemap;
+    Tracker *pt;
+    while (!m_trackerlist.empty())
+    {
+        pt = m_trackerlist.back();
+        m_trackerlist.pop_back();
+        purgeMap(*pt, (std::time_t) 0);
+        delete pt->filemap;
+        delete pt->fmt;
+        delete pt;
+    }
+
 }
 
 void Downloader::saveNewObjects()
 {
-    for (auto &fmt : *m_fmtlist)
-        saveNewObjects(*fmt);
+    for (auto &trk : m_trackerlist)
+        saveNewObjects(*trk);
 }
 
-void Downloader::saveNewObjects(Formatter &fmt)
+void Downloader::saveNewObjects(Tracker &trkr)
 {
     S3Get s3accessor(m_bucket_name);
     s3object_list list = s3accessor.getObjectList();
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
-    std::string dirname = fmt.getSaveDir().c_str();
+    std::string dirname = trkr.fmt->getSaveDir().c_str();
     std::string c;
 
     std::size_t nn = dirname.find_last_of('/');
@@ -123,21 +140,21 @@ void Downloader::saveNewObjects(Formatter &fmt)
 
             if (now - ts < time_limit)
             {
-                std::string fname = fmt.mkname(s3_object);
-                Aws::String key = fmt.getKey(fname.c_str());
+                std::string fname = trkr.fmt->mkname(s3_object);
+                Aws::String key = trkr.fmt->getKey(fname.c_str());
                 std::string input = key.c_str();
-                std::unordered_map<std::string, FileTracker>::const_iterator got = m_filemap->find(input);
+                std::unordered_map<std::string, FileTracker>::const_iterator got = trkr.filemap->find(input);
 
-                if (got == m_filemap->end()) // not found in map
+                if (got == trkr.filemap->end()) // not found in map
                 {
                     //std::cout << "saving object from s3" << std::endl;
-                    s3accessor.objSaveAs(s3_object, fmt);
+                    s3accessor.objSaveAs(s3_object, *trkr.fmt);
                     std::string fullpath = dirname + fname;
                     FileTracker ft = { fullpath, ts };
 
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
-                    m_filemap->insert(hashent);
-                    fmt.clean_up();
+                    trkr.filemap->insert(hashent);
+                    trkr.fmt->clean_up();
                 }
             }
         }
@@ -198,34 +215,47 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
     return filemap;
 }
 
-void Downloader::purgeMap(std::time_t time_limit)
+void Downloader::purgeMap(Tracker &trkr, std::time_t time_limit)
 {
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
     std::vector<std::string> to_remove;
 
-    for (auto it = m_filemap->begin(); it != m_filemap->end(); ++it)
+    for (auto it = trkr.filemap->begin(); it != trkr.filemap->end(); ++it)
     {
         if (now - it->second.ftime > time_limit)
             to_remove.push_back(it->first);
     }
     for (auto it = to_remove.begin(); it != to_remove.end(); ++it)
-        m_filemap->erase(*it);
+        trkr.filemap->erase(*it);
+}
+
+void Downloader::purgeMap(Tracker &trkr)
+{
+    std::time_t time_limit = m_days * SECONDS_PER_DAY;
+    purgeMap(trkr, time_limit);
+}
+
+void Downloader::purgeMap(std::time_t time_limit)
+{
+    for (auto &trkr : m_trackerlist)
+        purgeMap(*trkr, time_limit);
 }
 
 void Downloader::purgeMap()
 {
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
-    purgeMap(time_limit);
+    for (auto &trkr : m_trackerlist)
+        purgeMap(*trkr, time_limit);
 }
 
-void Downloader::printMap()
+void Downloader::printMap(Tracker &trkr)
 {
     std::time_t time_limit = m_days * SECONDS_PER_DAY;
     auto n = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(n);
 
-    for (auto it = m_filemap->begin(); it != m_filemap->end(); ++it)
+    for (auto it = trkr.filemap->begin(); it != trkr.filemap->end(); ++it)
     {
         std::cout << " " << it->first << ":" << it->second.ftime << std::endl;
     }
