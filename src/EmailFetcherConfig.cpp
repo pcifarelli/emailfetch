@@ -21,21 +21,9 @@ using namespace std;
 using namespace Aws;
 
 struct program_defaults defaults =
-{
-    5000,
-    5000,
-    {
-        "./mail/.%f",
-        "./mail/%d/%u@%d/"
-    },
-    {
-        15026,
-        "./cfg/ucdp_eapfastemail.pem",
-        "eapfastemail",
-        "./mail/slot"
-    }
-};
-
+{ 5000, 5000,
+{ "./mail/.%f", "./mail/%d/%u@%d/" },
+{ 15026, "./cfg/ucdp_eapfastemail.pem", "eapfastemail", "./mail/slot" } };
 
 void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults)
 {
@@ -108,9 +96,11 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
     }
 }
 
-string replace_all(string str, const string &from, const string &to) {
+string replace_all(string str, const string &from, const string &to)
+{
     size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos)
+    {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
     }
@@ -121,9 +111,9 @@ string create_location(string fmt, string &user, string &name, string &domainnam
 {
     string result = fmt;
 
-    result = replace_all( result, "%u", user);       // replace all "%u with the user's name
-    result = replace_all( result, "%f", name);       // replace all "%f with the feed name
-    result = replace_all( result, "%d", domainname); // replace all "%d with the domain name
+    result = replace_all(result, "%u", user);       // replace all "%u with the user's name
+    result = replace_all(result, "%f", name);       // replace all "%f with the feed name
+    result = replace_all(result, "%d", domainname); // replace all "%d with the domain name
 
     std::size_t n = result.find_last_of('/');
     if (n != std::string::npos && n != result.length() - 1)
@@ -141,7 +131,6 @@ string create_user_mailbox_location(program_defaults &defaults, string &user, st
 {
     return create_location(defaults.mailbox_defaults.userdir, user, name, domainname);
 }
-
 
 void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
 {
@@ -209,38 +198,40 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                 {
                     ploc->type = NONSLOT;
                     pitem->has_nonslot_workflow = true;
+                    bool is_public = false;
+                    string user = "";
+                    string workdir = "";
+
                     if (locations[j].ValueExists("public"))
+                        is_public = locations[j].GetBool("public");
+                    if (locations[j].ValueExists("user"))
+                        user = locations[j].GetString("user").c_str();
+                    if (locations[j].ValueExists("workdir"))
+                        workdir = locations[j].GetString("workdir").c_str();
+
+                    if (is_public)
+                        ploc->mailbox.destination = create_public_mailbox_location(defaults, pitem->name, pitem->domainname);
+                    else
                     {
-                        bool is_public = locations[j].GetBool("public");
-                        if (is_public)
-                            ploc->mailbox.destination = create_public_mailbox_location(defaults, pitem->name, pitem->domainname);
+                        if (user != "")
+                        {
+                            ploc->mailbox.user = user;
+                            ploc->mailbox.destination = create_user_mailbox_location(defaults, ploc->mailbox.user, pitem->name,pitem->domainname);
+                        }
                         else
                         {
-                            if (locations[j].ValueExists("user"))
+                            if (workdir != "")
                             {
-                                ploc->mailbox.user = locations[j].GetString("user").c_str();
-                                ploc->mailbox.destination = create_user_mailbox_location(defaults, ploc->mailbox.user, pitem->name, pitem->domainname);
+                                string fmt = workdir;
+                                ploc->mailbox.user = "";
+                                ploc->mailbox.destination = create_location(fmt, user, pitem->name, pitem->domainname);
                             }
                             else
                             {
-                                if (locations[j].ValueExists("workdir"))
-                                {
-                                    string fmt = locations[j].GetString("workdir").c_str();
-                                    ploc->mailbox.user = "";
-                                    ploc->mailbox.destination = create_location(fmt, ploc->mailbox.user, pitem->name, pitem->domainname);
-                                }
-                                else
-                                {
-                                    cout << "CONFIG: Error: Unable to find user or workdir element for mailbox location - ignoring this location" << endl;
-                                    continue;
-                                }
+                                cout << "CONFIG: Error: Unable to find user or workdir element for mailbox location - ignoring this location" << endl;
+                                continue;
                             }
                         }
-                    }
-                    else
-                    {
-                        cout << "CONFIG: Error: required boolean element \"public\" not specified for mailbox - ignoring this location" << endl;
-                        continue;
                     }
                 }
                 else // it goes to a URL
@@ -276,9 +267,7 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                 pitem->locations.push_back(*ploc);
             }
             else
-            {
                 cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring this location" << endl;
-            }
         }
 
         pitem->enabled = arr[i].GetBool("enabled");
@@ -318,25 +307,29 @@ void print_config(config_list &mailboxconfig)
     for (auto &item : mailboxconfig)
     {
         cout << "CONFIG: " << item.description << endl;
-        cout << "CONFIG: " << item.name << '@' << item.domainname;
+        cout << "CONFIG:    " << item.name << '@' << item.domainname;
         cout << (item.enabled ? " is enabled" : " is disabled");
         cout << (item.has_nonslot_workflow ? " and has non-slot workflow\n" : "\n");
-        cout << "CONFIG: " << "S3 Bucket:     " << item.bucket << endl;
-        cout << "CONFIG: " << "SNS Topic ARN: " << item.topic_arn << endl;
-        cout << "CONFIG: " << "Locations:" << endl;
+        cout << "CONFIG:    " << "S3 Bucket:     " << item.bucket << endl;
+        cout << "CONFIG:    " << "SNS Topic ARN: " << item.topic_arn << endl;
+        cout << "CONFIG:    " << "Locations:" << endl;
+        int i = 0;
         for (auto &loc : item.locations)
+        {
+            ++i;
             if (loc.type == SLOT)
             {
-                cout << "CONFIG: Slot:     " << "   URL:         " << loc.rest.url << endl;
-                cout << "CONFIG: Slot:     " << "   workdir:     " << loc.rest.workdir << endl;
-                cout << "CONFIG: Slot:     " << "   " << (loc.rest.sni ? "SNI enabled" : "SNI disabled") << endl;
+                cout << "CONFIG:       " << i << ". Slot:     " << "   URL:         " << loc.rest.url << endl;
+                cout << "CONFIG:       " << i << ". Slot:     " << "   workdir:     " << loc.rest.workdir << endl;
+                cout << "CONFIG:       " << i << ". Slot:     " << "   " << (loc.rest.sni ? "SNI enabled" : "SNI disabled") << endl;
             }
             else
             {
                 if (loc.mailbox.user != "")
-                    cout << "CONFIG: Non-slot: " << "   user:        " << loc.mailbox.user << endl;
-                cout << "CONFIG: Non-slot: " << "   destination: " << loc.mailbox.destination << endl;
+                    cout << "CONFIG:       " << i << ". Non-slot: " << "   user:        " << loc.mailbox.user << endl;
+                cout << "CONFIG:       " << i << ". Non-slot: " << "   destination: " << loc.mailbox.destination << endl;
             }
+        }
     }
 }
 

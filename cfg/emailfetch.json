@@ -23,6 +23,7 @@
 "mailbox"   : 
    [
       {
+         "__comment"   : "you can specify email, or name & domainname.  If you specify both, email takes precedence",
          "email"       : "feed1@testaws.pcifarelli.net",
          "description" : "Feed 1 Mailbox",
          "locations"   : [ { "mailbox" : true, "public" : true } ],
