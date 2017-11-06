@@ -210,13 +210,13 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                         workdir = locations[j].GetString("workdir").c_str();
 
                     if (is_public)
-                        ploc->mailbox.destination = create_public_mailbox_location(defaults, pitem->name, pitem->domainname);
+                        ploc->destination = create_public_mailbox_location(defaults, pitem->name, pitem->domainname);
                     else
                     {
                         if (user != "")
                         {
                             ploc->mailbox.user = user;
-                            ploc->mailbox.destination = create_user_mailbox_location(defaults, ploc->mailbox.user, pitem->name,pitem->domainname);
+                            ploc->destination = create_user_mailbox_location(defaults, ploc->mailbox.user, pitem->name,pitem->domainname);
                         }
                         else
                         {
@@ -224,7 +224,7 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                             {
                                 string fmt = workdir;
                                 ploc->mailbox.user = "";
-                                ploc->mailbox.destination = create_location(fmt, user, pitem->name, pitem->domainname);
+                                ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname);
                             }
                             else
                             {
@@ -255,7 +255,7 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     {
                         string fmt = locations[j].GetString("url").c_str();
                         string user = "";
-                        ploc->rest.url = create_location(fmt, user, pitem->name, pitem->domainname);
+                        ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname);
                     }
                     else
                     {
@@ -319,7 +319,7 @@ void print_config(config_list &mailboxconfig)
             ++i;
             if (loc.type == SLOT)
             {
-                cout << "CONFIG:       " << i << ". Slot:     " << "   URL:         " << loc.rest.url << endl;
+                cout << "CONFIG:       " << i << ". Slot:     " << "   URL:         " << loc.destination << endl;
                 cout << "CONFIG:       " << i << ". Slot:     " << "   workdir:     " << loc.rest.workdir << endl;
                 cout << "CONFIG:       " << i << ". Slot:     " << "   " << (loc.rest.sni ? "SNI enabled" : "SNI disabled") << endl;
             }
@@ -327,7 +327,7 @@ void print_config(config_list &mailboxconfig)
             {
                 if (loc.mailbox.user != "")
                     cout << "CONFIG:       " << i << ". Non-slot: " << "   user:        " << loc.mailbox.user << endl;
-                cout << "CONFIG:       " << i << ". Non-slot: " << "   destination: " << loc.mailbox.destination << endl;
+                cout << "CONFIG:       " << i << ". Non-slot: " << "   destination: " << loc.destination << endl;
             }
         }
     }

@@ -33,8 +33,28 @@
 namespace S3Downloader
 {
 
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name) :
+    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+{
+    init();
+}
+
 Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+{
+    init();
+    addFormatter(fmt);
+}
+
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist) :
+    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+{
+    init();
+    for (auto &fmt : fmtlist)
+        addFormatter(fmt);
+}
+
+void Downloader::addFormatter( Formatter *fmt )
 {
     Tracker *pt = new Tracker;
     pt->fmt = fmt;
@@ -42,26 +62,6 @@ Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket
     pt->filemap = mkdirmap(*pt->fmt, m_days * SECONDS_PER_DAY);
 
     m_trackerlist.push_back(pt);
-    init();
-}
-
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist) :
-    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
-{
-    Tracker *pt;
-
-    for (auto &fmt : fmtlist)
-    {
-        pt = new Tracker;
-
-        pt->fmt = fmt;
-        // dir is the directory we are tracking
-        pt->filemap = mkdirmap(*pt->fmt, m_days * SECONDS_PER_DAY);
-
-        m_trackerlist.push_back(pt);
-    }
-
-    init();
 }
 
 void Downloader::init()

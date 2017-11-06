@@ -34,12 +34,19 @@ typedef std::unordered_map<std::string, FileTracker> FileTrackerMap;
 class Downloader
 {
 public:
-    // NOTE: s3 and fmt must stay in scope
+    // NOTE: fmt must stay in scope
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name);
     Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt);
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, FormatterList &fmtlist);
     virtual ~Downloader();
 
-    Aws::String &bucketName() { return m_bucket_name; }
+    void addFormatter( Formatter *fmt );
+
+    Aws::String &bucketName()      { return m_bucket_name;      }
+    Aws::String &topicArn()        { return m_topic_arn;        }
+    Aws::String &queueUrl()        { return m_queue_url;    }
+    Aws::String &queueArn()        { return m_queue_arn;    }
+    Aws::String &subscriptionArn() { return m_subscription_arn; }
 
     void start();
     void stop();
@@ -62,9 +69,9 @@ protected:
 private:
     void init();
     FileTrackerMap *mkdirmap(Formatter &fmt, time_t secs_back);
-    void purgeMap();                                               // purge m_days back
+    void purgeMap();                                        // purge m_days back
     void purgeMap(Tracker &trkr);                           // purge mback
-    void purgeMap(std::time_t secs_back );                         // purge secs back
+    void purgeMap(std::time_t secs_back );                  // purge secs back
     void purgeMap(Tracker &trkr, std::time_t secs_back );   // purge secs back
     void printMap(Tracker &);
 

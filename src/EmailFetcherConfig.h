@@ -26,14 +26,13 @@ enum workflow_type
 struct location_type
 {
     workflow_type type;
+    std::string   destination;
     struct
     {
-        std::string   destination;
         std::string   user;
     } mailbox;
     struct
     {
-        std::string   url;
         std::string   workdir;
         bool          sni;
     } rest;

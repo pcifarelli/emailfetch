@@ -95,28 +95,46 @@ int main(int argc, char** argv)
     InitAPI(options);
     {
         S3Downloader::FormatterList     fmtlist;
-        MaildirFormatter               *mailfmt;          // a "formatter" is responsible for providing services to stream and save the file
 
         for (auto &item : mailboxconfig)
         {
             if (item.enabled)
             {
-
-                // instantiating a Downloader results in a new thread that waits on the notification
+                // instantiating a Downloader and calling "start()" results in a new thread that waits on the notification
+                item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str());
                 for (auto &loc : item.locations)
                 {
-                    if (loc.type == NONSLOT)
+                    switch (loc.type)
                     {
-                        Aws::String dir = loc.mailbox.destination.c_str();
-                        mailfmt = new MaildirFormatter(dir);
-                        fmtlist.push_back(mailfmt);
-                        item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), fmtlist);
+                        case NONSLOT:
+                        {
+                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                            // a "MaildirFormatter" saves emails in maildir format to be served via imap
+                            MaildirFormatter *mailfmt;
 
-                        // start the thread
-                        item.pdownl->start();
-                        cout << "Email for " << item.name << ", location " << (loc.type==SLOT?loc.rest.url:loc.mailbox.destination) << " is started" << endl;
+                            Aws::String dir = loc.destination.c_str();
+                            mailfmt = new MaildirFormatter(dir);
+                            item.pdownl->addFormatter(mailfmt);
+                            cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                        }
+                        case SLOT:
+                        {
+                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                            // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
+                            UCDPFormatter *ucdpfmt;
+    
+                            Aws::String url = loc.destination.c_str();
+                            ucdpfmt = new UCDPFormatter(url);
+                            item.pdownl->addFormatter(ucdpfmt);
+                            cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                        }
+                        default:
+                           cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
                     }
                 }
+                // start the thread
+                item.pdownl->start();
+                cout << "Email for " << item.name << " is started" << endl;
             }
             else
                 cout << "Email " << item.name << " is disabled" << endl;
