@@ -23,7 +23,7 @@ class CurlPoster
 {
 public:
     CurlPoster(std::string url);
-    CurlPoster(std::string url, std::string sni_cert);
+    CurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password);
     virtual ~CurlPoster();
     void post(std::string jstr);
     std::string getResult() const { return m_result; }
@@ -34,9 +34,16 @@ private:
       int sizeleft;
     };
 
+    CURL *m_curl;
+    struct curl_slist *m_opts;
+    struct curl_slist *m_resolve;
+
     std::string m_url;
     std::string m_result;
 
+    void init();
+    void set_ServerNameIndication(std::string hostname, unsigned short port, std::string ip);
+    void set_Certificate(std::string certificate, std::string password);
     static size_t read_callback(void *dest, size_t size, size_t nmemb, void *userp);
     static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
     int postIt(const char *url, const char *data, int sz);
