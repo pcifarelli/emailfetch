@@ -23,13 +23,13 @@ namespace S3Downloader
 {
 
 CurlPoster::CurlPoster( std::string url ) :
-  m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL)
+  m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
 }
 
 CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
-  m_curl(NULL), m_opts(NULL), m_resolve(NULL)
+  m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
     set_ServerNameIndication(hostname, port, ip);
@@ -39,7 +39,7 @@ CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string c
 void CurlPoster::setProxy(std::string proxy)
 {
    if (m_curl)
-      curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
+      m_curl_status = curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
       
 }
 
@@ -64,22 +64,46 @@ void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, 
         m_resolve = curl_slist_append(NULL, resolve.c_str());
         if (m_resolve)
         {
-    	    curl_easy_setopt(m_curl, CURLOPT_RESOLVE, m_resolve);
-	    curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
+    	    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_RESOLVE, m_resolve) ) != CURLE_OK )
+               return;
+
+            if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str()) ) != CURLE_OK )
+               return;
         }
         else
-            cout << "Error: Unable to set resolve list for server name indication" << endl;
+        {
+            m_curl_status = CURLE_FAILED_INIT;
+            //cout << "Error: Unable to set resolve list for server name indication" << endl;
+        }
     }
 }
 
 void CurlPoster::set_Certificate(string certificate, string password)
 {
-  curl_easy_setopt(m_curl, CURLOPT_SSLCERTTYPE, "PEM");
-  curl_easy_setopt(m_curl, CURLOPT_KEYPASSWD, password.c_str());
-  curl_easy_setopt(m_curl, CURLOPT_SSLCERT, certificate.c_str());
+    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERTTYPE, "PEM") ) != CURLE_OK )
+        return;
 
-  // don't verify peer as UCDP uses self-signed certificates
-  curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, 0);
+    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_KEYPASSWD, password.c_str()) ) != CURLE_OK )
+        return;
+
+    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERT, certificate.c_str()) ) != CURLE_OK )
+        return;
+
+    // don't verify peer as UCDP uses self-signed certificates
+    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, 0) ) != CURLE_OK )
+        return;
+}
+
+void CurlPoster::setVerboseOutput()
+{
+    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L)) != CURLE_OK )
+        return;
+}
+
+void CurlPoster::setQuietOutput()
+{
+    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK )
+        return;
 }
 
 void CurlPoster::init()
@@ -100,16 +124,15 @@ void CurlPoster::init()
     if (m_curl)
     {
         /* First set the URL that is about to receive our POST. */
-        curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
+        if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str())) != CURLE_OK )
+            return;
 
         /* Now specify we want to POST data */
-        curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
+        if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_POST, 1L)) != CURLE_OK )
+            return;
 
-
-        /* get verbose debug output please */
-        curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
-
-        curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L); //0 disable messages
+        if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK ) //0 disable messages
+            return;
 
         /*
          If you use POST to a HTTP 1.1 server, you can send data without knowing
@@ -126,7 +149,7 @@ void CurlPoster::init()
         m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
         m_opts = curl_slist_append(m_opts, "Expect:");
         m_opts = curl_slist_append(m_opts, "Content-Type: application/json");
-        res = curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_opts);
+        m_curl_status = curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_opts);
         /* use curl_slist_free_all() after the *perform() call to free this
          list again */
     }

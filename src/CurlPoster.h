@@ -25,9 +25,16 @@ public:
     CurlPoster(std::string url);
     CurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password);
     virtual ~CurlPoster();
+
     void setProxy(std::string proxy);
     void setNoProxy() { setProxy(""); }
+    void setVerboseOutput();
+    void setQuietOutput();
+
+    // this is the workhorse
     void post(std::string jstr);
+
+    CURLcode status() const { return m_curl_status; }
     std::string getResult() const { return m_result; }
 
 private:
@@ -36,7 +43,8 @@ private:
       int sizeleft;
     };
 
-    CURL *m_curl;
+    CURL     *m_curl;
+    CURLcode  m_curl_status;
     struct curl_slist *m_opts;
     struct curl_slist *m_resolve;
 
