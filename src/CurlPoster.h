@@ -25,6 +25,8 @@ public:
     CurlPoster(std::string url);
     CurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password);
     virtual ~CurlPoster();
+    void setProxy(std::string proxy);
+    void setNoProxy() { setProxy(""); }
     void post(std::string jstr);
     std::string getResult() const { return m_result; }
 

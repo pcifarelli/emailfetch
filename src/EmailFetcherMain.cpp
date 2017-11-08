@@ -90,6 +90,14 @@ int main(int argc, char** argv)
     sigaction(SIGINT, &termaction, 0);
     sigaction(SIGQUIT, &termaction, 0);
 
+    CurlPoster cp("eapfastemail.ucdp.thomsonreuters.com", 8301, "159.220.49.19", "./ucdp_eapfastemail.pem", "password");
+    cp.post("{\"type\":\"Test\", \
+              \"title\":\"Me\", \
+              \"description\":\"this is a test\"}");
+    cout << "\nCompleted POST\n";
+    cout << cp.getResult();
+    exit(0);
+
     // setup the AWS SDK
     SDKOptions options;
     InitAPI(options);

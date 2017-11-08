@@ -35,31 +35,40 @@ CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string c
     set_Certificate(certificate, password);
 }
 
+void CurlPoster::setProxy(std::string proxy)
+{
+   if (m_curl)
+      curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
+      
+}
+
 void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, string ip)
 {
-    ostringstream r_out;
-    r_out << hostname << ":" << port << ":" << ip;
-    string resolve = r_out.str();
-    if ( m_resolve )
+    if (m_curl)
     {
-        curl_slist_free_all(m_resolve);
-        m_resolve = NULL;
-    }
-
-    ostringstream u_out;
-    u_out << "https://" << hostname << ":" << port << "/ucdpext/post";
-    m_url = u_out.str();
+        ostringstream r_out;
+        r_out << hostname << ":" << port << ":" << ip;
+        string resolve = r_out.str();
+        if ( m_resolve )
+        {
+            curl_slist_free_all(m_resolve);
+            m_resolve = NULL;
+        }
+    
+        ostringstream u_out;
+        u_out << "https://" << hostname << ":" << port << "/ucdpext/post";
+        m_url = u_out.str();
     
 
-    m_resolve = curl_slist_append(NULL, resolve.c_str());
-    if (m_resolve)
-    {
-	curl_easy_setopt(m_curl, CURLOPT_RESOLVE, m_resolve);
-	curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
+        m_resolve = curl_slist_append(NULL, resolve.c_str());
+        if (m_resolve)
+        {
+    	    curl_easy_setopt(m_curl, CURLOPT_RESOLVE, m_resolve);
+	    curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
+        }
+        else
+            cout << "Error: Unable to set resolve list for server name indication" << endl;
     }
-    else
-        cout << "Error: Unable to set resolve list for server name indication" << endl;
-
 }
 
 void CurlPoster::set_Certificate(string certificate, string password)
