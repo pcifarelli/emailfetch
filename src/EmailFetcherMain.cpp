@@ -91,6 +91,7 @@ int main(int argc, char** argv)
     sigaction(SIGQUIT, &termaction, 0);
 
     CurlPoster cp("eapfastemail.ucdp.thomsonreuters.com", 8301, "159.220.49.19", "./ucdp_eapfastemail.pem", "password");
+    cp.setNoProxy();
     cp.post("{\"type\":\"Test\", \
               \"title\":\"Me\", \
               \"description\":\"this is a test\"}");

@@ -28,7 +28,8 @@ CurlPoster::CurlPoster( std::string url ) :
     init();
 }
 
-CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string certificate, string password)
+CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
+  m_curl(NULL), m_opts(NULL), m_resolve(NULL)
 {
     init();
     set_ServerNameIndication(hostname, port, ip);
@@ -117,6 +118,11 @@ void CurlPoster::init()
          CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked transfer, you must
          specify the size in the request.
          */
+        if ( m_opts )
+        {
+           curl_slist_free_all(m_opts);
+           m_opts = NULL;
+        }
         m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
         m_opts = curl_slist_append(m_opts, "Expect:");
         m_opts = curl_slist_append(m_opts, "Content-Type: application/json");
