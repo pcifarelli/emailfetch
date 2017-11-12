@@ -22,14 +22,14 @@ using namespace std;
 namespace S3Downloader
 {
 
-CurlPoster::CurlPoster( std::string url ) :
-  m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
+CurlPoster::CurlPoster(std::string url) :
+    m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
 }
 
 CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
-  m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
+    m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
     set_ServerNameIndication(hostname, port, ip);
@@ -38,9 +38,9 @@ CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string c
 
 void CurlPoster::setProxy(std::string proxy)
 {
-   if (m_curl)
-      m_curl_status = curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
-      
+    if (m_curl)
+        m_curl_status = curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
+
 }
 
 void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, string ip)
@@ -50,25 +50,24 @@ void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, 
         ostringstream r_out;
         r_out << hostname << ":" << port << ":" << ip;
         string resolve = r_out.str();
-        if ( m_resolve )
+        if (m_resolve)
         {
             curl_slist_free_all(m_resolve);
             m_resolve = NULL;
         }
-    
+
         ostringstream u_out;
         u_out << "https://" << hostname << ":" << port << "/ucdpext/post";
         m_url = u_out.str();
-    
 
         m_resolve = curl_slist_append(NULL, resolve.c_str());
         if (m_resolve)
         {
-    	    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_RESOLVE, m_resolve) ) != CURLE_OK )
-               return;
+            if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_RESOLVE, m_resolve)) != CURLE_OK)
+                return;
 
-            if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str()) ) != CURLE_OK )
-               return;
+            if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str())) != CURLE_OK)
+                return;
         }
         else
         {
@@ -80,29 +79,29 @@ void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, 
 
 void CurlPoster::set_Certificate(string certificate, string password)
 {
-    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERTTYPE, "PEM") ) != CURLE_OK )
+    if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERTTYPE, "PEM")) != CURLE_OK)
         return;
 
-    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_KEYPASSWD, password.c_str()) ) != CURLE_OK )
+    if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_KEYPASSWD, password.c_str())) != CURLE_OK)
         return;
 
-    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERT, certificate.c_str()) ) != CURLE_OK )
+    if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERT, certificate.c_str())) != CURLE_OK)
         return;
 
     // don't verify peer as UCDP uses self-signed certificates
-    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, 0) ) != CURLE_OK )
+    if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, 0)) != CURLE_OK)
         return;
 }
 
 void CurlPoster::setVerboseOutput()
 {
-    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L)) != CURLE_OK )
+    if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L)) != CURLE_OK)
         return;
 }
 
 void CurlPoster::setQuietOutput()
 {
-    if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK )
+    if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK)
         return;
 }
 
@@ -124,14 +123,14 @@ void CurlPoster::init()
     if (m_curl)
     {
         /* First set the URL that is about to receive our POST. */
-        if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str())) != CURLE_OK )
+        if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str())) != CURLE_OK)
             return;
 
         /* Now specify we want to POST data */
-        if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_POST, 1L)) != CURLE_OK )
+        if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_POST, 1L)) != CURLE_OK)
             return;
 
-        if ( (m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK ) //0 disable messages
+        if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK) //0 disable messages
             return;
 
         /*
@@ -141,10 +140,10 @@ void CurlPoster::init()
          CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked transfer, you must
          specify the size in the request.
          */
-        if ( m_opts )
+        if (m_opts)
         {
-           curl_slist_free_all(m_opts);
-           m_opts = NULL;
+            curl_slist_free_all(m_opts);
+            m_opts = NULL;
         }
         m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
         m_opts = curl_slist_append(m_opts, "Expect:");
@@ -157,19 +156,19 @@ void CurlPoster::init()
 
 CurlPoster::~CurlPoster()
 {
-    if ( m_opts )
+    if (m_opts)
         curl_slist_free_all(m_opts);
 
-    if ( m_resolve )
+    if (m_resolve)
         curl_slist_free_all(m_resolve);
 
-    if ( m_curl )
+    if (m_curl)
         curl_easy_cleanup(m_curl);
 
     curl_global_cleanup();
 }
 
-size_t CurlPoster::read_callback( void *dest, size_t size, size_t nmemb, void *userp )
+size_t CurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *userp)
 {
     struct WriteThis *wt = (struct WriteThis *) userp;
     size_t buffer_size = size * nmemb;
@@ -190,7 +189,7 @@ size_t CurlPoster::read_callback( void *dest, size_t size, size_t nmemb, void *u
     return 0; /* no more data left to deliver */
 }
 
-size_t CurlPoster::write_data( void *buffer, size_t size, size_t nmemb, void *userp )
+size_t CurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
     CurlPoster *thisObj = (CurlPoster *) userp;
 
@@ -198,12 +197,12 @@ size_t CurlPoster::write_data( void *buffer, size_t size, size_t nmemb, void *us
     return size * nmemb;
 }
 
-void CurlPoster::post( std::string jstr )
+void CurlPoster::post(std::string jstr)
 {
     postIt(m_url.c_str(), jstr.c_str(), jstr.length());
 }
 
-int CurlPoster::postIt( const char *url, const char *data, int sz )
+int CurlPoster::postIt(const char *url, const char *data, int sz)
 {
     CURL *curl;
     CURLcode res;

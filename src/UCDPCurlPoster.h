@@ -27,24 +27,34 @@ public:
     virtual ~CurlPoster();
 
     void setProxy(std::string proxy);
-    void setNoProxy() { setProxy(""); }
+    void setNoProxy()
+    {
+        setProxy("");
+    }
     void setVerboseOutput();
     void setQuietOutput();
 
     // this is the workhorse
     void post(std::string jstr);
 
-    CURLcode status() const { return m_curl_status; }
-    std::string getResult() const { return m_result; }
+    CURLcode status() const
+    {
+        return m_curl_status;
+    }
+    std::string getResult() const
+    {
+        return m_result;
+    }
 
 private:
-    struct WriteThis {
-      const char *readptr;
-      int sizeleft;
+    struct WriteThis
+    {
+        const char *readptr;
+        int sizeleft;
     };
 
-    CURL     *m_curl;
-    CURLcode  m_curl_status;
+    CURL *m_curl;
+    CURLcode m_curl_status;
     struct curl_slist *m_opts;
     struct curl_slist *m_resolve;
 
