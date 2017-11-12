@@ -16,7 +16,7 @@
 #include <fstream>
 #include <ios>
 #include <sstream>
-#include "CurlPoster.h"
+#include "UCDPCurlPoster.h"
 using namespace std;
 
 namespace S3Downloader

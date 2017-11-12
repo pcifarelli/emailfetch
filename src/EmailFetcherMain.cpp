@@ -20,7 +20,7 @@
 #include "MaildirDownloader.h"
 #include "MaildirFormatter.h"
 #include "UCDPFormatter.h"
-#include "CurlPoster.h"
+#include "UCDPCurlPoster.h"
 
 #include "config.h"
 
