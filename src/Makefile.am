@@ -1,8 +1,8 @@
-#AWS_SDK_PATH=${HOME}/develop/aws-sdk-cpp
-AWS_SDK_PATH=${HOME}/develop/ucdp_core_bins/local/aws-sdk-cpp
+AWS_SDK_PATH=${HOME}/develop/aws-sdk-cpp
+#AWS_SDK_PATH=${HOME}/develop/ucdp_core_bins/local/aws-sdk-cpp
 #AWS_SDK_PATH=/usr/local
-AWS_LIBDIR = lib64
-#AWS_LIBDIR = lib
+#AWS_LIBDIR = lib64
+AWS_LIBDIR = lib
 AWS_LIBS = \
 	-laws-cpp-sdk-core \
 	-laws-cpp-sdk-s3 \
@@ -29,7 +29,7 @@ emailfetch_SOURCES = EmailFetcherMain.cpp \
 	S3Get.cpp \
 	Formatter.cpp \
 	Downloader.cpp \
-	CurlPoster.cpp
+	UCDPCurlPoster.cpp
 
 emailfetch_LDADD = ${CURLLIB} -L$(AWS_SDK_PATH)/${AWS_LIBDIR} $(AWS_LIBS)
 
