@@ -5,8 +5,8 @@
  *      Author: paulc
  */
 
-#ifndef SRC_CURLPOSTER_H_
-#define SRC_CURLPOSTER_H_
+#ifndef SRC_UCDPCURLPOSTER_H_
+#define SRC_UCDPCURLPOSTER_H_
 
 #include <sys/types.h>
 #include <string>
@@ -19,12 +19,12 @@
 namespace S3Downloader
 {
 
-class CurlPoster
+class UCDPCurlPoster
 {
 public:
-    CurlPoster(std::string url);
-    CurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password);
-    virtual ~CurlPoster();
+    UCDPCurlPoster(std::string url);
+    UCDPCurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password);
+    virtual ~UCDPCurlPoster();
 
     void setProxy(std::string proxy);
     void setNoProxy()
@@ -71,4 +71,4 @@ private:
 
 } /* namespace S3Downloader */
 
-#endif /* SRC_CURLPOSTER_H_ */
+#endif /* SRC_UCDPCURLPOSTER_H_ */

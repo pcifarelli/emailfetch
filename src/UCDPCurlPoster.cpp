@@ -22,13 +22,13 @@ using namespace std;
 namespace S3Downloader
 {
 
-CurlPoster::CurlPoster(std::string url) :
+UCDPCurlPoster::UCDPCurlPoster(std::string url) :
     m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
 }
 
-CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
+UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
     m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
@@ -36,14 +36,14 @@ CurlPoster::CurlPoster(string hostname, unsigned short port, string ip, string c
     set_Certificate(certificate, password);
 }
 
-void CurlPoster::setProxy(std::string proxy)
+void UCDPCurlPoster::setProxy(std::string proxy)
 {
     if (m_curl)
         m_curl_status = curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
 
 }
 
-void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, string ip)
+void UCDPCurlPoster::set_ServerNameIndication(string hostname, unsigned short port, string ip)
 {
     if (m_curl)
     {
@@ -77,7 +77,7 @@ void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, 
     }
 }
 
-void CurlPoster::set_Certificate(string certificate, string password)
+void UCDPCurlPoster::set_Certificate(string certificate, string password)
 {
     if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERTTYPE, "PEM")) != CURLE_OK)
         return;
@@ -93,19 +93,19 @@ void CurlPoster::set_Certificate(string certificate, string password)
         return;
 }
 
-void CurlPoster::setVerboseOutput()
+void UCDPCurlPoster::setVerboseOutput()
 {
     if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L)) != CURLE_OK)
         return;
 }
 
-void CurlPoster::setQuietOutput()
+void UCDPCurlPoster::setQuietOutput()
 {
     if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK)
         return;
 }
 
-void CurlPoster::init()
+void UCDPCurlPoster::init()
 {
     CURLcode res;
 
@@ -154,7 +154,7 @@ void CurlPoster::init()
     }
 }
 
-CurlPoster::~CurlPoster()
+UCDPCurlPoster::~UCDPCurlPoster()
 {
     if (m_opts)
         curl_slist_free_all(m_opts);
@@ -168,7 +168,7 @@ CurlPoster::~CurlPoster()
     curl_global_cleanup();
 }
 
-size_t CurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *userp)
+size_t UCDPCurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *userp)
 {
     struct WriteThis *wt = (struct WriteThis *) userp;
     size_t buffer_size = size * nmemb;
@@ -189,20 +189,20 @@ size_t CurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *us
     return 0; /* no more data left to deliver */
 }
 
-size_t CurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+size_t UCDPCurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-    CurlPoster *thisObj = (CurlPoster *) userp;
+    UCDPCurlPoster *thisObj = (UCDPCurlPoster *) userp;
 
     thisObj->m_result.assign((char *) buffer, size * nmemb);
     return size * nmemb;
 }
 
-void CurlPoster::post(std::string jstr)
+void UCDPCurlPoster::post(std::string jstr)
 {
     postIt(m_url.c_str(), jstr.c_str(), jstr.length());
 }
 
-int CurlPoster::postIt(const char *url, const char *data, int sz)
+int UCDPCurlPoster::postIt(const char *url, const char *data, int sz)
 {
     CURL *curl;
     CURLcode res;
