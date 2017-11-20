@@ -62,10 +62,10 @@ void UCDPFormatter::clean_up()
     int64_t ms = secs_ms - ( t * 1000 );
 
     std::ostringstream o;
-    o << most_of_the_date << '.' << std::setfill('0') << std::setw(7) << ms << "Z";
+    o << most_of_the_date << '.' << std::setfill('0') << std::setw(3) << ms << "Z";
     date = o.str();
 
-    std::cout << date << std::endl;
+
 }
 
 int UCDPFormatter::scan_headers(const std::string fname, std::string &msgid, std::string &to, std::string &from, std::string &subject, std::string &date)

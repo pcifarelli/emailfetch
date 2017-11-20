@@ -26,12 +26,25 @@ UCDPCurlPoster::UCDPCurlPoster(std::string url) :
     m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
+    setHeaders("", "", "", "", -1);
 }
 
 UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
     m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
 {
     init();
+    setHeaders("", "", "", "", -1);
+    set_ServerNameIndication(hostname, port, ip);
+    set_Certificate(certificate, password);
+}
+
+UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password,
+    std::string trmessageid, int messageprio,
+    std::string trclientid, std::string trfeedid, std::string trmessagetype) :
+    m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
+{
+    init();
+    setHeaders(trclientid, trfeedid, trmessageid, trmessagetype, messageprio);
     set_ServerNameIndication(hostname, port, ip);
     set_Certificate(certificate, password);
 }
@@ -133,25 +146,65 @@ void UCDPCurlPoster::init()
         if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK) //0 disable messages
             return;
 
-        /*
-         If you use POST to a HTTP 1.1 server, you can send data without knowing
-         the size before starting the POST if you use chunked encoding. You
-         enable this by adding a header like "Transfer-Encoding: chunked" with
-         CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked transfer, you must
-         specify the size in the request.
-         */
-        if (m_opts)
-        {
-            curl_slist_free_all(m_opts);
-            m_opts = NULL;
-        }
-        m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
-        m_opts = curl_slist_append(m_opts, "Expect:");
-        m_opts = curl_slist_append(m_opts, "Content-Type: application/json");
-        m_curl_status = curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_opts);
-        /* use curl_slist_free_all() after the *perform() call to free this
-         list again */
     }
+}
+
+void UCDPCurlPoster::setHeaders(std::string trclientid, std::string trfeedid, std::string trmessageid, std::string trmessagetype, int messageprio)
+{
+    std::string hdr = "";
+    /*
+     If you use POST to a HTTP 1.1 server, you can send data without knowing
+     the size before starting the POST if you use chunked encoding. You
+     enable this by adding a header like "Transfer-Encoding: chunked" with
+     CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked transfer, you must
+     specify the size in the request.
+     */
+    if (m_opts)
+    {
+        curl_slist_free_all(m_opts);
+        m_opts = NULL;
+    }
+    m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
+    m_opts = curl_slist_append(m_opts, "Expect:");
+    m_opts = curl_slist_append(m_opts, "Content-Type: application/json");
+
+    if (trclientid.length())
+    {
+        hdr = "tr-client-id: " + trclientid;
+        m_opts = curl_slist_append(m_opts, hdr.c_str());
+    }
+
+    if (trfeedid.length())
+    {
+        hdr.erase();
+        hdr = "tr-feed-id: " + trfeedid;
+        m_opts = curl_slist_append(m_opts, hdr.c_str());
+    }
+
+    if (trmessageid.length())
+    {
+        hdr.erase();
+        hdr = "tr-message-id: " + trmessageid;
+        m_opts = curl_slist_append(m_opts, hdr.c_str());
+    }
+
+    if (trmessagetype.length())
+    {
+        hdr.erase();
+        hdr = "tr-message-type: " + trmessagetype;
+        m_opts = curl_slist_append(m_opts, hdr.c_str());
+    }
+
+    if (messageprio >= 0 && messageprio <= 9)
+    {
+        ostringstream out;
+        out << "tr-message-priority: " << messageprio;
+        m_opts = curl_slist_append(m_opts, out.str().c_str());
+    }
+
+    m_curl_status = curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_opts);
+    /* use curl_slist_free_all() after the *perform() call to free this
+     list again */
 }
 
 UCDPCurlPoster::~UCDPCurlPoster()

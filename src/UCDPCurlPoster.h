@@ -24,6 +24,9 @@ class UCDPCurlPoster
 public:
     UCDPCurlPoster(std::string url);
     UCDPCurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password);
+    UCDPCurlPoster(std::string hostname, unsigned short port, std::string ip, std::string certificate, std::string password,
+        std::string trmessageid, int messageprio,
+        std::string trclientid = "ucdp_eapfastemail", std::string trfeedid = "news_eapfe", std::string trmessagetype = "EmailML");
     virtual ~UCDPCurlPoster();
 
     void setProxy(std::string proxy);
@@ -62,6 +65,8 @@ private:
     std::string m_result;
 
     void init();
+    void setHeaders(std::string trclientid, std::string trfeedid, std::string trmessageid, std::string trmessagetype,
+        int messageprio);
     void set_ServerNameIndication(std::string hostname, unsigned short port, std::string ip);
     void set_Certificate(std::string certificate, std::string password);
     static size_t read_callback(void *dest, size_t size, size_t nmemb, void *userp);
