@@ -22,29 +22,19 @@ using namespace std;
 namespace S3Downloader
 {
 
-UCDPCurlPoster::UCDPCurlPoster(std::string url) :
-    m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
+UCDPCurlPoster::UCDPCurlPoster(std::string url, bool chunked) :
+    m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
+    m_trclientid(""), m_trfeedid(""), m_trmessagetype("")
 {
     init();
-    setHeaders("", "", "", "", -1);
 }
 
-UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password) :
-    m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
-{
-    init();
-    setHeaders("", "", "", "", -1);
-    set_ServerNameIndication(hostname, port, ip);
-    set_Certificate(certificate, password);
-}
-
-UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password,
-    std::string trmessageid, int messageprio,
+UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password, bool chunked,
     std::string trclientid, std::string trfeedid, std::string trmessagetype) :
-    m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK)
+    m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
+    m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype)
 {
     init();
-    setHeaders(trclientid, trfeedid, trmessageid, trmessagetype, messageprio);
     set_ServerNameIndication(hostname, port, ip);
     set_Certificate(certificate, password);
 }
@@ -149,7 +139,8 @@ void UCDPCurlPoster::init()
     }
 }
 
-void UCDPCurlPoster::setHeaders(std::string trclientid, std::string trfeedid, std::string trmessageid, std::string trmessagetype, int messageprio)
+
+void UCDPCurlPoster::setHeaders(long msglength, int messageprio, std::string trmessageid)
 {
     std::string hdr = "";
     /*
@@ -164,20 +155,29 @@ void UCDPCurlPoster::setHeaders(std::string trclientid, std::string trfeedid, st
         curl_slist_free_all(m_opts);
         m_opts = NULL;
     }
-    m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
+
+    if (m_chunked)
+        m_opts = curl_slist_append(m_opts, "Transfer-Encoding: chunked");
+    else
+        m_curl_status = curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, msglength);
+
+    std::ostringstream o;
+    o << "content-length: " << msglength;
+    m_opts = curl_slist_append(m_opts, o.str().c_str());
+
     m_opts = curl_slist_append(m_opts, "Expect:");
     m_opts = curl_slist_append(m_opts, "Content-Type: application/json");
 
-    if (trclientid.length())
+    if (m_trclientid.length())
     {
-        hdr = "tr-client-id: " + trclientid;
+        hdr = "tr-client-id: " + m_trclientid;
         m_opts = curl_slist_append(m_opts, hdr.c_str());
     }
 
-    if (trfeedid.length())
+    if (m_trfeedid.length())
     {
         hdr.erase();
-        hdr = "tr-feed-id: " + trfeedid;
+        hdr = "tr-feed-id: " + m_trfeedid;
         m_opts = curl_slist_append(m_opts, hdr.c_str());
     }
 
@@ -188,10 +188,10 @@ void UCDPCurlPoster::setHeaders(std::string trclientid, std::string trfeedid, st
         m_opts = curl_slist_append(m_opts, hdr.c_str());
     }
 
-    if (trmessagetype.length())
+    if (m_trmessagetype.length())
     {
         hdr.erase();
-        hdr = "tr-message-type: " + trmessagetype;
+        hdr = "tr-message-type: " + m_trmessagetype;
         m_opts = curl_slist_append(m_opts, hdr.c_str());
     }
 
@@ -205,6 +205,7 @@ void UCDPCurlPoster::setHeaders(std::string trclientid, std::string trfeedid, st
     m_curl_status = curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_opts);
     /* use curl_slist_free_all() after the *perform() call to free this
      list again */
+
 }
 
 UCDPCurlPoster::~UCDPCurlPoster()
@@ -250,8 +251,9 @@ size_t UCDPCurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void 
     return size * nmemb;
 }
 
-void UCDPCurlPoster::post(std::string jstr)
+void UCDPCurlPoster::post(int messageprio, std::string trmessageid, std::string jstr)
 {
+    setHeaders((long) jstr.length(), messageprio, trmessageid);
     postIt(m_url.c_str(), jstr.c_str(), jstr.length());
 }
 
