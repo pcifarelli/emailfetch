@@ -5,19 +5,22 @@
 {
    "user"  : "vmail",
    "group" : "vmail",
-   "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname",
+   "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname, %a = destination ip address",
     "mailbox" :
     {
         "publicdir"  : "/vmail/public/.%f",
         "userdir"    : "/vmail/%d/%u@%d/Maildir"
     },
    "UCDP"  : 
-   	{
-   		"port"        : 15926,
-   		"snicertfile" : "./cfg/ucdp_eapfastemail.pem",
-   		"clientname"  : "eapfastemail",
-   		"workdir"     : "/vmail/slot/%f"
-    }
+   {
+   		"port"                : 8301,
+   		"certificate"         : "./cfg/ucdp_eapfastemail.pem",
+   		"certificatepassword" : "password",
+   		"trclientid"          : "eapfastemail",
+   		"trfeedid"            : "news_eapfe",
+   		"trmessagetype"       : "EmailML",
+   		"workdir"             : "/vmail/slot/%f/%a"
+   }
 },
 
 "mailbox"   : 
@@ -38,7 +41,8 @@
          "locations" : [ 
             { "mailbox" : true , "public" : false, "user" : "paul" },
             { "mailbox" : true,  "public" : true },
-            { "mailbox" : false, "sni"    : true,  "url" : "https://10.51.13.4/ucdprest/publish" }
+            { "mailbox" : false, "UCDP"    : false,  "url" : "https://10.51.13.4/ucdprest/publish" },
+            { "mailbox" : false, "UCDP"    : true,   "ip" : "159.220.49.19" }
          ],
          "bucket"    : "paul-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
@@ -49,8 +53,8 @@
          "domainname"  : "testaws.pcifarelli.net",
          "description" : "Email Feed 3",
          "locations" : [ 
-            { "mailbox" : false, "sni" : true, "url" : "https://10.51.13.4/ucdprest/publish" },
-            { "mailbox" : false, "sni" : true, "url" : "https://10.51.13.5/ucdprest/publish" }
+            { "mailbox" : false, "UCDP" : false, "url" : "https://10.51.13.4/ucdprest/publish" },
+            { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19" }
          ],
          "bucket"    : "paul-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",

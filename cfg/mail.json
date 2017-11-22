@@ -3,7 +3,23 @@
 "defaults"  :
 {
    "user"  : "vmail",
-   "group" : "vmail"
+   "group" : "vmail",
+   "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname",
+    "mailbox" :
+    {
+        "publicdir"  : "/vmail/public/.%f",
+        "userdir"    : "/vmail/%d/%u@%d/Maildir"
+    },
+   "UCDP"  : 
+   {
+     "port"                : 8301,
+     "certificate"         : "./cfg/ucdp_eapfastemail.pem",
+     "certificatepassword" : "password",
+     "trclientid"          : "eapfastemail",
+     "trfeedid"            : "news_eapfe",
+     "trmessagetype"       : "EmailML",
+     "workdir"             : "/vmail/slot/%f/%a"
+   }
 },
 "mailbox" : 
    [
@@ -19,7 +35,8 @@
       { 
          "description"      : "Feed 2 Mailbox",
          "email"       : "feed2@testaws.pcifarelli.net",
-         "locations" : [ { "mailbox" : true, "workdir" : "./mail2" } ],
+         "locations" : [ { "mailbox" : true, "workdir" : "./mail2" },
+                         { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19", "certificate" : "./cfg/ucdp_eapfastemail.pem", "certificatepassword" :"password" } ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",
          "enabled"   : false

@@ -29,8 +29,15 @@ UCDPCurlPoster::UCDPCurlPoster(std::string url, bool chunked) :
     init();
 }
 
-UCDPCurlPoster::UCDPCurlPoster(string hostname, unsigned short port, string ip, string certificate, string password, bool chunked,
-    std::string trclientid, std::string trfeedid, std::string trmessagetype) :
+UCDPCurlPoster::UCDPCurlPoster(string ip,
+                               string certificate,
+                               string password,
+                               string hostname,
+                               unsigned short port,
+                               bool chunked,
+                               std::string trclientid,
+                               std::string trfeedid,
+                               std::string trmessagetype) :
     m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
     m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype)
 {

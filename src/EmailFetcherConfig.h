@@ -33,8 +33,15 @@ struct location_type
     } mailbox;
     struct
     {
-        std::string   workdir;
-        bool          sni;
+        std::string    workdir;
+        bool           UCDP;
+        unsigned short port;
+        std::string    snihostname;
+        std::string    certificate;
+        std::string    certificatepassword;
+        std::string    trclientid;
+        std::string    trfeedid;
+        std::string    trmessagetype;
     } rest;
 };
 typedef std::list<location_type> location_list;
@@ -66,10 +73,14 @@ struct program_defaults
     } mailbox_defaults;
     struct
     {
+        std::string    workdir;
         unsigned short port;
-        std::string         snicertfile;
-        std::string         clientname;
-        std::string         workdir;
+        std::string    snihostname;
+        std::string    certificate;
+        std::string    certificatepassword;
+        std::string    trclientid;
+        std::string    trfeedid;
+        std::string    trmessagetype;
     } UCDP_defaults;
 };
 

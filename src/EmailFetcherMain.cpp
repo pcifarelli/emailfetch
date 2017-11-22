@@ -90,16 +90,22 @@ int main(int argc, char** argv)
     sigaction(SIGINT, &termaction, 0);
     sigaction(SIGQUIT, &termaction, 0);
 
-    //UCDPCurlPoster cp("eapfastemail.ucdp.thomsonreuters.com", 8301, "159.220.49.19", "./cfg/ucdp_eapfastemail.pem", "password");
-    //
-    //cp.setNoProxy();
-    //cp.post(3, "9283e2839472943875349873949",
-    //    "{\"type\":\"Test\", \
-    //      \"title\":\"Me\", \
-    //      \"description\":\"this is a test\"}");
-    //cout << cp.getResult();
-    //
-    //exit(0);
+//    UCDPCurlPoster cp("159.220.49.19", "./cfg/ucdp_eapfastemail.pem", "password");
+//
+//    cp.setNoProxy();
+//    cp.post(3, "7384e2839472943875349873977",
+//        "{\"type\":\"Test\", \
+//          \"title\":\"Me\", \
+//          \"description\":\"this is a test\"}");
+//    cout << cp.getResult();
+//
+//    cp.post(3, "8485e2839472943875349873988",
+//        "{\"type\":\"Test\", \
+//          \"title\":\"Me 2\", \
+//          \"description\":\"this is a test - the second one\"}");
+//    cout << cp.getResult();
+//
+    exit(0);
 
     // setup the AWS SDK
     SDKOptions options;

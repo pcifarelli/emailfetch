@@ -7,6 +7,16 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <stdio.h>
+#include <cstddef>
+#include <string>
+#include <iostream>
+#include <iomanip>
+#include <errno.h>
+#include <fstream>
+#include <ios>
+#include <sstream>
+#include <regex>
 
 #include <iterator>
 #include <pwd.h>
@@ -21,9 +31,24 @@ using namespace std;
 using namespace Aws;
 
 struct program_defaults defaults =
-{ 5000, 5000,
-{ "./mail/.%f", "./mail/%d/%u@%d/" },
-{ 15026, "./cfg/ucdp_eapfastemail.pem", "eapfastemail", "./mail/slot" } };
+{
+   5000,
+   5000,
+   {
+       "./mail/.%f",
+       "./mail/%d/%u@%d/"
+   },
+   {
+       "./mail/slot/%f",
+       8301,
+       "eapfastemail.ucdp.thomsonreuters.com",
+       "./cfg/ucdp_eapfastemail.pem",
+       "password",
+       "eapfastemail",
+       "news_eapfe",
+       "EmailML"
+   }
+};
 
 void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults)
 {
@@ -87,10 +112,18 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
         Utils::Json::JsonValue ucdpdefaults = jdefaults.GetObject("UCDP");
         if (ucdpdefaults.ValueExists("port"))
             defaults.UCDP_defaults.port = ucdpdefaults.GetInteger("port");
-        if (ucdpdefaults.ValueExists("snicertfile"))
-            defaults.UCDP_defaults.snicertfile = ucdpdefaults.GetString("snicertfile").c_str();
-        if (ucdpdefaults.ValueExists("clientname"))
-            defaults.UCDP_defaults.clientname = ucdpdefaults.GetString("clientname").c_str();
+        if (ucdpdefaults.ValueExists("snihostname"))
+            defaults.UCDP_defaults.snihostname = ucdpdefaults.GetString("snihostname").c_str();
+        if (ucdpdefaults.ValueExists("certificate"))
+            defaults.UCDP_defaults.certificate = ucdpdefaults.GetString("certificate").c_str();
+        if (ucdpdefaults.ValueExists("certificatepassword"))
+            defaults.UCDP_defaults.certificatepassword = ucdpdefaults.GetString("certificatepassword").c_str();
+        if (ucdpdefaults.ValueExists("trclientid"))
+            defaults.UCDP_defaults.trclientid = ucdpdefaults.GetString("trclientid").c_str();
+        if (ucdpdefaults.ValueExists("trfeedid"))
+            defaults.UCDP_defaults.trfeedid = ucdpdefaults.GetString("trfeedid").c_str();
+        if (ucdpdefaults.ValueExists("trmessagetype"))
+            defaults.UCDP_defaults.trmessagetype = ucdpdefaults.GetString("trmessagetype").c_str();
         if (ucdpdefaults.ValueExists("workdir"))
             defaults.UCDP_defaults.workdir = ucdpdefaults.GetString("workdir").c_str();
     }
@@ -107,13 +140,14 @@ string replace_all(string str, const string &from, const string &to)
     return str;
 }
 
-string create_location(string fmt, string &user, string &name, string &domainname)
+string create_location(string fmt, string &user, string &name, string &domainname, string destination)
 {
     string result = fmt;
 
-    result = replace_all(result, "%u", user);       // replace all "%u with the user's name
-    result = replace_all(result, "%f", name);       // replace all "%f with the feed name
-    result = replace_all(result, "%d", domainname); // replace all "%d with the domain name
+    result = replace_all(result, "%u", user);        // replace all "%u with the user's name
+    result = replace_all(result, "%f", name);        // replace all "%f with the feed name
+    result = replace_all(result, "%d", domainname);  // replace all "%d with the domain name
+    result = replace_all(result, "%a", destination); // replace all "%a with the destination ip or host name
 
     std::size_t n = result.find_last_of('/');
     if (n != std::string::npos && n != result.length() - 1)
@@ -124,12 +158,12 @@ string create_location(string fmt, string &user, string &name, string &domainnam
 
 string create_public_mailbox_location(program_defaults &defaults, string &name, string &domainname)
 {
-    return create_location(defaults.mailbox_defaults.publicdir, name, name, domainname);
+    return create_location(defaults.mailbox_defaults.publicdir, name, name, domainname, "");
 }
 
 string create_user_mailbox_location(program_defaults &defaults, string &user, string &name, string &domainname)
 {
-    return create_location(defaults.mailbox_defaults.userdir, user, name, domainname);
+    return create_location(defaults.mailbox_defaults.userdir, user, name, domainname, "");
 }
 
 void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
@@ -224,7 +258,7 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                             {
                                 string fmt = workdir;
                                 ploc->mailbox.user = "";
-                                ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname);
+                                ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname, "");
                             }
                             else
                             {
@@ -234,40 +268,85 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                         }
                     }
                 }
-                else // it goes to a URL
+                else // it goes to a REST post
                 {
+                    string addr = "";
+
                     ploc->type = SLOT;
                     // SNI is the default for UCDP, and UCDP is the default system to post to
-                    if (locations[j].ValueExists("sni"))
-                        ploc->rest.sni = locations[j].GetBool("sni");
+                    if (locations[j].ValueExists("UCDP"))
+                        ploc->rest.UCDP = locations[j].GetBool("UCDP");
                     else
-                        ploc->rest.sni = true;
+                        ploc->rest.UCDP = true;
+
+                    if (!ploc->rest.UCDP && locations[j].ValueExists("url"))
+                    {
+                        string fmt = locations[j].GetString("url").c_str();
+                        string user = "";
+                        ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname, "");
+
+                        // extract the ip or host from the url, for substitutions
+                        std::smatch sm;
+                        std::regex e_addr   ("^(http[s]?:)//([^/]+)/(.*)");
+                        std::regex_match(ploc->destination, sm, e_addr);
+                        if (sm.size() > 0)
+                            addr = sm[2];
+
+                    }
+                    else if (ploc->rest.UCDP && locations[j].ValueExists("ip"))  // these are the minimum required params for SNI
+                    {
+                        ploc->destination = locations[j].GetString("ip").c_str();
+                        addr = ploc->destination;
+
+                        if (locations[j].ValueExists("certificate"))
+                            ploc->rest.certificate = locations[j].GetString("certificate").c_str();
+                        else
+                            ploc->rest.certificate = defaults.UCDP_defaults.certificate;
+
+                        if (locations[j].ValueExists("certificatepassword"))
+                            ploc->rest.certificatepassword = locations[j].GetString("certificatepassword").c_str();
+                        else
+                            ploc->rest.certificatepassword = defaults.UCDP_defaults.certificatepassword;
+
+                        if (locations[j].ValueExists("port"))
+                            ploc->rest.port = locations[j].GetInteger("port");
+                        else
+                            ploc->rest.port = defaults.UCDP_defaults.port;
+
+                        if (locations[j].ValueExists("trclientid"))
+                            ploc->rest.trclientid = locations[j].GetString("trclientid").c_str();
+                        else
+                            ploc->rest.trclientid = defaults.UCDP_defaults.trclientid;
+
+                        if (locations[j].ValueExists("trfeedid"))
+                            ploc->rest.trfeedid = locations[j].GetString("trfeedid").c_str();
+                        else
+                            ploc->rest.trfeedid = defaults.UCDP_defaults.trfeedid;
+
+                        if (locations[j].ValueExists("trmessagetype"))
+                            ploc->rest.trmessagetype = locations[j].GetString("trmessagetype").c_str();
+                        else
+                            ploc->rest.trmessagetype = defaults.UCDP_defaults.trmessagetype;
+                    }
+                    else
+                    {
+                        cout << "CONFIG: Error: no URL or IP/HOST/PORT specified for REST destination - ignoring location in " << pitem->name << endl;
+                        continue;
+                    }
 
                     if (locations[j].ValueExists("workdir"))
                     {
                         string fmt = locations[j].GetString("workdir").c_str();
-                        ploc->rest.workdir = create_location(fmt, ploc->mailbox.user, pitem->name, pitem->domainname);
+                        ploc->rest.workdir = create_location(fmt, ploc->mailbox.user, pitem->name, pitem->domainname, addr);
                     }
                     else
-                        ploc->rest.workdir = create_location(defaults.UCDP_defaults.workdir, ploc->mailbox.user, pitem->name, pitem->domainname);
-
-                    if (locations[j].ValueExists("url"))
-                    {
-                        string fmt = locations[j].GetString("url").c_str();
-                        string user = "";
-                        ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname);
-                    }
-                    else
-                    {
-                        cout << "CONFIG: Error: no URL specified for REST destination - ignoring this location" << endl;
-                        continue;
-                    }
+                        ploc->rest.workdir = create_location(defaults.UCDP_defaults.workdir, ploc->mailbox.user, pitem->name, pitem->domainname, addr);
                 }
 
                 pitem->locations.push_back(*ploc);
             }
             else
-                cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring this location" << endl;
+                cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring location in " << pitem->name << endl;
         }
 
         pitem->enabled = arr[i].GetBool("enabled");
@@ -319,12 +398,25 @@ void print_config(config_list &mailboxconfig)
             ++i;
             if (loc.type == SLOT)
             {
-                cout << "CONFIG:       " << i << ". Slot:     " << "   URL:         " << loc.destination << endl;
+                if (loc.rest.UCDP)
+                {
+                    cout << "CONFIG:       " << i << ". Slot:     " << "SLOT: UCDP destination" << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   IP:          " << loc.destination << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   Port:        " << loc.rest.port << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   ClientId:    " << loc.rest.trclientid << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   FeedId:      " << loc.rest.trfeedid << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   MessageType: " << loc.rest.trmessagetype << endl;
+                }
+                else
+                {
+                    cout << "CONFIG:       " << i << ". Slot:     " << "SLOT: REST URL destination" << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   URL:         " << loc.destination << endl;
+                }
                 cout << "CONFIG:       " << i << ". Slot:     " << "   workdir:     " << loc.rest.workdir << endl;
-                cout << "CONFIG:       " << i << ". Slot:     " << "   " << (loc.rest.sni ? "SNI enabled" : "SNI disabled") << endl;
             }
             else
             {
+                cout << "CONFIG:       " << i << ". Slot:     " << "NON-SLOT Mailbox Destination" << endl;
                 if (loc.mailbox.user != "")
                     cout << "CONFIG:       " << i << ". Non-slot: " << "   user:        " << loc.mailbox.user << endl;
                 cout << "CONFIG:       " << i << ". Non-slot: " << "   destination: " << loc.destination << endl;
