@@ -7,8 +7,8 @@
    "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname",
     "mailbox" :
     {
-        "publicdir"  : "/vmail/public/.%f",
-        "userdir"    : "/vmail/%d/%u@%d/Maildir"
+        "publicdir"  : "./vmail/public/.%f",
+        "userdir"    : "./vmail/%d/%u@%d/Maildir"
     },
    "UCDP"  : 
    {
@@ -18,7 +18,7 @@
      "trclientid"          : "eapfastemail",
      "trfeedid"            : "news_eapfe",
      "trmessagetype"       : "EmailML",
-     "workdir"             : "/vmail/slot/%f/%a"
+     "workdir"             : "./vmail/slot/%f/%a"
    }
 },
 "mailbox" : 
@@ -27,16 +27,30 @@
          "__comment"   : "you can specify email, or name & domainname.  If you specify both, email takes precedence",
          "description" : "Feed 1 Mailbox",
          "email"       : "feed1@testaws.pcifarelli.net",
-         "locations"   : [ { "mailbox" : true, "workdir" : "./mail" } ],
          "bucket"      : "feed1-testaws-pcifarelli-net",
          "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
-         "enabled"     : true
-      }, 
+         "enabled"     : true,
+         "locations"   : [ 
+            { "mailbox" : true, "public" : true },
+            { "mailbox" : true, "public" : false, "user" : "paul" }
+         ]
+      },
+      {
+         "description" : "Paul's personal email",
+         "email"       : "paul@testaws.pcifarelli.net",
+         "bucket"      : "paul-testaws-pcifarelli-net",
+         "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
+         "enabled"     : true,
+         "locations"   : [
+            { "mailbox" : true, "public" : false, "user" : "paul" }
+         ]
+      },
       { 
          "description"      : "Feed 2 Mailbox",
          "email"       : "feed2@testaws.pcifarelli.net",
          "locations" : [ { "mailbox" : true, "workdir" : "./mail2" },
-                         { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19", "certificate" : "./cfg/ucdp_eapfastemail.pem", "certificatepassword" :"password" } ],
+                         { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19" } 
+         ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",
          "enabled"   : false
