@@ -33,6 +33,9 @@ using namespace Aws;
 const char *default_config_file = "./cfg/emailfetch.json";
 #include "EmailFetcherConfig.h"
 
+// verbose output
+bool verbose = false;
+
 // signal handler for TERM
 bool quittin_time = false;
 void term_sigaction(int signo, siginfo_t *sinfo, void *arg);
@@ -43,22 +46,31 @@ int main(int argc, char** argv)
 
     // read the command line options
     int option_char;
-    while ((option_char = getopt(argc, argv, "f:m:")) != -1)
+    while ((option_char = getopt(argc, argv, "f:m:vh")) != -1)
         switch (option_char)
         {
         case 'f':
             config_file = optarg;
             break;
+        case 'v':
+            verbose = true;
+            break;
         case 'h':
-            cout << "Usage: emailfetch [-f <config file>]" << endl;
+        default:
+            cout << "Usage: emailfetch [-f <config file>] [-v] [-h]" << endl
+               << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
+               << "         -v\t\t\tverbose output" << endl << "         -h\t\t\tthis help" << endl;
+            exit(0);
         }
 
-    cout << "Using " << config_file << " for configuration" << endl;
+    if (verbose)
+        cout << "Using " << config_file << " for configuration" << endl;
 
     list<config_item> mailboxconfig; // this is our mailbox configuration
     // NOTE that this means we must have read permission in the account that the program is started in (we don't know what our euid/guid should be yet)
     get_config(config_file, defaults, mailboxconfig);
-    print_config(mailboxconfig);
+    if (verbose)
+        print_config(mailboxconfig);
 
     // try to set the effective userid and group id
     if (setegid(defaults.egroup))
@@ -105,7 +117,6 @@ int main(int argc, char** argv)
 //          \"description\":\"this is a test - the second one\"}");
 //    cout << cp.getResult();
 //
-    exit(0);
 
     // setup the AWS SDK
     SDKOptions options;
@@ -118,7 +129,7 @@ int main(int argc, char** argv)
             if (item.enabled)
             {
                 // instantiating a Downloader and calling "start()" results in a new thread that waits on the notification
-                item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str());
+                item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), verbose);
                 for (auto &loc : item.locations)
                 {
                     switch (loc.type)
@@ -132,8 +143,10 @@ int main(int argc, char** argv)
                             Aws::String dir = loc.destination.c_str();
                             mailfmt = new MaildirFormatter(dir);
                             item.pdownl->addFormatter(mailfmt);
-                            cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                            if (verbose)
+                                cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
                         }
+                        break;
                         case SLOT:
                         {
                             // a "Formatter" is responsible for providing services to stream and route the mail to a destination
@@ -143,33 +156,22 @@ int main(int argc, char** argv)
                             Aws::String url = loc.destination.c_str();
                             ucdpfmt = new UCDPFormatter(url);
                             item.pdownl->addFormatter(ucdpfmt);
-                            cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                            if (verbose)
+                                cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
                         }
+                        break;
                         default:
-                           cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
+                            cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
                     }
                 }
                 // start the thread
                 item.pdownl->start();
-                cout << "Email for " << item.name << " is started" << endl;
+                if (verbose)
+                    cout << "Email for " << item.name << " is started" << endl;
             }
-            else
+            else if (verbose)
                 cout << "Email " << item.name << " is disabled" << endl;
         }
-
-//        CurlPoster cp("http://10.0.1.103:8080/growler/rest/notify/My%20Laptop");
-//        cp.post("{\"type\":\"SmartThings\", \
-//                  \"title\":\"Secure\", \
-//                  \"description\":\"this is a test\"}");
-//        cout << "\nCompleted POST\n";
-//        cout << cp.getResult();
-//        CurlPoster cp("eapfastemail.ucdp.thomsonreuters.com", 8301, "159.220.49.19", "./ucdp_eapfastemail.pem", "password");
-//
-//        cp.setNoProxy();
-//        cp.post("{\"type\":\"Test\", \
-//                  \"title\":\"Me\", \
-//                  \"description\":\"this is a test\"}");
-//        cout << cp.getResult();
 
         // wait until signaled to quit
         while (!quittin_time)
@@ -182,7 +184,9 @@ int main(int argc, char** argv)
             if (item.enabled)
             {
                 item.pdownl->stop();
-                cout << item.name << " stopped" << endl;
+                if (verbose)
+                    cout << item.name << " stopped" << endl;
+
                 if (item.enabled)
                     delete item.pdownl;
             }

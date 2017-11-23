@@ -400,7 +400,7 @@ void print_config(config_list &mailboxconfig)
             {
                 if (loc.rest.UCDP)
                 {
-                    cout << "CONFIG:       " << i << ". Slot:     " << "SLOT: UCDP destination" << endl;
+                    cout << "CONFIG:       " << i << ". Type:     " << "SLOT: UCDP destination" << endl;
                     cout << "CONFIG:       " << i << ". Slot:     " << "   IP:          " << loc.destination << endl;
                     cout << "CONFIG:       " << i << ". Slot:     " << "   Port:        " << loc.rest.port << endl;
                     cout << "CONFIG:       " << i << ". Slot:     " << "   ClientId:    " << loc.rest.trclientid << endl;
@@ -416,7 +416,7 @@ void print_config(config_list &mailboxconfig)
             }
             else
             {
-                cout << "CONFIG:       " << i << ". Slot:     " << "NON-SLOT Mailbox Destination" << endl;
+                cout << "CONFIG:       " << i << ". Type:     " << "NON-SLOT Mailbox Destination" << endl;
                 if (loc.mailbox.user != "")
                     cout << "CONFIG:       " << i << ". Non-slot: " << "   user:        " << loc.mailbox.user << endl;
                 cout << "CONFIG:       " << i << ". Non-slot: " << "   destination: " << loc.destination << endl;

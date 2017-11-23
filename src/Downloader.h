@@ -35,9 +35,9 @@ class Downloader
 {
 public:
     // NOTE: fmt must stay in scope
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name);
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt);
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, FormatterList &fmtlist);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, bool verbose);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt, bool verbose);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, FormatterList &fmtlist, bool verbose);
     virtual ~Downloader();
 
     void addFormatter( Formatter *fmt );
@@ -88,6 +88,8 @@ private:
     pthread_t m_pthread_id;
     bool m_exit_thread;
     int  m_exit_status;
+
+    bool m_verbose;
 
     TrackerList m_trackerlist;
     Aws::String m_bucket_name;

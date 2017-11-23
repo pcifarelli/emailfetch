@@ -33,21 +33,21 @@
 namespace S3Downloader
 {
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name) :
-    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, bool verbose) :
+    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
 }
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt) :
-    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt, bool verbose) :
+    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
     addFormatter(fmt);
 }
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist) :
-    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name)
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist, bool verbose) :
+    m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
     for (auto &fmt : fmtlist)
@@ -271,7 +271,8 @@ void Downloader::create_sqs_queue(Aws::String queue_name)
     auto cq_out = m_sqs->CreateQueue(cq_req);
     if (cq_out.IsSuccess())
     {
-        std::cout << "Successfully created queue " << m_queue_name << std::endl;
+        if (m_verbose)
+            std::cout << "Successfully created queue " << m_queue_name << std::endl;
     }
     else
     {
@@ -288,7 +289,8 @@ void Downloader::get_queue_url()
     if (gqu_out.IsSuccess())
     {
         m_queue_url = gqu_out.GetResult().GetQueueUrl();
-        std::cout << "Queue " << m_queue_name << " has url " << m_queue_url << std::endl;
+        if (m_verbose)
+            std::cout << "Queue " << m_queue_name << " has url " << m_queue_url << std::endl;
     }
     else
     {
@@ -308,7 +310,8 @@ void Downloader::get_queue_arn()
         auto attr = gqa_out.GetResult().GetAttributes();
         auto it = attr.begin();
         m_queue_arn = it->second;
-        std::cout << "Queue " << m_queue_name << " has arn " << m_queue_arn << std::endl;
+        if (m_verbose)
+            std::cout << "Queue " << m_queue_name << " has arn " << m_queue_arn << std::endl;
     }
     else
     {
@@ -324,7 +327,8 @@ void Downloader::delete_sqs_queue()
     auto dq_out = m_sqs->DeleteQueue(dq_req);
     if (dq_out.IsSuccess())
     {
-        std::cout << "Successfully deleted queue with url " << m_queue_url << std::endl;
+        if (m_verbose)
+            std::cout << "Successfully deleted queue with url " << m_queue_url << std::endl;
     }
     else
     {
@@ -368,7 +372,7 @@ void Downloader::add_permission()
     {
         std::cout << "Error getting url for queue " << m_queue_name << ": " << out.GetError().GetMessage() << std::endl;
     }
-    else
+    else if (m_verbose)
         std::cout << "successfully added policy allowing sns topic to send messages" << std::endl;
 }
 
@@ -384,8 +388,9 @@ void Downloader::subscribe_topic()
     if (out.IsSuccess())
     {
         m_subscription_arn = out.GetResult().GetSubscriptionArn();
-        std::cout << "successfully subscribed queue " << m_queue_arn << " to topic " << m_topic_arn << " with subscription arn "
-            << m_subscription_arn << std::endl;
+        if (m_verbose)
+            std::cout << "successfully subscribed queue " << m_queue_arn << " to topic " << m_topic_arn << " with subscription arn "
+                << m_subscription_arn << std::endl;
     }
     else
     {
@@ -404,7 +409,8 @@ void Downloader::unsubscribe_topic()
 
     if (out.IsSuccess())
     {
-        std::cout << "successfully unsubscribed queue " << m_queue_arn << " from topic " << m_topic_arn << std::endl;
+        if (m_verbose)
+            std::cout << "successfully unsubscribed queue " << m_queue_arn << " from topic " << m_topic_arn << std::endl;
     }
     else
     {
@@ -463,7 +469,7 @@ void Downloader::start()
     m_exit_status = 0;
     if (pthread_create(&m_pthread_id, NULL, Downloader::run, (void *) this))
         std::cout << "Unable to start Downloader for " << bucketName() << std::endl;
-    else
+    else if (m_verbose)
         std::cout << "Started downloader for " << bucketName() << std::endl;
 }
 
@@ -471,7 +477,8 @@ void Downloader::stop()
 {
     m_exit_thread = true;
     int *retval;
-    std::cout << "Stopped downloader for " << bucketName() << std::endl;
+    if (m_verbose)
+        std::cout << "Stopped downloader for " << bucketName() << std::endl;
     pthread_join(m_pthread_id, (void **) &retval);
 }
 
