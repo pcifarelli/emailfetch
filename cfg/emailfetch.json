@@ -29,25 +29,25 @@
          "__comment"   : "you can specify email, or name & domainname.  If you specify both, email takes precedence",
          "email"       : "feed1@testaws.pcifarelli.net",
          "description" : "Feed 1 Mailbox",
-         "locations"   : [ { "mailbox" : true, "public" : true } ],
          "bucket"      : "feed1-testaws-pcifarelli-net",
          "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
-         "enabled"     : true
+         "enabled"     : true,
+         "locations"   : [ { "mailbox" : true, "public" : true } ]
       }, 
       { 
          "name"        : "feed2",
          "domainname"  : "testaws.pcifarelli.net",
          "description" : "Feed 2 Mailbox",
+         "bucket"    : "paul-testaws-pcifarelli-net",
+         "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
+         "enabled"   : true,
          "locations" : [ 
             { "mailbox" : true , "public" : false, "user" : "paul" },
             { "mailbox" : true,  "public" : true },
             { "mailbox" : false, "UCDP"    : false,  "url" : "https://10.51.13.4/ucdprest/publish" },
             { "mailbox" : false, "UCDP"    : true,   "ip" : "159.220.49.19" }
-         ],
-         "bucket"    : "paul-testaws-pcifarelli-net",
-         "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
-         "enabled"   : true
-      }, 
+         ]
+      },
       { 
          "name"        : "feed3",
          "domainname"  : "testaws.pcifarelli.net",
