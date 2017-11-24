@@ -30,7 +30,14 @@ public:
     static std::string escape_json(const std::string &s);
     static std::string unescape_json(const std::string &s);
 
-    static int scan_headers(const std::string fname, std::string &msgid, std::string &to, std::string &from, std::string &subject, std::string &date);
+    static int scan_headers(const std::string fname,
+                            std::string &msgid,
+                            std::string &to,
+                            std::string &from,
+                            std::string &subject,
+                            std::string &date,
+                            std::string &contenttype,
+                            std::string &boundary);
 
 private:
     std::string   m_objkey;
