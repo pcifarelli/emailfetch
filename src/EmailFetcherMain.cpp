@@ -34,11 +34,19 @@ const char *default_config_file = "./cfg/emailfetch.json";
 #include "EmailFetcherConfig.h"
 
 // verbose output
-bool verbose = false;
+int verbose = 0;
 
 // signal handler for TERM
 bool quittin_time = false;
 void term_sigaction(int signo, siginfo_t *sinfo, void *arg);
+
+void usage()
+{
+    cout << "Usage: emailfetch [-f <config file>] [-vN] [-h]" << endl
+       << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
+       << "         -vN\t\t\tverbose output level, N=1,2 or 3" << endl << "         -h\t\t\tthis help" << endl;
+    exit(0);
+}
 
 int main(int argc, char** argv)
 {
@@ -46,21 +54,25 @@ int main(int argc, char** argv)
 
     // read the command line options
     int option_char;
-    while ((option_char = getopt(argc, argv, "f:m:vh")) != -1)
+    while ((option_char = getopt(argc, argv, "f:m:v:h")) != -1)
         switch (option_char)
         {
         case 'f':
             config_file = optarg;
             break;
         case 'v':
-            verbose = true;
+            if (!strncmp(optarg,"1",1))
+                verbose = 1;
+            else if (!strncmp(optarg,"2",1))
+                verbose = 2;
+            else if (!strncmp(optarg,"3",1))
+                verbose = 3;
+            else
+                usage();
             break;
         case 'h':
         default:
-            cout << "Usage: emailfetch [-f <config file>] [-v] [-h]" << endl
-               << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
-               << "         -v\t\t\tverbose output" << endl << "         -h\t\t\tthis help" << endl;
-            exit(0);
+            usage();
         }
 
     if (verbose)

@@ -33,20 +33,20 @@
 namespace S3Downloader
 {
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, bool verbose) :
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, int verbose) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
 }
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt, bool verbose) :
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt, int verbose) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
     addFormatter(fmt);
 }
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist, bool verbose) :
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist, int verbose) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
@@ -437,15 +437,19 @@ void Downloader::wait_for_message()
     const auto& messages = rm_out.GetResult().GetMessages();
     if (messages.size() == 0)
     {
-        //std::cout << "No messages received from queue " << m_queue_url << std::endl;
+        if (m_verbose > 2)
+            std::cout << "No messages received from queue " << m_queue_url << std::endl;
         return;
     }
 
     const auto& message = messages[0];
-    //std::cout << "Received message:" << std::endl;
-    //std::cout << "  MessageId: " << message.GetMessageId() << std::endl;
-    //std::cout << "  ReceiptHandle: " << message.GetReceiptHandle() << std::endl;
-    //std::cout << "  Body: " << message.GetBody() << std::endl << std::endl;
+    if (m_verbose > 1)
+    {
+        std::cout << "Received message:" << std::endl;
+        std::cout << "  MessageId: " << message.GetMessageId() << std::endl;
+        std::cout << "  ReceiptHandle: " << message.GetReceiptHandle() << std::endl;
+        std::cout << "  Body: " << message.GetBody() << std::endl << std::endl;
+    }
 
     Aws::SQS::Model::DeleteMessageRequest dm_req;
     dm_req.SetQueueUrl(m_queue_url);
@@ -454,7 +458,8 @@ void Downloader::wait_for_message()
     auto dm_out = m_sqs->DeleteMessage(dm_req);
     if (dm_out.IsSuccess())
     {
-        //std::cout << "Successfully deleted message " << message.GetMessageId() << " from queue " << m_queue_url << std::endl;
+        if (m_verbose > 2)
+            std::cout << "Successfully deleted message " << message.GetMessageId() << " from queue " << m_queue_url << std::endl;
     }
     else
     {

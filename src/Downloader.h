@@ -35,9 +35,9 @@ class Downloader
 {
 public:
     // NOTE: fmt must stay in scope
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, bool verbose);
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt, bool verbose);
-    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, FormatterList &fmtlist, bool verbose);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, int verbose);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, Formatter *fmt, int verbose);
+    Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, FormatterList &fmtlist, int verbose);
     virtual ~Downloader();
 
     void addFormatter( Formatter *fmt );
