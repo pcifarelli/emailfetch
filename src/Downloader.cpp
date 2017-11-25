@@ -100,10 +100,10 @@ Downloader::~Downloader()
     while (!m_trackerlist.empty())
     {
         pt = m_trackerlist.back();
-        m_trackerlist.pop_back();
         purgeMap(*pt, (std::time_t) 0);
         delete pt->filemap;
         delete pt->fmt;
+        m_trackerlist.pop_back();
         delete pt;
     }
 
@@ -443,7 +443,7 @@ void Downloader::wait_for_message()
     }
 
     const auto& message = messages[0];
-    if (m_verbose > 1)
+    if (m_verbose > 2)
     {
         std::cout << "Received message:" << std::endl;
         std::cout << "  MessageId: " << message.GetMessageId() << std::endl;

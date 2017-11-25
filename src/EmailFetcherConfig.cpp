@@ -172,10 +172,10 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
 
     for (int i = 0; i < arr.GetLength(); i++)
     {
-        config_item *pitem = new config_item;
+        config_item item;
 
         if (arr[i].ValueExists("bucket"))
-            pitem->bucket = arr[i].GetString("bucket").c_str();
+            item.bucket = arr[i].GetString("bucket").c_str();
         else
         {
             cout << "CONFIG: Error: no AWS S3 bucket specified for this downloader -  ignoring" << endl;
@@ -186,20 +186,20 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
         {
             string email = arr[i].GetString("email").c_str();
             istringstream e(email);
-            getline(e, pitem->name, '@');
-            getline(e, pitem->domainname, '@');
+            getline(e, item.name, '@');
+            getline(e, item.domainname, '@');
         }
         else
         {
             if (arr[i].ValueExists("name"))
-                pitem->name = arr[i].GetString("name").c_str();
+                item.name = arr[i].GetString("name").c_str();
             else
             {
                 cout << "CONFIG: Error: Cannot determine the email address for this downloader (name missing)" << endl;
                 continue;
             }
             if (arr[i].ValueExists("domainname"))
-                pitem->domainname = arr[i].GetString("domainname").c_str();
+                item.domainname = arr[i].GetString("domainname").c_str();
             else
             {
                 cout << "CONFIG: Error: Cannot determine the email address for this downloader (domainname missing)" << endl;
@@ -208,15 +208,15 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
         }
 
         if (arr[i].ValueExists("description"))
-            pitem->description = arr[i].GetString("description").c_str();
+            item.description = arr[i].GetString("description").c_str();
         else
-            pitem->description = pitem->name + "@" + pitem->domainname;
+            item.description = item.name + "@" + item.domainname;
 
         if (arr[i].ValueExists("topic_arn"))
-            pitem->topic_arn = arr[i].GetString("topic_arn").c_str();
+            item.topic_arn = arr[i].GetString("topic_arn").c_str();
         else
         {
-            cout << "CONFIG: Error: no topic arn specified for downloader " << pitem->name << endl;
+            cout << "CONFIG: Error: no topic arn specified for downloader " << item.name << endl;
             continue;
         }
 
@@ -226,12 +226,12 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
         {
             if (locations[j].ValueExists("mailbox"))
             {
-                location_type *ploc = new location_type;
+                location_type loc;
                 bool is_mailbox = locations[j].GetBool("mailbox");
                 if (is_mailbox)
                 {
-                    ploc->type = NONSLOT;
-                    pitem->has_nonslot_workflow = true;
+                    loc.type = NONSLOT;
+                    item.has_nonslot_workflow = true;
                     bool is_public = false;
                     string user = "";
                     string workdir = "";
@@ -244,21 +244,21 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                         workdir = locations[j].GetString("workdir").c_str();
 
                     if (is_public)
-                        ploc->destination = create_public_mailbox_location(defaults, pitem->name, pitem->domainname);
+                        loc.destination = create_public_mailbox_location(defaults, item.name, item.domainname);
                     else
                     {
                         if (user != "")
                         {
-                            ploc->mailbox.user = user;
-                            ploc->destination = create_user_mailbox_location(defaults, ploc->mailbox.user, pitem->name,pitem->domainname);
+                            loc.mailbox.user = user;
+                            loc.destination = create_user_mailbox_location(defaults, loc.mailbox.user, item.name, item.domainname);
                         }
                         else
                         {
                             if (workdir != "")
                             {
                                 string fmt = workdir;
-                                ploc->mailbox.user = "";
-                                ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname, "");
+                                loc.mailbox.user = "";
+                                loc.destination = create_location(fmt, user, item.name, item.domainname, "");
                             }
                             else
                             {
@@ -272,85 +272,85 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                 {
                     string addr = "";
 
-                    ploc->type = SLOT;
+                    loc.type = SLOT;
                     // SNI is the default for UCDP, and UCDP is the default system to post to
                     if (locations[j].ValueExists("UCDP"))
-                        ploc->rest.UCDP = locations[j].GetBool("UCDP");
+                        loc.rest.UCDP = locations[j].GetBool("UCDP");
                     else
-                        ploc->rest.UCDP = true;
+                        loc.rest.UCDP = true;
 
-                    if (!ploc->rest.UCDP && locations[j].ValueExists("url"))
+                    if (!loc.rest.UCDP && locations[j].ValueExists("url"))
                     {
                         string fmt = locations[j].GetString("url").c_str();
                         string user = "";
-                        ploc->destination = create_location(fmt, user, pitem->name, pitem->domainname, "");
+                        loc.destination = create_location(fmt, user, item.name, item.domainname, "");
 
                         // extract the ip or host from the url, for substitutions
                         std::smatch sm;
                         std::regex e_addr   ("^(http[s]?:)//([^/]+)/(.*)");
-                        std::regex_match(ploc->destination, sm, e_addr);
+                        std::regex_match(loc.destination, sm, e_addr);
                         if (sm.size() > 0)
                             addr = sm[2];
 
                     }
-                    else if (ploc->rest.UCDP && locations[j].ValueExists("ip"))  // these are the minimum required params for SNI
+                    else if (loc.rest.UCDP && locations[j].ValueExists("ip"))  // these are the minimum required params for SNI
                     {
-                        ploc->destination = locations[j].GetString("ip").c_str();
-                        addr = ploc->destination;
+                        loc.destination = locations[j].GetString("ip").c_str();
+                        addr = loc.destination;
 
                         if (locations[j].ValueExists("certificate"))
-                            ploc->rest.certificate = locations[j].GetString("certificate").c_str();
+                            loc.rest.certificate = locations[j].GetString("certificate").c_str();
                         else
-                            ploc->rest.certificate = defaults.UCDP_defaults.certificate;
+                            loc.rest.certificate = defaults.UCDP_defaults.certificate;
 
                         if (locations[j].ValueExists("certificatepassword"))
-                            ploc->rest.certificatepassword = locations[j].GetString("certificatepassword").c_str();
+                            loc.rest.certificatepassword = locations[j].GetString("certificatepassword").c_str();
                         else
-                            ploc->rest.certificatepassword = defaults.UCDP_defaults.certificatepassword;
+                            loc.rest.certificatepassword = defaults.UCDP_defaults.certificatepassword;
 
                         if (locations[j].ValueExists("port"))
-                            ploc->rest.port = locations[j].GetInteger("port");
+                            loc.rest.port = locations[j].GetInteger("port");
                         else
-                            ploc->rest.port = defaults.UCDP_defaults.port;
+                            loc.rest.port = defaults.UCDP_defaults.port;
 
                         if (locations[j].ValueExists("trclientid"))
-                            ploc->rest.trclientid = locations[j].GetString("trclientid").c_str();
+                            loc.rest.trclientid = locations[j].GetString("trclientid").c_str();
                         else
-                            ploc->rest.trclientid = defaults.UCDP_defaults.trclientid;
+                            loc.rest.trclientid = defaults.UCDP_defaults.trclientid;
 
                         if (locations[j].ValueExists("trfeedid"))
-                            ploc->rest.trfeedid = locations[j].GetString("trfeedid").c_str();
+                            loc.rest.trfeedid = locations[j].GetString("trfeedid").c_str();
                         else
-                            ploc->rest.trfeedid = defaults.UCDP_defaults.trfeedid;
+                            loc.rest.trfeedid = defaults.UCDP_defaults.trfeedid;
 
                         if (locations[j].ValueExists("trmessagetype"))
-                            ploc->rest.trmessagetype = locations[j].GetString("trmessagetype").c_str();
+                            loc.rest.trmessagetype = locations[j].GetString("trmessagetype").c_str();
                         else
-                            ploc->rest.trmessagetype = defaults.UCDP_defaults.trmessagetype;
+                            loc.rest.trmessagetype = defaults.UCDP_defaults.trmessagetype;
                     }
                     else
                     {
-                        cout << "CONFIG: Error: no URL or IP/HOST/PORT specified for REST destination - ignoring location in " << pitem->name << endl;
+                        cout << "CONFIG: Error: no URL or IP/HOST/PORT specified for REST destination - ignoring location in " << item.name << endl;
                         continue;
                     }
 
                     if (locations[j].ValueExists("workdir"))
                     {
                         string fmt = locations[j].GetString("workdir").c_str();
-                        ploc->rest.workdir = create_location(fmt, ploc->mailbox.user, pitem->name, pitem->domainname, addr);
+                        loc.rest.workdir = create_location(fmt, loc.mailbox.user, item.name, item.domainname, addr);
                     }
                     else
-                        ploc->rest.workdir = create_location(defaults.UCDP_defaults.workdir, ploc->mailbox.user, pitem->name, pitem->domainname, addr);
+                        loc.rest.workdir = create_location(defaults.UCDP_defaults.workdir, loc.mailbox.user, item.name, item.domainname, addr);
                 }
 
-                pitem->locations.push_back(*ploc);
+                item.locations.push_back(loc);
             }
             else
-                cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring location in " << pitem->name << endl;
+                cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring location in " << item.name << endl;
         }
 
-        pitem->enabled = arr[i].GetBool("enabled");
-        config.push_back(*pitem);
+        item.enabled = arr[i].GetBool("enabled");
+        config.push_back(item);
     }
 }
 
