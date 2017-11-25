@@ -32,7 +32,8 @@
          "enabled"     : true,
          "locations"   : [ 
             { "mailbox" : true, "public" : true },
-            { "mailbox" : true, "public" : false, "user" : "paul" }
+            { "mailbox" : true, "public" : false, "user" : "paul" },
+            { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19" } 
          ]
       },
       {
