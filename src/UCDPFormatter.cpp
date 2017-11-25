@@ -24,9 +24,8 @@
 using namespace std;
 
 UCDPFormatter::UCDPFormatter(Aws::String dir) :
-    Formatter(dir)
+    Formatter(dir + "full/")
 {
-    // TODO Auto-generated constructor stub
 
 }
 

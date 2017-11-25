@@ -165,8 +165,8 @@ int main(int argc, char** argv)
                             // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
                             UCDPFormatter *ucdpfmt;
     
-                            Aws::String url = loc.destination.c_str();
-                            ucdpfmt = new UCDPFormatter(url);
+                            Aws::String workdir = loc.rest.workdir.c_str();
+                            ucdpfmt = new UCDPFormatter(workdir);
                             item.pdownl->addFormatter(ucdpfmt);
                             if (verbose)
                                 cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
