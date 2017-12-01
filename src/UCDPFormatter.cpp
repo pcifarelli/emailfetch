@@ -11,6 +11,7 @@
 #include <aws/s3/model/Object.h>
 #include <aws/s3/model/GetObjectRequest.h>
 #include <stdio.h>
+#include <iconv.h>
 #include <cstddef>
 #include <string>
 #include <iostream>
@@ -78,6 +79,39 @@ void UCDPFormatter::clean_up()
 
 }
 
+#define UTF8_MAX 6
+int UCDPFormatter::to_utf8(string charset, vector<unsigned char> &in, vector<unsigned char> &out)
+{
+    string chenc = str_toupper(charset);
+    size_t iconv_bytes_in = in.size(), iconv_bytes_out = in.size() * UTF8_MAX;
+
+    iconv_t cd = iconv_open("UTF-8", chenc.c_str());
+    if (cd == (iconv_t) -1)
+    {
+	cout << "ERROR opening iconv" << endl;
+	return -1;
+    }
+
+    char *pin = (char *) &in[0];
+    char *pout = (char *) malloc( UTF8_MAX * in.size() );
+    char *pout_iconv = pout;
+    int ret = iconv(cd, &pin, &iconv_bytes_in, &pout_iconv, &iconv_bytes_out);
+    if (ret == (size_t) -1)
+    {
+	cout << "Could not convert to " << charset << " to UTF-8" << endl;
+	return -1;
+    }
+    iconv_close(cd);
+    size_t cnvtd = (size_t) (pout_iconv - pout);
+
+    for (int i; i < cnvtd; i++)
+ 	out.insert(out.end(), pout[i]);
+
+    free(pout);
+
+    return 0;
+}
+
 // trim from start (in place)
 void UCDPFormatter::ltrim(string &s)
 {
@@ -110,6 +144,21 @@ string UCDPFormatter::strip_semi(string &s)
     c--;
     if (*c == ';')
         s.erase(c);
+
+    return s;
+}
+
+string UCDPFormatter::strip_quotes(string &s)
+{
+    // strip the quotes if there
+    auto c = s.cend();
+    c--;
+    if (*c == '\"')
+	s.erase(c);
+
+    c = s.cbegin();
+    if (*c == '\"')
+	s.erase(c);
 
     return s;
 }
@@ -274,6 +323,100 @@ int UCDPFormatter::scan_headers(const string fname, string &msgid, string &to, s
 
     infile.close();
     return 0;
+}
+
+void UCDPFormatter::base64_encode(vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
+{
+  BIO *bmem, *b64;
+  BUF_MEM *bptr;
+
+  b64 = BIO_new(BIO_f_base64());
+  bmem = BIO_new(BIO_s_mem());
+  b64 = BIO_push(b64, bmem);
+  BIO_write(b64, &input[0], input.size());
+  BIO_flush(b64);
+  BIO_get_mem_ptr(b64, &bptr);
+
+  for (int i; i < bptr->length; i++)
+      if (preserve_crlf || (bptr->data[i] != '\r' && bptr->data[i] != '\n'))
+	  output.insert(output.end(), bptr->data[i]);
+
+  BIO_free_all(b64);
+
+}
+
+void UCDPFormatter::base64_decode(vector<unsigned char> &input, vector<unsigned char> &output)
+{
+  BIO *b64, *bmem;
+  int length = input.size();
+
+  output.insert(output.end(), length, (char) 0);
+
+  b64 = BIO_new(BIO_f_base64());
+  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+  bmem = BIO_new_mem_buf(&input[0], length);
+  bmem = BIO_push(b64, bmem);
+
+  int i = 0;
+  if ( (i = BIO_read(bmem, &output[0], length)) <= 0)
+      cout << "base64 decode failed\n";
+  else
+      output.resize(i);
+
+  BIO_free_all(bmem);
+}
+
+string UCDPFormatter::str_tolower(string s)
+{
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return tolower(c); });
+    return s;
+}
+
+string UCDPFormatter::str_toupper(string s)
+{
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return toupper(c); });
+    return s;
+}
+
+bool UCDPFormatter::is_utf8(string charset)
+{
+    charset = str_tolower(charset);
+    return ( (charset == "utf8" || charset == "utf-8") );
+}
+
+void UCDPFormatter::read_ifstream1(ifstream &infile, vector<unsigned char> &rawbody)
+{
+    streamsize n2;
+    vector<unsigned char> buf2(1024);
+    do
+    {
+	if (buf2.size() < 1024)
+	    buf2.reserve(1024);
+        n2 = infile.readsome((char *) &buf2[0], 1024);
+	if (n2 < 1024)
+	    buf2.resize(n2);
+        rawbody.insert(rawbody.end(), buf2.begin(), buf2.end());
+    } while (infile.good() && n2);
+
+}
+
+void UCDPFormatter::read_ifstream(ifstream &infile, vector<unsigned char> &rawbody)
+{
+    string next;
+    while (infile.good())
+    {
+       getline(infile, next);
+       // chomp off any cr left over from windows text
+       auto c = next.cend();
+       c--;
+       if (*c == '\r')
+          next.erase(c);
+
+       if (!next.length())
+	   break;
+
+       rawbody.insert(rawbody.end(), next.cbegin(), next.cend());
+    }
 }
 
 string UCDPFormatter::escape_json(const string &s)
