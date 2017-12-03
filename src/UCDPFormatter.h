@@ -37,8 +37,11 @@ public:
         std::string &date, std::string &contenttype, std::string &boundary, std::string &charset, std::string &transferenc);
 
 private:
+    // reads to the end of file
     static void read_ifstream(std::ifstream &infile, std::vector<unsigned char> &rawbody);
-    static void read_ifstream1(std::ifstream &infile, std::vector<unsigned char> &rawbody);
+    // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
+    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary, std::vector<unsigned char> &rawbody);
+
     static inline bool is_utf8(std::string charset);
     static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
     static inline std::string str_tolower(std::string s);

@@ -88,24 +88,24 @@ int UCDPFormatter::to_utf8(string charset, vector<unsigned char> &in, vector<uns
     iconv_t cd = iconv_open("UTF-8", chenc.c_str());
     if (cd == (iconv_t) -1)
     {
-	cout << "ERROR opening iconv" << endl;
-	return -1;
+        cout << "ERROR opening iconv" << endl;
+        return -1;
     }
 
     char *pin = (char *) &in[0];
-    char *pout = (char *) malloc( UTF8_MAX * in.size() );
+    char *pout = (char *) malloc( UTF8_MAX * in.size());
     char *pout_iconv = pout;
     int ret = iconv(cd, &pin, &iconv_bytes_in, &pout_iconv, &iconv_bytes_out);
     if (ret == (size_t) -1)
     {
-	cout << "Could not convert to " << charset << " to UTF-8" << endl;
-	return -1;
+        cout << "Could not convert to " << charset << " to UTF-8" << endl;
+        return -1;
     }
     iconv_close(cd);
     size_t cnvtd = (size_t) (pout_iconv - pout);
 
     for (int i; i < cnvtd; i++)
- 	out.insert(out.end(), pout[i]);
+        out.insert(out.end(), pout[i]);
 
     free(pout);
 
@@ -154,11 +154,11 @@ string UCDPFormatter::strip_quotes(string &s)
     auto c = s.cend();
     c--;
     if (*c == '\"')
-	s.erase(c);
+        s.erase(c);
 
     c = s.cbegin();
     if (*c == '\"')
-	s.erase(c);
+        s.erase(c);
 
     return s;
 }
@@ -257,7 +257,8 @@ int UCDPFormatter::scan_headers(ifstream &infile, string &msgid, string &to, str
 
     bool last = false;
     while ((infile.good() || last)
-        && !(msgid.length() && to.length() && from.length() && subject.length() && date.length() && contenttype.length() && transferenc.length()))
+        && !(msgid.length() && to.length() && from.length() && subject.length() && date.length() && contenttype.length()
+            && transferenc.length()))
     {
         getline(infile, next);
 
@@ -327,82 +328,91 @@ int UCDPFormatter::scan_headers(const string fname, string &msgid, string &to, s
 
 void UCDPFormatter::base64_encode(vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
 {
-  BIO *bmem, *b64;
-  BUF_MEM *bptr;
+    BIO *bmem, *b64;
+    BUF_MEM *bptr;
 
-  b64 = BIO_new(BIO_f_base64());
-  bmem = BIO_new(BIO_s_mem());
-  b64 = BIO_push(b64, bmem);
-  BIO_write(b64, &input[0], input.size());
-  BIO_flush(b64);
-  BIO_get_mem_ptr(b64, &bptr);
+    b64 = BIO_new(BIO_f_base64());
+    bmem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, bmem);
+    BIO_write(b64, &input[0], input.size());
+    BIO_flush(b64);
+    BIO_get_mem_ptr(b64, &bptr);
 
-  for (int i; i < bptr->length; i++)
-      if (preserve_crlf || (bptr->data[i] != '\r' && bptr->data[i] != '\n'))
-	  output.insert(output.end(), bptr->data[i]);
+    for (int i; i < bptr->length; i++)
+        if (preserve_crlf || (bptr->data[i] != '\r' && bptr->data[i] != '\n'))
+            output.insert(output.end(), bptr->data[i]);
 
-  BIO_free_all(b64);
+    BIO_free_all(b64);
 
 }
 
 void UCDPFormatter::base64_decode(vector<unsigned char> &input, vector<unsigned char> &output)
 {
-  BIO *b64, *bmem;
-  int length = input.size();
+    BIO *b64, *bmem;
+    int length = input.size();
 
-  output.insert(output.end(), length, (char) 0);
+    output.insert(output.end(), length, (char) 0);
 
-  b64 = BIO_new(BIO_f_base64());
-  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-  bmem = BIO_new_mem_buf(&input[0], length);
-  bmem = BIO_push(b64, bmem);
+    b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    bmem = BIO_new_mem_buf(&input[0], length);
+    bmem = BIO_push(b64, bmem);
 
-  int i = 0;
-  if ( (i = BIO_read(bmem, &output[0], length)) <= 0)
-      cout << "base64 decode failed\n";
-  else
-      output.resize(i);
+    int i = 0;
+    if ((i = BIO_read(bmem, &output[0], length)) <= 0)
+        cout << "base64 decode failed\n";
+    else
+        output.resize(i);
 
-  BIO_free_all(bmem);
+    BIO_free_all(bmem);
 }
 
 string UCDPFormatter::str_tolower(string s)
 {
-    transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return tolower(c); });
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
+    {   return tolower(c);});
     return s;
 }
 
 string UCDPFormatter::str_toupper(string s)
 {
-    transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return toupper(c); });
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
+    {   return toupper(c);});
     return s;
 }
 
 bool UCDPFormatter::is_utf8(string charset)
 {
     charset = str_tolower(charset);
-    return ( (charset == "utf8" || charset == "utf-8") );
+    return ((charset == "utf8" || charset == "utf-8"));
 }
 
-void UCDPFormatter::read_ifstream1(ifstream &infile, vector<unsigned char> &rawbody)
+void UCDPFormatter::read_ifstream(ifstream &infile, vector<unsigned char> &rawbody)
 {
     streamsize n2;
     vector<unsigned char> buf2(1024);
     do
     {
-	if (buf2.size() < 1024)
-	    buf2.reserve(1024);
+        if (buf2.size() < 1024)
+            buf2.reserve(1024);
         n2 = infile.readsome((char *) &buf2[0], 1024);
-	if (n2 < 1024)
-	    buf2.resize(n2);
+        if (n2 < 1024)
+            buf2.resize(n2);
         rawbody.insert(rawbody.end(), buf2.begin(), buf2.end());
     } while (infile.good() && n2);
 
 }
 
-void UCDPFormatter::read_ifstream(ifstream &infile, vector<unsigned char> &rawbody)
+bool UCDPFormatter::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary, vector<unsigned char> &rawbody)
 {
-    string next;
+    string next, b = "^(--" + boundary + ")(.*)";
+    string prev_b  = "^(--" + prev_boundary + ")(.*)";
+    bool reached_prev_boundary = false;
+    regex e_b(b);
+    regex e_prev_b(prev_b);
+    smatch sm;
+    smatch psm;
+
     while (infile.good())
     {
        getline(infile, next);
@@ -412,11 +422,25 @@ void UCDPFormatter::read_ifstream(ifstream &infile, vector<unsigned char> &rawbo
        if (*c == '\r')
           next.erase(c);
 
-       if (!next.length())
+       regex_match(next, sm, e_b);
+       if (sm.size() > 0)
 	   break;
 
+       if (prev_boundary.length())
+       {
+	   regex_match(next, psm, e_prev_b);
+	   if (psm.size() > 0)
+	   {
+	       reached_prev_boundary = true;
+	       break;
+	   }
+       }
+
+       next.append("\r\n");
        rawbody.insert(rawbody.end(), next.cbegin(), next.cend());
     }
+
+    return reached_prev_boundary;
 }
 
 string UCDPFormatter::escape_json(const string &s)
