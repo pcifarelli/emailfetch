@@ -30,38 +30,7 @@ public:
     static std::string escape_json(const std::string &s);
     static std::string unescape_json(const std::string &s);
 
-    static int scan_headers(const std::string fname, std::string &msgid, std::string &to, std::string &from, std::string &subject,
-        std::string &date, std::string &contenttype, std::string &boundary, std::string &charset, std::string &transferenc);
-
-    static int scan_headers(std::ifstream &f, std::string &msgid, std::string &to, std::string &from, std::string &subject,
-        std::string &date, std::string &contenttype, std::string &boundary, std::string &charset, std::string &transferenc);
-
 private:
-    // reads to the end of file
-    static void read_ifstream(std::ifstream &infile, std::vector<unsigned char> &rawbody);
-    // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
-    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary, std::vector<unsigned char> &rawbody);
-
-    static inline bool is_utf8(std::string charset);
-    static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
-    static inline std::string str_tolower(std::string s);
-    static inline std::string str_toupper(std::string s);
-    static void base64_decode(std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static void base64_encode(std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
-    static inline void ltrim(std::string &s);
-    static inline void rtrim(std::string &s);
-    static inline void trim(std::string &s);
-    static inline std::string strip_semi(std::string &s);
-    static inline std::string strip_quotes(std::string &s);
-
-    static std::string extract_attr(std::string attr, std::string line);
-    static void extract_contentdisposition_elements(std::string s, std::string next, std::string &filename, std::string &cdate, std::string &mdate, int &sz);
-
-    static void extract_contenttype(std::string s, std::string next, std::string &contenttype, std::string &boundary,
-        std::string &charset);
-    static int scan_attachment_headers(std::ifstream &f, std::string &contenttype, std::string &boundary, std::string &charset,
-        std::string &transferenc, std::string &attachment_filename);
-
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
 };
