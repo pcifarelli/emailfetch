@@ -55,6 +55,8 @@ private:
     static inline std::string strip_quotes(std::string &s);
 
     static std::string extract_attr(std::string attr, std::string line);
+    static void extract_contentdisposition_elements(std::string s, std::string next, std::string &filename, std::string &cdate, std::string &mdate, int &sz);
+
     static void extract_contenttype(std::string s, std::string next, std::string &contenttype, std::string &boundary,
         std::string &charset);
     static int scan_attachment_headers(std::ifstream &f, std::string &contenttype, std::string &boundary, std::string &charset,

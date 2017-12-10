@@ -170,14 +170,15 @@ string UCDPFormatter::extract_attr(string attr, string line)
     int pos_cs = line.find(attr);
     if (pos_cs != string::npos)
     {
-        string subline;
-        subline = line.substr(pos_cs + attr.length());
+	string subline;
+	subline = line.substr(pos_cs + attr.length());
 
-        regex e("[; \t]");
-        smatch sm;
-        regex_search(subline, sm, e);
-        value = subline.substr(1, sm.position(0));
-        strip_semi(value);
+	regex e("[; \t]");
+	smatch sm;
+	regex_search(subline, sm, e);
+	value = subline.substr(1,sm.position(0));
+	strip_semi(value);
+	strip_quotes(value);
     }
 
     return value;
@@ -185,7 +186,7 @@ string UCDPFormatter::extract_attr(string attr, string line)
 
 void UCDPFormatter::extract_contenttype(string s, string next, string &contenttype, string &boundary, string &charset)
 {
-    regex e_contenttype("^(Content-Type:)(.*)");
+    regex e_contenttype ("^(Content-Type:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
     regex e_boundary2("^([a-zA-Z]+); (.*)");
     regex e_boundary3("^([ \t]*)(boundary=)\"(.*)\";?(.*)");
@@ -197,124 +198,205 @@ void UCDPFormatter::extract_contenttype(string s, string next, string &contentty
     regex_match(s, sm, e_contenttype);
     if (!contenttype.length() && sm.size() > 0)
     {
-        string ct = sm[2].str();
+	string ct = sm[2].str();
 
-        regex_match(ct, sm1, e_boundary1);
-        regex_match(next, sm_next, e_boundary3);
-        if (sm1.size() > 0)
-        {
-            string mpt = sm1[2].str();
-            regex_match(mpt, sm2, e_boundary2);
-            if (sm2.size())
-            {
-                smatch smb;
-                string b = sm2[2].str();
-                regex_match(b, smb, e_boundary3);
-                boundary = smb[3];
-                contenttype = "multipart/" + sm2[1].str();
-                charset = extract_attr("charset", b);
-            }
-            else if (sm_next.size())
-            {
-                boundary = sm_next[3];
-                contenttype = sm[2];
-            }
-        }
-        else
-            contenttype = sm[2];
+	regex_match(ct, sm1, e_boundary1);
+	regex_match(next, sm_next, e_boundary3);
+	if (sm1.size() > 0)
+	{
+	    string mpt = sm1[2].str();
+	    regex_match(mpt, sm2, e_boundary2);
+	    if (sm2.size())
+	    {
+		smatch smb;
+		string b = sm2[2].str();
+		regex_match(b, smb, e_boundary3);
+		boundary = smb[3];
+		contenttype = "multipart/" + sm2[1].str();
+		charset = extract_attr("charset", b);
 
-        if (!charset.length())
-            charset = extract_attr("charset", contenttype);
+	    }
+	    else if (sm_next.size())
+	    {
+		boundary = sm_next[3];
+		contenttype = sm[2];
+	    }
+	}
+	else
+	    contenttype = sm[2];
 
-        trim(contenttype);
+	if (!charset.length())
+	    charset = extract_attr("charset", contenttype);
 
-        regex e("[; \t]");
-        smatch sm;
-        regex_search(contenttype, sm, e);
-        if (sm.size())
-            contenttype = contenttype.substr(0, sm.position(0));
+	trim(contenttype);
 
-        strip_semi(contenttype);
+	regex e("[; \t]");
+	smatch sm;
+	regex_search(contenttype, sm, e);
+	if (sm.size())
+	    contenttype = contenttype.substr(0,sm.position(0));
+
+	strip_semi(contenttype);
     }
 }
 
-int UCDPFormatter::scan_attachment_headers(ifstream &f, string &contenttype, string &boundary, string &charset, string &transferenc,
-    string &attachment_filename)
+void UCDPFormatter::extract_contentdisposition_elements(string s, string next, string &filename, string &cdate, string &mdate, int &sz)
 {
-}
-
-int UCDPFormatter::scan_headers(ifstream &infile, string &msgid, string &to, string &from, string &subject, string &date,
-    string &contenttype, string &boundary, string &charset, string &transferenc)
-{
-    string prev = "", s = "", next = "";
-    regex e_msgid("^(Message-ID:).*<(.*)>(.*)");
-    regex e_to("^(To:)[ \t]*<?(.*)>?");
-    regex e_from("^(From:)[ \t]*<?(.*)>?");
-    regex e_subject("^(Subject:)(.*)");
-    regex e_date("^(Date:)(.*)");
-    regex e_trenc("^(Content-Transfer-Encoding:)(.*)");
+    regex e_filename ("^(.*)([ \t]*)(filename=)\"(.*)\";?(.*)");
+    regex e_size     ("^(.*)(size=)(.*);?(.*)");
+    regex e_ctime    ("^(.*)(creation-date=)\"(.*)\";?(.*)");
+    regex e_mtime    ("^(.*)(modification-date=)\"(.*)\";?(.*)");
     smatch sm;
 
-    bool last = false;
-    while ((infile.good() || last)
-        && !(msgid.length() && to.length() && from.length() && subject.length() && date.length() && contenttype.length()
-            && transferenc.length()))
+    string size;
+
+    regex_match(s, sm, e_filename);
+    if (sm.size() > 0)
+	filename = sm[4];
+
+    regex_match(s, sm, e_size);
+    if (sm.size() > 0)
     {
-        getline(infile, next);
+	size = sm[3];
+	strip_semi(size);
+	sz = stoi(size);
+    }
 
-        // chomp off any cr left over from windows text
-        auto c = next.cend();
-        c--;
-        if (*c == '\r')
-            next.erase(c);
+    regex_match(s, sm, e_ctime);
+    if (sm.size() > 0)
+	cdate = sm[3];
 
-        regex_match(s, sm, e_msgid);
-        if (!msgid.length() && sm.size() > 0)
-            msgid = sm[2];
+    regex_match(s, sm, e_mtime);
+    if (sm.size() > 0)
+	mdate = sm[3];
+}
 
-        regex_match(s, sm, e_to);
-        if (!to.length() && sm.size() > 0)
-            to = sm[2];
+int UCDPFormatter::scan_headers(ifstream &infile,
+		 string &msgid,
+		 string &to,
+		 string &from,
+		 string &subject,
+		 string &date,
+		 string &contenttype,
+		 string &boundary,
+		 string &charset,
+		 string &transferenc)
+{
+    string prev = "",s = "",next = "";
+    regex e_msgid       ("^(Message-ID:).*<(.*)>(.*)");
+    regex e_to          ("^(To:)[ \t]*<?(.*)>?");
+    regex e_from        ("^(From:)[ \t]*<?(.*)>?");
+    regex e_subject     ("^(Subject:)(.*)");
+    regex e_date        ("^(Date:)(.*)");
+    regex e_trenc       ("^(Content-Transfer-Encoding:)(.*)");
+    regex e_disp        ("^(Content-Disposition:)(.*)");
+    regex e_nexthdr     ("^([^ \t]+)(.*)");
+    smatch sm;
 
-        regex_match(s, sm, e_from);
-        if (!from.length() && sm.size() > 0)
-            from = sm[2];
+    string disp, att_filename, att_cdate, att_mdate;
+    int att_size;
+    bool in_content_disposition = false;
+    bool nexthdr = false;
 
-        regex_match(s, sm, e_subject);
-        if (!subject.length() && sm.size() > 0)
-            subject = sm[2];
+    bool last = false;
+    while ((infile.good() || last) && !(msgid.length() && to.length() && from.length() && subject.length() && date.length() && contenttype.length() && transferenc.length()))
+    {
+       getline(infile, next);
 
-        regex_match(s, sm, e_date);
-        if (!date.length() && sm.size() > 0)
-            date = sm[2];
+       // chomp off any cr left over from windows text
+       auto c = next.cend();
+       c--;
+       if (*c == '\r')
+          next.erase(c);
 
-        regex_match(s, sm, e_trenc);
-        if (!transferenc.length() && sm.size() > 0)
-        {
-            transferenc = sm[2];
-            trim(transferenc);
-        }
+       regex_match(s, sm, e_nexthdr);
+       if (sm.size() > 0)
+	   nexthdr = true;
 
-        extract_contenttype(s, next, contenttype, boundary, charset);
+       regex_match(s, sm, e_msgid);
+       if (!msgid.length() && sm.size() > 0)
+	   msgid = sm[2];
 
-        prev = s;
-        s = next;
-        if (!infile.good())
-        {
-            if (last)
-                last = false;
-            else
-                last = true;
-        }
+       regex_match(s, sm, e_to);
+       if (!to.length() && sm.size() > 0)
+	   to = sm[2];
 
-        if (!s.length()) // end of header section
-            break;
+       regex_match(s, sm, e_from);
+       if (!from.length() && sm.size() > 0)
+	   from = sm[2];
+
+       regex_match(s, sm, e_subject);
+       if (!subject.length() && sm.size() > 0)
+	   subject = sm[2];
+
+       regex_match(s, sm, e_date);
+       if (!date.length() && sm.size() > 0)
+	   date = sm[2];
+
+       regex_match(s, sm, e_trenc);
+       if (!transferenc.length() && sm.size() > 0)
+       {
+	   transferenc = sm[2];
+	   trim(transferenc);
+       }
+
+       extract_contenttype(s, next, contenttype, boundary, charset);
+
+       regex_match(s, sm, e_disp);
+       if (sm.size() > 0)
+       {
+	   string dtype, tmp;
+	   int pos_semi;
+	   regex e_dtype ("^(Content-Disposition:)([ \t]*)(.*);?(.*)");
+	   smatch smdt;
+
+	   regex_match(s, smdt, e_dtype);
+	   tmp = str_tolower(smdt[3].str());
+	   pos_semi = tmp.find(";");
+	   if (pos_semi != string::npos)
+	       dtype = tmp.substr(0, pos_semi);
+	   else
+	       dtype = tmp;
+
+	   if (dtype == "attachment")
+	   {
+	       in_content_disposition = true;
+	       extract_contentdisposition_elements(s, next, att_filename, att_cdate, att_mdate, att_size);
+	   }
+       }
+       else if (!nexthdr && s.size() && in_content_disposition)
+	   extract_contentdisposition_elements(s, next, att_filename, att_cdate, att_mdate, att_size);
+       else
+	   in_content_disposition = false;
+
+       nexthdr = false;
+
+       prev = s;
+       s = next;
+       if (!infile.good())
+       {
+	   if (last)
+	       last = false;
+	   else
+	       last = true;
+       }
+
+       if (!s.length()) // end of header section
+	   break;
     }
 
 }
 
-int UCDPFormatter::scan_headers(const string fname, string &msgid, string &to, string &from, string &subject, string &date,
-    string &contenttype, string &boundary, string &charset, string &transferenc)
+int UCDPFormatter::scan_headers(const string fname,
+		 string &msgid,
+		 string &to,
+		 string &from,
+		 string &subject,
+		 string &date,
+		 string &contenttype,
+		 string &boundary,
+		 string &charset,
+		 string &transferenc)
 {
     ifstream infile(fname, ifstream::in);
 
@@ -325,6 +407,7 @@ int UCDPFormatter::scan_headers(const string fname, string &msgid, string &to, s
     infile.close();
     return 0;
 }
+
 
 void UCDPFormatter::base64_encode(vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
 {
