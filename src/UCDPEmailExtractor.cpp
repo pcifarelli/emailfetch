@@ -529,7 +529,7 @@ int UCDPEmailExtractor::scan_headers(const string fname, string &msgid, string &
     return 0;
 }
 
-void UCDPEmailExtractor::base64_encode(vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
+void UCDPEmailExtractor::base64_encode(const vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
 {
     BIO *bmem, *b64;
     BUF_MEM *bptr;
@@ -549,7 +549,7 @@ void UCDPEmailExtractor::base64_encode(vector<unsigned char> &input, vector<unsi
 
 }
 
-void UCDPEmailExtractor::base64_decode(vector<unsigned char> &input, vector<unsigned char> &output)
+void UCDPEmailExtractor::base64_decode(const vector<unsigned char> &input, vector<unsigned char> &output)
 {
     BIO *b64, *bmem;
     int length = input.size();
@@ -570,17 +570,47 @@ void UCDPEmailExtractor::base64_decode(vector<unsigned char> &input, vector<unsi
     BIO_free_all(bmem);
 }
 
+void UCDPEmailExtractor::base64_decode(const string &input, string &output)
+{
+    vector<unsigned char> vinput(input.begin(), input.end());
+    vector<unsigned char> voutput;
+    base64_decode(vinput, voutput);
+    output.clear();
+    output.insert(output.end(), voutput.begin(), voutput.end());
+}
+
+void UCDPEmailExtractor::base64_encode(const string &input, string &output)
+{
+    vector<unsigned char> vinput(input.begin(), input.end());
+    vector<unsigned char> voutput;
+    base64_encode(vinput, voutput);
+    output.clear();
+    output.insert(output.end(), voutput.begin(), voutput.end());
+}
+
+void UCDPEmailExtractor::base64_decode(const string &input, vector<unsigned char> &output)
+{
+    vector<unsigned char> vinput(input.begin(), input.end());
+    base64_decode(vinput, output);
+}
+
+void UCDPEmailExtractor::base64_encode(const vector<unsigned char> &input, string &output)
+{
+    vector<unsigned char> voutput;
+    base64_decode(input, voutput);
+    output.clear();
+    output.insert(output.end(), voutput.begin(), voutput.end());
+}
+
 string UCDPEmailExtractor::str_tolower(string s)
 {
-    transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
-    {   return tolower(c);});
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return tolower(c); });
     return s;
 }
 
 string UCDPEmailExtractor::str_toupper(string s)
 {
-    transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
-    {   return toupper(c);});
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return toupper(c); });
     return s;
 }
 

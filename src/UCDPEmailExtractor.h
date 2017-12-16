@@ -81,6 +81,13 @@ public:
     BodyList &bodies()            { return m_bodies; }
     AttachmentList &attachments() { return m_attachments; }
 
+    static void base64_decode(const std::string                &input, std::string                &output);
+    static void base64_encode(const std::string                &input, std::string                &output);
+    static void base64_decode(const std::string                &input, std::vector<unsigned char> &output);
+    static void base64_encode(const std::vector<unsigned char> &input, std::string                &output);
+    static void base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
+    static void base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
+    
 private:
     std::string m_fullpath;
     std::string m_msgid;
@@ -136,8 +143,6 @@ private:
     static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
     static inline std::string str_tolower(std::string s);
     static inline std::string str_toupper(std::string s);
-    static void base64_decode(std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static void base64_encode(std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
     static inline void ltrim(std::string &s);
     static inline void rtrim(std::string &s);
     static inline void trim(std::string &s);
