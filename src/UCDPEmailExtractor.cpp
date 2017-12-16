@@ -29,9 +29,11 @@ UCDPEmailExtractor::UCDPEmailExtractor(const string fullpath) :
     m_fullpath(fullpath)
 {
     std::string boundary;
-
-    scan_headers(m_fullpath.c_str(), m_msgid, m_to, m_from, m_subject, m_date, m_contenttype, boundary, m_charset, m_transferenc);
-    save_parts(m_fullpath.c_str(), "./parts");
+    std::string contentdisposition;
+    Attachment att;
+    
+    scan_headers(m_fullpath.c_str(), m_msgid, m_to, m_from, m_subject, m_date, m_contenttype, boundary, m_charset, m_transferenc, contentdisposition, att);
+    save_parts(m_fullpath.c_str());
 }
 
 UCDPEmailExtractor::~UCDPEmailExtractor()
@@ -57,7 +59,8 @@ int UCDPEmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vecto
     int ret = iconv(cd, &pin, &iconv_bytes_in, &pout_iconv, &iconv_bytes_out);
     if (ret == (size_t) -1)
     {
-        cout << "Could not convert to " << charset << " to UTF-8" << endl;
+        cout << "Could not convert " << charset << " to UTF-8" << endl;
+	free (pout);
         return -1;
     }
     iconv_close(cd);
@@ -92,48 +95,56 @@ void UCDPEmailExtractor::transform_body(vector<unsigned char> &rawbody, string t
     body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 }
 
-bool UCDPEmailExtractor::extract_body(ifstream &infile, string transferenc, string &charset, string &body)
+bool UCDPEmailExtractor::extract_body(ifstream &infile, string contenttype, string transferenc, string &charset, string &body)
 {
     vector<unsigned char> rawbody;
 
     read_ifstream(infile, rawbody);
     body.clear();
 
-    transform_body(rawbody, transferenc, charset, body);
+    if (!contenttype.compare(0, 4, "text"))
+	transform_body(rawbody, transferenc, charset, body);
+    else
+	body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return false;
 }
 
-bool UCDPEmailExtractor::extract_body(ifstream &infile, string prev_boundary, string boundary, string transferenc, string &charset,
-    string &body)
+bool UCDPEmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc, string &charset, string &body)
 {
+    bool is_text = !contenttype.compare(0, 4, "text");
+    bool strip_crlf = (str_tolower(transferenc) == "base64");
     vector<unsigned char> rawbody;
     bool reached_prev_boundary;
 
-    cout << "EXTRACT_BODY, boundary=" << boundary << endl;
-    cout << "EXTRACT_BODY, prev_boundary=" << prev_boundary << endl;
-
     rawbody.clear();
-    reached_prev_boundary = read_ifstream_to_boundary(infile, prev_boundary, boundary, rawbody);
+    reached_prev_boundary = read_ifstream_to_boundary(infile, prev_boundary, boundary, rawbody, strip_crlf);
 
     body.clear();
-    if (rawbody.size())
+    if (rawbody.size() && is_text)
         transform_body(rawbody, transferenc, charset, body);
+    else
+	body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
-    cout << "EXTRACT_BODY, reached_prev_boundary=" << (reached_prev_boundary ? "TRUE" : "FALSE") << endl;
     return reached_prev_boundary;
 }
 
 int UCDPEmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttype, string &boundary, string &charset,
-    string &transferenc, string &attachment_filename)
+						string &transferenc, string &contentdisposition, Attachment &att)
 {
     string dummy;
-    string a_contenttype, a_boundary, a_charset, a_transferenc, a_attachment_filename;
+    string a_contenttype, a_boundary, a_charset, a_transferenc, a_contentdisposition;
+    Attachment a_att;
     contenttype.clear();
     boundary.clear();
     charset.clear();
     transferenc.clear();
-    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc);
+    contentdisposition.clear();
+    att.m_attachment_filename.clear();
+    att.m_creation_datetime.clear();
+    att.m_modification_datetime.clear();
+    att.m_size = 0;
+    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc, a_contentdisposition, a_att);
     if (a_contenttype.length())
         contenttype = a_contenttype;
     if (a_boundary.length())
@@ -142,79 +153,80 @@ int UCDPEmailExtractor::scan_attachment_headers(ifstream &infile, string &conten
         charset = a_charset;
     if (a_transferenc.length())
         transferenc = a_transferenc;
+    if (a_contentdisposition.length())
+    {
+	contentdisposition = a_contentdisposition;
+	if (str_tolower(contentdisposition) == "attachment")
+	    att = a_att;
+    }
 }
 
 bool UCDPEmailExtractor::extract_attachments(ifstream &infile, string prev_boundary, string contenttype, string boundary,
-    string charset, string transferenc)
+					     string charset, string transferenc)
 {
-    string body, a_contenttype = contenttype, a_boundary = boundary, a_charset = charset, a_transferenc = transferenc;
+    string a_contenttype = contenttype, a_boundary = boundary, a_charset = charset, a_transferenc = transferenc;
     bool reached_prev_boundary = false;
+    string contentdisposition = "";
+    Attachment att;
 
-    cout << "EXTRACTATTACHMENTS: PREV_BOUNDARY=" << prev_boundary << endl;
     while (infile.good() || reached_prev_boundary)
     {
         string a_filename;
 
-        reached_prev_boundary = extract_body(infile, prev_boundary, boundary, transferenc, charset, body);
-        cout << "NEW BODY: " << endl;
-        cout << body << endl;
+	if (str_tolower(contentdisposition) == "attachment")
+	{
+	    reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset, att.m_attachment);
+	    att.m_contenttype = a_contenttype;
+	    att.m_charset = a_charset;
+	    att.m_transferenc = a_transferenc;
+
+	    m_attachments.push_back(att);	    
+	}
+	else
+	{
+	    Body b;
+	    reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset, b.m_body);
+
+	    // if it has some size, it's not just a newline, and it's content type is not multipart, then we save it
+	    if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
+	    {
+		b.m_contenttype = a_contenttype;
+		b.m_charset = a_charset;
+		b.m_transferenc = a_transferenc;
+
+		m_bodies.push_back(b);
+	    }
+	}
+	
         if (reached_prev_boundary)
         {
             // we were extracting a subdocument
-            cout << "REACHED PREV BOUNDARY" << endl;
             return reached_prev_boundary;
         }
 
         // see if there are new headers to deal with
-        scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, a_filename);
-        cout << "HEADERS:=================================================================================================="
-            << endl;
-        cout << "HEADERS:=================================================================================================="
-            << endl;
-        cout << "HEADERS: contenttype=" << a_contenttype << endl;
-        cout << "HEADERS: a_boundary=" << a_boundary << endl;
-        cout << "HEADERS: charset=" << a_charset << endl;
-        cout << "HEADERS: prev_boundary=" << prev_boundary << endl;
-        cout << "HEADERS: boundary=" << boundary << endl;
-        cout << "HEADERS: transferenc=" << a_transferenc << endl;
+        scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentdisposition, att);
 
         if (a_boundary.length() && (a_boundary != boundary))
         {
-            cout << "*********************** EXTRACTING SUB-DOC" << endl;
             extract_attachments(infile, boundary, a_contenttype, a_boundary, a_charset, a_transferenc);
 
             // we returned because we reached the prev boundary, so we are possibly pointing to attchment headers, so check
-            scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, a_filename);
-            cout << "HEADERS:=================================================================================================="
-                << endl;
-            cout << "HEADERS:=================================================================================================="
-                << endl;
-            cout << "HEADERS: contenttype=" << a_contenttype << endl;
-            cout << "HEADERS: a_boundary=" << a_boundary << endl;
-            cout << "HEADERS: charset=" << a_charset << endl;
-            cout << "HEADERS: prev_boundary=" << prev_boundary << endl;
-            cout << "HEADERS: boundary=" << boundary << endl;
-            cout << "HEADERS: transferenc=" << a_transferenc << endl;
+            scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentdisposition, att);
         }
     }
 
     return reached_prev_boundary;
 }
 
-int UCDPEmailExtractor::save_parts(const string fname, const string savedir)
+int UCDPEmailExtractor::save_parts(const string fname)
 {
     ifstream infile(fname, ifstream::in);
-    string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc;
-    string body;
+    string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition;
+    Attachment att;
 
     // this version of scan_headers leaves the ifstream pointing to the first line after the header block
-    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc);
-
-    cout << "SAVE_PARTS: " << fname << endl;
-    cout << "SAVE_PARTS: " << subject << endl;
-    cout << "SAVE_PARTS: " << charset << endl;
-    cout << "SAVE_PARTS: " << contenttype << endl;
-    cout << "SAVE_PARTS: " << transferenc << endl;
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition, att);
 
     if (!contenttype.compare(0, 9, "multipart"))
     {
@@ -223,13 +235,15 @@ int UCDPEmailExtractor::save_parts(const string fname, const string savedir)
     }
     else
     {
+	Body b;
+	
         // simple email
-        extract_body(infile, transferenc, charset, body);
-        //cout << body << endl;
+        b.m_contenttype = contenttype;
+        b.m_charset = charset;
+	b.m_transferenc = transferenc;
+        extract_body(infile, contenttype, transferenc, charset, b.m_body);
+	m_bodies.push_back(b);
     }
-
-    //ofstream outfile;
-    //outfile.open(savedir + "body", ios::out | ios::binary);
 }
 
 // trim from start (in place)
@@ -393,7 +407,8 @@ void UCDPEmailExtractor::extract_contentdisposition_elements(string s, string ne
 }
 
 int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, string &from, string &subject, string &date,
-    string &contenttype, string &boundary, string &charset, string &transferenc)
+				     string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
+				     Attachment &att)
 {
     string prev = "", s = "", next = "";
     regex e_msgid("^(Message-ID:).*<(.*)>(.*)");
@@ -406,8 +421,6 @@ int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to
     regex e_nexthdr("^([^ \t]+)(.*)");
     smatch sm;
 
-    string disp, att_filename, att_cdate, att_mdate;
-    int att_size;
     bool in_content_disposition = false;
     bool nexthdr = false;
 
@@ -460,7 +473,7 @@ int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to
         regex_match(s, sm, e_disp);
         if (sm.size() > 0)
         {
-            string dtype, tmp;
+            string tmp;
             int pos_semi;
             regex e_dtype("^(Content-Disposition:)([ \t]*)(.*);?(.*)");
             smatch smdt;
@@ -469,18 +482,18 @@ int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to
             tmp = str_tolower(smdt[3].str());
             pos_semi = tmp.find(";");
             if (pos_semi != string::npos)
-                dtype = tmp.substr(0, pos_semi);
+                contentdisposition = tmp.substr(0, pos_semi);
             else
-                dtype = tmp;
+                contentdisposition = tmp;
 
-            if (dtype == "attachment")
+            if (contentdisposition == "attachment")
             {
                 in_content_disposition = true;
-                extract_contentdisposition_elements(s, next, att_filename, att_cdate, att_mdate, att_size);
+                extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime, att.m_modification_datetime, att.m_size);
             }
         }
         else if (!nexthdr && s.size() && in_content_disposition)
-            extract_contentdisposition_elements(s, next, att_filename, att_cdate, att_mdate, att_size);
+            extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime, att.m_modification_datetime, att.m_size);
         else
             in_content_disposition = false;
 
@@ -503,13 +516,14 @@ int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to
 }
 
 int UCDPEmailExtractor::scan_headers(const string fname, string &msgid, string &to, string &from, string &subject, string &date,
-    string &contenttype, string &boundary, string &charset, string &transferenc)
+				     string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
+				     Attachment &att)
 {
     ifstream infile(fname, ifstream::in);
 
     msgid = to = from = subject = date = contenttype = boundary = charset = transferenc = "";
 
-    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc);
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition, att);
 
     infile.close();
     return 0;
@@ -549,7 +563,7 @@ void UCDPEmailExtractor::base64_decode(vector<unsigned char> &input, vector<unsi
 
     int i = 0;
     if ((i = BIO_read(bmem, &output[0], length)) <= 0)
-        cout << "base64 decode failed\n";
+        cout << "base64 decode failed length=" << length << endl;
     else
         output.resize(i);
 
@@ -593,7 +607,7 @@ void UCDPEmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &
 }
 
 bool UCDPEmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
-    vector<unsigned char> &rawbody)
+						   vector<unsigned char> &rawbody, bool strip_crlf)
 {
     string next, b = "^(--" + boundary + ")(.*)";
     string prev_b = "^(--" + prev_boundary + ")(.*)";
@@ -625,8 +639,10 @@ bool UCDPEmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev
                 break;
             }
         }
-
-        next.append("\r\n");
+	
+	if (!strip_crlf)
+	    next.append("\r\n");
+	
         rawbody.insert(rawbody.end(), next.cbegin(), next.cend());
     }
 
