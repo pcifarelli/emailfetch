@@ -1,5 +1,5 @@
 /*
- * UCDPEmailExtractor.h
+ * EmailExtractor.h
  *
  *  Created on: Dec 10, 2017
  *      Author: paulc
@@ -9,8 +9,8 @@
  * extracts the whole email into memory, so be careful of huge attachments
  */
 
-#ifndef SRC_UCDPEMAILEXTRACTOR_H_
-#define SRC_UCDPEMAILEXTRACTOR_H_
+#ifndef SRC_EMAILEXTRACTOR_H_
+#define SRC_EMAILEXTRACTOR_H_
 
 #include <sstream>
 #include <iomanip>
@@ -18,11 +18,11 @@
 #include <list>
 #include <vector>
 
-class UCDPEmailExtractor
+class EmailExtractor
 {
 public:
-    UCDPEmailExtractor(std::string fullpath);
-    virtual ~UCDPEmailExtractor();
+    EmailExtractor(std::string fullpath);
+    virtual ~EmailExtractor();
 
     class Body
     {
@@ -38,7 +38,7 @@ public:
         std::string m_charset;
         std::string m_transferenc;
 
-	friend class UCDPEmailExtractor;
+	friend class EmailExtractor;
     };
     typedef std::list<Body> BodyList;
     class Attachment
@@ -63,7 +63,7 @@ public:
 	std::string m_transferenc;
         int m_size;
 
-	friend class UCDPEmailExtractor;
+	friend class EmailExtractor;
     };
     typedef std::list<Attachment> AttachmentList;
 
@@ -201,4 +201,4 @@ private:
 
 };
 
-#endif /* SRC_UCDPEMAILEXTRACTOR_H_ */
+#endif /* SRC_EMAILEXTRACTOR_H_ */

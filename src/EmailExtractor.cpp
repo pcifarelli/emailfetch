@@ -1,5 +1,5 @@
 /*
- * UCDPEmailExtractor.cpp
+ * EmailExtractor.cpp
  *
  *  Created on: Dec 10, 2017
  *      Author: paulc
@@ -21,11 +21,11 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-#include "UCDPEmailExtractor.h"
+#include "EmailExtractor.h"
 
 using namespace std;
 
-UCDPEmailExtractor::UCDPEmailExtractor(const string fullpath) :
+EmailExtractor::EmailExtractor(const string fullpath) :
     m_fullpath(fullpath)
 {
     std::string boundary;
@@ -36,12 +36,12 @@ UCDPEmailExtractor::UCDPEmailExtractor(const string fullpath) :
     save_parts(m_fullpath.c_str());
 }
 
-UCDPEmailExtractor::~UCDPEmailExtractor()
+EmailExtractor::~EmailExtractor()
 {
     // TODO Auto-generated destructor stub
 }
 
-int UCDPEmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<unsigned char> &out)
+int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<unsigned char> &out)
 {
     string chenc = str_toupper(charset);
     size_t iconv_bytes_in = in.size(), iconv_bytes_out = in.size() * UTF8_MAX;
@@ -74,7 +74,7 @@ int UCDPEmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vecto
     return 0;
 }
 
-void UCDPEmailExtractor::transform_body(vector<unsigned char> &rawbody, string transferenc, string &charset, string &body)
+void EmailExtractor::transform_body(vector<unsigned char> &rawbody, string transferenc, string &charset, string &body)
 {
     // convert everything to utf-8
     if (str_tolower(transferenc) == "base64" && !is_utf8(charset))
@@ -95,7 +95,7 @@ void UCDPEmailExtractor::transform_body(vector<unsigned char> &rawbody, string t
     body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 }
 
-bool UCDPEmailExtractor::extract_body(ifstream &infile, string contenttype, string transferenc, string &charset, string &body)
+bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string transferenc, string &charset, string &body)
 {
     vector<unsigned char> rawbody;
 
@@ -110,7 +110,7 @@ bool UCDPEmailExtractor::extract_body(ifstream &infile, string contenttype, stri
     return false;
 }
 
-bool UCDPEmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc, string &charset, string &body)
+bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc, string &charset, string &body)
 {
     bool is_text = !contenttype.compare(0, 4, "text");
     bool strip_crlf = (str_tolower(transferenc) == "base64");
@@ -129,7 +129,7 @@ bool UCDPEmailExtractor::extract_body(ifstream &infile, string contenttype, stri
     return reached_prev_boundary;
 }
 
-int UCDPEmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttype, string &boundary, string &charset,
+int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttype, string &boundary, string &charset,
 						string &transferenc, string &contentdisposition, Attachment &att)
 {
     string dummy;
@@ -161,7 +161,7 @@ int UCDPEmailExtractor::scan_attachment_headers(ifstream &infile, string &conten
     }
 }
 
-bool UCDPEmailExtractor::extract_attachments(ifstream &infile, string prev_boundary, string contenttype, string boundary,
+bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary, string contenttype, string boundary,
 					     string charset, string transferenc)
 {
     string a_contenttype = contenttype, a_boundary = boundary, a_charset = charset, a_transferenc = transferenc;
@@ -219,7 +219,7 @@ bool UCDPEmailExtractor::extract_attachments(ifstream &infile, string prev_bound
     return reached_prev_boundary;
 }
 
-int UCDPEmailExtractor::save_parts(const string fname)
+int EmailExtractor::save_parts(const string fname)
 {
     ifstream infile(fname, ifstream::in);
     string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition;
@@ -247,7 +247,7 @@ int UCDPEmailExtractor::save_parts(const string fname)
 }
 
 // trim from start (in place)
-void UCDPEmailExtractor::ltrim(string &s)
+void EmailExtractor::ltrim(string &s)
 {
     s.erase(s.begin(), find_if(s.begin(), s.end(), [](int ch)
     {
@@ -256,7 +256,7 @@ void UCDPEmailExtractor::ltrim(string &s)
 }
 
 // trim from end (in place)
-void UCDPEmailExtractor::rtrim(string &s)
+void EmailExtractor::rtrim(string &s)
 {
     s.erase(find_if(s.rbegin(), s.rend(), [](int ch)
     {
@@ -265,13 +265,13 @@ void UCDPEmailExtractor::rtrim(string &s)
 }
 
 // trim from both ends (in place)
-void UCDPEmailExtractor::trim(string &s)
+void EmailExtractor::trim(string &s)
 {
     ltrim(s);
     rtrim(s);
 }
 
-string UCDPEmailExtractor::strip_semi(string &s)
+string EmailExtractor::strip_semi(string &s)
 {
     // strip the semi-colon if its there
     auto c = s.cend();
@@ -282,7 +282,7 @@ string UCDPEmailExtractor::strip_semi(string &s)
     return s;
 }
 
-string UCDPEmailExtractor::strip_quotes(string &s)
+string EmailExtractor::strip_quotes(string &s)
 {
     // strip the quotes if there
     auto c = s.cend();
@@ -297,7 +297,7 @@ string UCDPEmailExtractor::strip_quotes(string &s)
     return s;
 }
 
-string UCDPEmailExtractor::extract_attr(string attr, string line)
+string EmailExtractor::extract_attr(string attr, string line)
 {
     string value = "";
 
@@ -318,7 +318,7 @@ string UCDPEmailExtractor::extract_attr(string attr, string line)
     return value;
 }
 
-void UCDPEmailExtractor::extract_contenttype(string s, string next, string &contenttype, string &boundary, string &charset)
+void EmailExtractor::extract_contenttype(string s, string next, string &contenttype, string &boundary, string &charset)
 {
     regex e_contenttype("^(Content-Type:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
@@ -374,7 +374,7 @@ void UCDPEmailExtractor::extract_contenttype(string s, string next, string &cont
     }
 }
 
-void UCDPEmailExtractor::extract_contentdisposition_elements(string s, string next, string &filename, string &cdate, string &mdate,
+void EmailExtractor::extract_contentdisposition_elements(string s, string next, string &filename, string &cdate, string &mdate,
     int &sz)
 {
     regex e_filename("^(.*)([ \t]*)(filename=)\"(.*)\";?(.*)");
@@ -406,7 +406,7 @@ void UCDPEmailExtractor::extract_contentdisposition_elements(string s, string ne
         mdate = sm[3];
 }
 
-int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, string &from, string &subject, string &date,
+int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, string &from, string &subject, string &date,
 				     string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
 				     Attachment &att)
 {
@@ -515,7 +515,7 @@ int UCDPEmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to
 
 }
 
-int UCDPEmailExtractor::scan_headers(const string fname, string &msgid, string &to, string &from, string &subject, string &date,
+int EmailExtractor::scan_headers(const string fname, string &msgid, string &to, string &from, string &subject, string &date,
 				     string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
 				     Attachment &att)
 {
@@ -529,7 +529,7 @@ int UCDPEmailExtractor::scan_headers(const string fname, string &msgid, string &
     return 0;
 }
 
-void UCDPEmailExtractor::base64_encode(const vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
+void EmailExtractor::base64_encode(const vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
 {
     BIO *bmem, *b64;
     BUF_MEM *bptr;
@@ -549,7 +549,7 @@ void UCDPEmailExtractor::base64_encode(const vector<unsigned char> &input, vecto
 
 }
 
-void UCDPEmailExtractor::base64_decode(const vector<unsigned char> &input, vector<unsigned char> &output)
+void EmailExtractor::base64_decode(const vector<unsigned char> &input, vector<unsigned char> &output)
 {
     BIO *b64, *bmem;
     int length = input.size();
@@ -570,7 +570,7 @@ void UCDPEmailExtractor::base64_decode(const vector<unsigned char> &input, vecto
     BIO_free_all(bmem);
 }
 
-void UCDPEmailExtractor::base64_decode(const string &input, string &output)
+void EmailExtractor::base64_decode(const string &input, string &output)
 {
     vector<unsigned char> vinput(input.begin(), input.end());
     vector<unsigned char> voutput;
@@ -579,7 +579,7 @@ void UCDPEmailExtractor::base64_decode(const string &input, string &output)
     output.insert(output.end(), voutput.begin(), voutput.end());
 }
 
-void UCDPEmailExtractor::base64_encode(const string &input, string &output)
+void EmailExtractor::base64_encode(const string &input, string &output)
 {
     vector<unsigned char> vinput(input.begin(), input.end());
     vector<unsigned char> voutput;
@@ -588,13 +588,13 @@ void UCDPEmailExtractor::base64_encode(const string &input, string &output)
     output.insert(output.end(), voutput.begin(), voutput.end());
 }
 
-void UCDPEmailExtractor::base64_decode(const string &input, vector<unsigned char> &output)
+void EmailExtractor::base64_decode(const string &input, vector<unsigned char> &output)
 {
     vector<unsigned char> vinput(input.begin(), input.end());
     base64_decode(vinput, output);
 }
 
-void UCDPEmailExtractor::base64_encode(const vector<unsigned char> &input, string &output)
+void EmailExtractor::base64_encode(const vector<unsigned char> &input, string &output)
 {
     vector<unsigned char> voutput;
     base64_decode(input, voutput);
@@ -602,25 +602,25 @@ void UCDPEmailExtractor::base64_encode(const vector<unsigned char> &input, strin
     output.insert(output.end(), voutput.begin(), voutput.end());
 }
 
-string UCDPEmailExtractor::str_tolower(string s)
+string EmailExtractor::str_tolower(string s)
 {
     transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return tolower(c); });
     return s;
 }
 
-string UCDPEmailExtractor::str_toupper(string s)
+string EmailExtractor::str_toupper(string s)
 {
     transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return toupper(c); });
     return s;
 }
 
-bool UCDPEmailExtractor::is_utf8(string charset)
+bool EmailExtractor::is_utf8(string charset)
 {
     charset = str_tolower(charset);
     return ((charset == "utf8" || charset == "utf-8"));
 }
 
-void UCDPEmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &rawbody)
+void EmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &rawbody)
 {
     streamsize n2;
     vector<unsigned char> buf2(1024);
@@ -636,7 +636,7 @@ void UCDPEmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &
 
 }
 
-bool UCDPEmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
+bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
 						   vector<unsigned char> &rawbody, bool strip_crlf)
 {
     string next, b = "^(--" + boundary + ")(.*)";
