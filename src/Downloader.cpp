@@ -170,7 +170,6 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
 
     DIR *dir;
     struct dirent *ent;
-    struct dirent entry;
     struct stat fstats;
     std::string fname;
     std::string fullpath;
@@ -184,7 +183,8 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
     {
         do
         {
-            readdir_r(dir, &entry, &ent);
+            // funny, readdir_r is deprecated, and readdir reentrant in modern implementations.  who knew
+            ent = readdir(dir);
             if (ent)
             {
                 fname = ent->d_name;
