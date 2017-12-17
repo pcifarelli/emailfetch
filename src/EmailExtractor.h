@@ -67,63 +67,26 @@ public:
     };
     typedef std::list<Attachment> AttachmentList;
 
-    const std::string &msgid()
-    {
-        return m_msgid;
-    }
-    const std::string &to()
-    {
-        return m_to;
-    }
-    const std::string &from()
-    {
-        return m_from;
-    }
-    const std::string &subject()
-    {
-        return m_subject;
-    }
-    const std::string &date()
-    {
-        return m_date;
-    }
-    const std::string &contenttype()
-    {
-        return m_contenttype;
-    }
-    const std::string &charset()
-    {
-        return m_charset;
-    }
-    const std::string &transferenc()
-    {
-        return m_transferenc;
-    }
+    const std::string &msgid();
+    const std::string &to();
+    const std::string &from();
+    const std::string &subject();
+    const std::string &date();
+    const std::string &contenttype();
+    const std::string &charset();
+    const std::string &transferenc();
 
-    int num_bodies() const
-    {
-        return m_bodies.size();
-    }
-    int num_attachments() const
-    {
-        return m_attachments.size();
-    }
-    BodyList &bodies()
-    {
-        return m_bodies;
-    }
-    AttachmentList &attachments()
-    {
-        return m_attachments;
-    }
+    int num_bodies() const;
+    int num_attachments() const;
+    BodyList &bodies();
+    AttachmentList &attachments();
 
     static void base64_decode(const std::string &input, std::string &output);
     static void base64_encode(const std::string &input, std::string &output);
     static void base64_decode(const std::string &input, std::vector<unsigned char> &output);
     static void base64_encode(const std::vector<unsigned char> &input, std::string &output);
     static void base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static void base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf =
-        false);
+    static void base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
 
 private:
     std::string m_fullpath;

@@ -25,6 +25,7 @@
 
 using namespace std;
 
+// accessors
 const string &EmailExtractor::Body::body()
 {
     return m_body;
@@ -73,6 +74,56 @@ const string &EmailExtractor::Attachment::transferenc()
 const int EmailExtractor::Attachment::size()
 {
     return m_size;
+}
+
+const string &EmailExtractor::msgid()
+{
+    return m_msgid;
+}
+const string &EmailExtractor::to()
+{
+    return m_to;
+}
+const string &EmailExtractor::from()
+{
+    return m_from;
+}
+const string &EmailExtractor::subject()
+{
+    return m_subject;
+}
+const string &EmailExtractor::date()
+{
+    return m_date;
+}
+const string &EmailExtractor::contenttype()
+{
+    return m_contenttype;
+}
+const string &EmailExtractor::charset()
+{
+    return m_charset;
+}
+const string &EmailExtractor::transferenc()
+{
+    return m_transferenc;
+}
+
+int EmailExtractor::num_bodies() const
+{
+    return m_bodies.size();
+}
+int EmailExtractor::num_attachments() const
+{
+    return m_attachments.size();
+}
+EmailExtractor::BodyList &EmailExtractor::bodies()
+{
+    return m_bodies;
+}
+EmailExtractor::AttachmentList &EmailExtractor::attachments()
+{
+    return m_attachments;
 }
 
 EmailExtractor::EmailExtractor(const string fullpath) :
