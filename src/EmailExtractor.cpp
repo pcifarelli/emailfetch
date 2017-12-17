@@ -25,14 +25,65 @@
 
 using namespace std;
 
+const string &EmailExtractor::Body::body()
+{
+    return m_body;
+}
+const string &EmailExtractor::Body::contenttype()
+{
+    return m_contenttype;
+}
+const string &EmailExtractor::Body::charset()
+{
+    return m_charset;
+}
+const string &EmailExtractor::Body::transferenc()
+{
+    return m_transferenc;
+}
+
+const string &EmailExtractor::Attachment::attachment()
+{
+    return m_attachment;
+}
+const string &EmailExtractor::Attachment::filename()
+{
+    return m_attachment_filename;
+}
+const string &EmailExtractor::Attachment::creation_time()
+{
+    return m_creation_datetime;
+}
+const string &EmailExtractor::Attachment::modification_time()
+{
+    return m_creation_datetime;
+}
+const string &EmailExtractor::Attachment::contenttype()
+{
+    return m_contenttype;
+}
+const string &EmailExtractor::Attachment::charset()
+{
+    return m_charset;
+}
+const string &EmailExtractor::Attachment::transferenc()
+{
+    return m_transferenc;
+}
+const int EmailExtractor::Attachment::size()
+{
+    return m_size;
+}
+
 EmailExtractor::EmailExtractor(const string fullpath) :
     m_fullpath(fullpath)
 {
     std::string boundary;
     std::string contentdisposition;
     Attachment att;
-    
-    scan_headers(m_fullpath.c_str(), m_msgid, m_to, m_from, m_subject, m_date, m_contenttype, boundary, m_charset, m_transferenc, contentdisposition, att);
+
+    scan_headers(m_fullpath.c_str(), m_msgid, m_to, m_from, m_subject, m_date, m_contenttype, boundary, m_charset, m_transferenc,
+        contentdisposition, att);
     save_parts(m_fullpath.c_str());
 }
 
@@ -60,7 +111,7 @@ int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<un
     if (ret == (size_t) -1)
     {
         cout << "Could not convert " << charset << " to UTF-8" << endl;
-	free (pout);
+        free(pout);
         return -1;
     }
     iconv_close(cd);
@@ -103,14 +154,15 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string t
     body.clear();
 
     if (!contenttype.compare(0, 4, "text"))
-	transform_body(rawbody, transferenc, charset, body);
+        transform_body(rawbody, transferenc, charset, body);
     else
-	body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
+        body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return false;
 }
 
-bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc, string &charset, string &body)
+bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc,
+    string &charset, string &body)
 {
     bool is_text = !contenttype.compare(0, 4, "text");
     bool strip_crlf = (str_tolower(transferenc) == "base64");
@@ -124,13 +176,13 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string p
     if (rawbody.size() && is_text)
         transform_body(rawbody, transferenc, charset, body);
     else
-	body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
+        body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return reached_prev_boundary;
 }
 
 int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttype, string &boundary, string &charset,
-						string &transferenc, string &contentdisposition, Attachment &att)
+    string &transferenc, string &contentdisposition, Attachment &att)
 {
     string dummy;
     string a_contenttype, a_boundary, a_charset, a_transferenc, a_contentdisposition;
@@ -144,7 +196,8 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttyp
     att.m_creation_datetime.clear();
     att.m_modification_datetime.clear();
     att.m_size = 0;
-    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc, a_contentdisposition, a_att);
+    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc,
+        a_contentdisposition, a_att);
     if (a_contenttype.length())
         contenttype = a_contenttype;
     if (a_boundary.length())
@@ -155,14 +208,14 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttyp
         transferenc = a_transferenc;
     if (a_contentdisposition.length())
     {
-	contentdisposition = a_contentdisposition;
-	if (str_tolower(contentdisposition) == "attachment")
-	    att = a_att;
+        contentdisposition = a_contentdisposition;
+        if (str_tolower(contentdisposition) == "attachment")
+            att = a_att;
     }
 }
 
 bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary, string contenttype, string boundary,
-					     string charset, string transferenc)
+    string charset, string transferenc)
 {
     string a_contenttype = contenttype, a_boundary = boundary, a_charset = charset, a_transferenc = transferenc;
     bool reached_prev_boundary = false;
@@ -173,31 +226,33 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
     {
         string a_filename;
 
-	if (str_tolower(contentdisposition) == "attachment")
-	{
-	    reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset, att.m_attachment);
-	    att.m_contenttype = a_contenttype;
-	    att.m_charset = a_charset;
-	    att.m_transferenc = a_transferenc;
+        if (str_tolower(contentdisposition) == "attachment")
+        {
+            reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset,
+                att.m_attachment);
+            att.m_contenttype = a_contenttype;
+            att.m_charset = a_charset;
+            att.m_transferenc = a_transferenc;
 
-	    m_attachments.push_back(att);	    
-	}
-	else
-	{
-	    Body b;
-	    reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset, b.m_body);
+            m_attachments.push_back(att);
+        }
+        else
+        {
+            Body b;
+            reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset,
+                b.m_body);
 
-	    // if it has some size, it's not just a newline, and it's content type is not multipart, then we save it
-	    if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
-	    {
-		b.m_contenttype = a_contenttype;
-		b.m_charset = a_charset;
-		b.m_transferenc = a_transferenc;
+            // if it has some size, it's not just a newline, and it's content type is not multipart, then we save it
+            if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
+            {
+                b.m_contenttype = a_contenttype;
+                b.m_charset = a_charset;
+                b.m_transferenc = a_transferenc;
 
-		m_bodies.push_back(b);
-	    }
-	}
-	
+                m_bodies.push_back(b);
+            }
+        }
+
         if (reached_prev_boundary)
         {
             // we were extracting a subdocument
@@ -235,14 +290,14 @@ int EmailExtractor::save_parts(const string fname)
     }
     else
     {
-	Body b;
-	
+        Body b;
+
         // simple email
         b.m_contenttype = contenttype;
         b.m_charset = charset;
-	b.m_transferenc = transferenc;
+        b.m_transferenc = transferenc;
         extract_body(infile, contenttype, transferenc, charset, b.m_body);
-	m_bodies.push_back(b);
+        m_bodies.push_back(b);
     }
 }
 
@@ -407,8 +462,8 @@ void EmailExtractor::extract_contentdisposition_elements(string s, string next, 
 }
 
 int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, string &from, string &subject, string &date,
-				     string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
-				     Attachment &att)
+    string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
+    Attachment &att)
 {
     string prev = "", s = "", next = "";
     regex e_msgid("^(Message-ID:).*<(.*)>(.*)");
@@ -489,11 +544,13 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
             if (contentdisposition == "attachment")
             {
                 in_content_disposition = true;
-                extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime, att.m_modification_datetime, att.m_size);
+                extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime,
+                    att.m_modification_datetime, att.m_size);
             }
         }
         else if (!nexthdr && s.size() && in_content_disposition)
-            extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime, att.m_modification_datetime, att.m_size);
+            extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime,
+                att.m_modification_datetime, att.m_size);
         else
             in_content_disposition = false;
 
@@ -516,8 +573,8 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
 }
 
 int EmailExtractor::scan_headers(const string fname, string &msgid, string &to, string &from, string &subject, string &date,
-				     string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
-				     Attachment &att)
+    string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
+    Attachment &att)
 {
     ifstream infile(fname, ifstream::in);
 
@@ -604,13 +661,15 @@ void EmailExtractor::base64_encode(const vector<unsigned char> &input, string &o
 
 string EmailExtractor::str_tolower(string s)
 {
-    transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return tolower(c); });
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
+    {   return tolower(c);});
     return s;
 }
 
 string EmailExtractor::str_toupper(string s)
 {
-    transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return toupper(c); });
+    transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
+    {   return toupper(c);});
     return s;
 }
 
@@ -637,7 +696,7 @@ void EmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &rawb
 }
 
 bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
-						   vector<unsigned char> &rawbody, bool strip_crlf)
+    vector<unsigned char> &rawbody, bool strip_crlf)
 {
     string next, b = "^(--" + boundary + ")(.*)";
     string prev_b = "^(--" + prev_boundary + ")(.*)";
@@ -669,10 +728,10 @@ bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_bou
                 break;
             }
         }
-	
-	if (!strip_crlf)
-	    next.append("\r\n");
-	
+
+        if (!strip_crlf)
+            next.append("\r\n");
+
         rawbody.insert(rawbody.end(), next.cbegin(), next.cend());
     }
 

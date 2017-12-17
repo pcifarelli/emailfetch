@@ -43,8 +43,8 @@ void term_sigaction(int signo, siginfo_t *sinfo, void *arg);
 void usage()
 {
     cout << "Usage: emailfetch [-f <config file>] [-vN] [-h]" << endl
-       << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
-       << "         -vN\t\t\tverbose output level, N=1,2 or 3" << endl << "         -h\t\t\tthis help" << endl;
+        << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
+        << "         -vN\t\t\tverbose output level, N=1,2 or 3" << endl << "         -h\t\t\tthis help" << endl;
     exit(0);
 }
 
@@ -61,17 +61,17 @@ int main(int argc, char** argv)
             config_file = optarg;
             break;
         case 'v':
-            if (!strncmp(optarg,"1",1))
+            if (!strncmp(optarg, "1", 1))
                 verbose = 1;
-            else if (!strncmp(optarg,"2",1))
+            else if (!strncmp(optarg, "2", 1))
                 verbose = 2;
-            else if (!strncmp(optarg,"3",1))
+            else if (!strncmp(optarg, "3", 1))
                 verbose = 3;
             else
                 usage();
             break;
         case 'h':
-        default:
+            default:
             usage();
         }
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     SDKOptions options;
     InitAPI(options);
     {
-        S3Downloader::FormatterList     fmtlist;
+        S3Downloader::FormatterList fmtlist;
 
         for (auto &item : mailboxconfig)
         {
@@ -146,34 +146,35 @@ int main(int argc, char** argv)
                 {
                     switch (loc.type)
                     {
-                        case NONSLOT:
+                    case NONSLOT:
                         {
-                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
-                            // a "MaildirFormatter" saves emails in maildir format to be served via imap
-                            MaildirFormatter *mailfmt;
+                        // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                        // a "MaildirFormatter" saves emails in maildir format to be served via imap
+                        MaildirFormatter *mailfmt;
 
-                            Aws::String dir = loc.destination.c_str();
-                            mailfmt = new MaildirFormatter(dir);
-                            item.pdownl->addFormatter(mailfmt);
-                            if (verbose)
-                                cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
-                        }
+                        Aws::String dir = loc.destination.c_str();
+                        mailfmt = new MaildirFormatter(dir);
+                        item.pdownl->addFormatter(mailfmt);
+                        if (verbose)
+                            cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                    }
                         break;
-                        case SLOT:
+                    case SLOT:
                         {
-                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
-                            // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
-                            UCDPFormatter *ucdpfmt;
-    
-                            Aws::String workdir = loc.rest.workdir.c_str();
-                            ucdpfmt = new UCDPFormatter(workdir);
-                            item.pdownl->addFormatter(ucdpfmt);
-                            if (verbose)
-                                cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
-                        }
+                        // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                        // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
+                        UCDPFormatter *ucdpfmt;
+
+                        Aws::String workdir = loc.rest.workdir.c_str();
+                        ucdpfmt = new UCDPFormatter(workdir);
+                        item.pdownl->addFormatter(ucdpfmt);
+                        if (verbose)
+                            cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                    }
                         break;
-                        default:
-                            cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
+                    default:
+                        cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring"
+                            << endl;
                     }
                 }
                 // start the thread
@@ -215,5 +216,4 @@ void term_sigaction(int signo, siginfo_t *, void *)
 {
     quittin_time = true;
 }
-
 

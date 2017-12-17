@@ -46,7 +46,8 @@ Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket
     addFormatter(fmt);
 }
 
-Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist, int verbose) :
+Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, S3Downloader::FormatterList &fmtlist,
+    int verbose) :
     m_days(days), m_topic_arn(topic_arn), m_bucket_name(bucket_name), m_verbose(verbose)
 {
     init();
@@ -54,7 +55,7 @@ Downloader::Downloader(const int days, Aws::String topic_arn, Aws::String bucket
         addFormatter(fmt);
 }
 
-void Downloader::addFormatter( Formatter *fmt )
+void Downloader::addFormatter(Formatter *fmt)
 {
     Tracker *pt = new Tracker;
     pt->fmt = fmt;
@@ -150,7 +151,8 @@ void Downloader::saveNewObjects(Tracker &trkr)
                     //std::cout << "saving object from s3" << std::endl;
                     s3accessor.objSaveAs(s3_object, *trkr.fmt);
                     std::string fullpath = dirname + fname;
-                    FileTracker ft = { fullpath, ts };
+                    FileTracker ft =
+                    { fullpath, ts };
 
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                     trkr.filemap->insert(hashent);
@@ -198,7 +200,7 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
                             Aws::String name = fname.c_str();
                             Aws::String key = fmt.getKey(name);
                             FileTracker ft =
-                            { fullpath, fstats.st_mtim.tv_sec };
+                                { fullpath, fstats.st_mtim.tv_sec };
 
                             std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                             filemap->insert(hashent);

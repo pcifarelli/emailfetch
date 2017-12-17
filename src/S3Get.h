@@ -35,7 +35,10 @@ public:
     S3Get(Aws::String b_name, Aws::String access_id, Aws::String secret_key, unsigned int timeout = 30000);
     virtual ~S3Get();
 
-    Aws::String bucketName() const { return m_bucket_name; }
+    Aws::String bucketName() const
+    {
+        return m_bucket_name;
+    }
     void listBuckets(void) const;
     void listObjects(void) const;
     void saveObjects(Formatter &fmtr);

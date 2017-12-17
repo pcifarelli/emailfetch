@@ -24,11 +24,13 @@ namespace S3Downloader
 
 mode_t Formatter::m_newdirs_mode = 0700;
 
-Formatter::Formatter() : m_dir(""), m_local_file(NULL), m_fullpath("")
+Formatter::Formatter() :
+    m_dir(""), m_local_file(NULL), m_fullpath("")
 {
 }
 
-Formatter::Formatter(Aws::String dir) : m_dir(dir), m_local_file(NULL), m_fullpath("")
+Formatter::Formatter(Aws::String dir) :
+    m_dir(dir), m_local_file(NULL), m_fullpath("")
 {
     mkdirs(m_dir.c_str(), m_newdirs_mode);
 }
@@ -45,7 +47,7 @@ void Formatter::close()
 }
 
 std::string Formatter::mkname(const Aws::S3::Model::Object obj) const
-{
+    {
     return obj.GetKey().c_str();
 }
 
@@ -75,7 +77,7 @@ Aws::OStream &Formatter::getStream(void *buf, size_t sz)
 }
 
 Aws::String Formatter::getKey(Aws::String filename) const
-{
+    {
     return filename;
 }
 
@@ -120,7 +122,6 @@ int Formatter::mkdirs(std::string dirname, mode_t mode)
     }
     return 0;
 }
-
 
 }
 

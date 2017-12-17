@@ -31,24 +31,24 @@ using namespace std;
 using namespace Aws;
 
 struct program_defaults defaults =
-{
-   5000,
-   5000,
-   {
-       "./mail/.%f",
-       "./mail/%d/%u@%d/"
-   },
-   {
-       "./mail/slot/%f",
-       8301,
-       "eapfastemail.ucdp.thomsonreuters.com",
-       "./cfg/ucdp_eapfastemail.pem",
-       "password",
-       "eapfastemail",
-       "news_eapfe",
-       "EmailML"
-   }
-};
+    {
+        5000,
+        5000,
+        {
+            "./mail/.%f",
+            "./mail/%d/%u@%d/"
+        },
+        {
+            "./mail/slot/%f",
+            8301,
+            "eapfastemail.ucdp.thomsonreuters.com",
+            "./cfg/ucdp_eapfastemail.pem",
+            "password",
+            "eapfastemail",
+            "news_eapfe",
+            "EmailML"
+        }
+    };
 
 void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults)
 {
@@ -262,7 +262,9 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                             }
                             else
                             {
-                                cout << "CONFIG: Error: Unable to find user or workdir element for mailbox location - ignoring this location" << endl;
+                                cout
+                                    << "CONFIG: Error: Unable to find user or workdir element for mailbox location - ignoring this location"
+                                    << endl;
                                 continue;
                             }
                         }
@@ -287,7 +289,7 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
 
                         // extract the ip or host from the url, for substitutions
                         std::smatch sm;
-                        std::regex e_addr   ("^(http[s]?:)//([^/]+)/(.*)");
+                        std::regex e_addr("^(http[s]?:)//([^/]+)/(.*)");
                         std::regex_match(loc.destination, sm, e_addr);
                         if (sm.size() > 0)
                             addr = sm[2];
@@ -330,7 +332,8 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     }
                     else
                     {
-                        cout << "CONFIG: Error: no URL or IP/HOST/PORT specified for REST destination - ignoring location in " << item.name << endl;
+                        cout << "CONFIG: Error: no URL or IP/HOST/PORT specified for REST destination - ignoring location in "
+                            << item.name << endl;
                         continue;
                     }
 
@@ -340,13 +343,15 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                         loc.rest.workdir = create_location(fmt, loc.mailbox.user, item.name, item.domainname, addr);
                     }
                     else
-                        loc.rest.workdir = create_location(defaults.UCDP_defaults.workdir, loc.mailbox.user, item.name, item.domainname, addr);
+                        loc.rest.workdir = create_location(defaults.UCDP_defaults.workdir, loc.mailbox.user, item.name,
+                            item.domainname, addr);
                 }
 
                 item.locations.push_back(loc);
             }
             else
-                cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring location in " << item.name << endl;
+                cout << "CONFIG: Error: required element \"mailbox\" boolean element not specified - ignoring location in "
+                    << item.name << endl;
         }
 
         item.enabled = arr[i].GetBool("enabled");

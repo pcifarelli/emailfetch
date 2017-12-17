@@ -14,8 +14,8 @@
 #include <iostream>
 #include "MaildirDownloader.h"
 
-
-MaildirDownloader::MaildirDownloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name, MaildirFormatter &fmt) :
+MaildirDownloader::MaildirDownloader(const Aws::String dir, const int days, Aws::String topic_arn, Aws::String bucket_name,
+    MaildirFormatter &fmt) :
     Downloader(dir + "/cur", days, topic_arn, bucket_name, fmt)
 {
 }

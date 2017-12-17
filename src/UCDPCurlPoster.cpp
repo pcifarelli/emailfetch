@@ -24,22 +24,22 @@ namespace S3Downloader
 
 UCDPCurlPoster::UCDPCurlPoster(std::string url, bool chunked) :
     m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
-    m_trclientid(""), m_trfeedid(""), m_trmessagetype("")
+        m_trclientid(""), m_trfeedid(""), m_trmessagetype("")
 {
     init();
 }
 
 UCDPCurlPoster::UCDPCurlPoster(string ip,
-                               string certificate,
-                               string password,
-                               string hostname,
-                               unsigned short port,
-                               bool chunked,
-                               std::string trclientid,
-                               std::string trfeedid,
-                               std::string trmessagetype) :
+    string certificate,
+    string password,
+    string hostname,
+    unsigned short port,
+    bool chunked,
+    std::string trclientid,
+    std::string trfeedid,
+    std::string trmessagetype) :
     m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
-    m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype)
+        m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype)
 {
     init();
     set_ServerNameIndication(hostname, port, ip);
@@ -145,7 +145,6 @@ void UCDPCurlPoster::init()
 
     }
 }
-
 
 void UCDPCurlPoster::setHeaders(long msglength, int messageprio, std::string trmessageid)
 {

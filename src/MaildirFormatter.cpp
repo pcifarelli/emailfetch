@@ -19,7 +19,8 @@
 
 unsigned int MaildirFormatter::m_q_sequence = 0;
 
-MaildirFormatter::MaildirFormatter(Aws::String dir) : Formatter(dir), m_isopen(false)
+MaildirFormatter::MaildirFormatter(Aws::String dir) :
+    Formatter(dir), m_isopen(false)
 {
     char host[NI_MAXHOST];
 
@@ -66,9 +67,10 @@ void MaildirFormatter::close_and_rename()
             int lerrno = errno;
             char buf[1024], *p;
             if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
-                std::cout << "Error: Failed to rename file " << m_name << " to maildir new directory (" << p << ")"  << std::endl;
+                std::cout << "Error: Failed to rename file " << m_name << " to maildir new directory (" << p << ")" << std::endl;
             else
-                std::cout << "Error: Failed to rename file " << m_name << " to maildir new directory (" << lerrno << ")"  << std::endl;
+                std::cout << "Error: Failed to rename file " << m_name << " to maildir new directory (" << lerrno << ")"
+                    << std::endl;
 
             std::cout << "  From: " << tmppath << std::endl;
             std::cout << "  To:   " << newpath << std::endl;
@@ -95,7 +97,7 @@ void MaildirFormatter::clean_up()
 }
 
 Aws::String MaildirFormatter::getKey(Aws::String filename) const
-{
+    {
     Aws::String hash;
     extractHash(filename, hash);
     return hash;
@@ -134,9 +136,9 @@ bool MaildirFormatter::sha256_as_str(void *input, unsigned long length, std::str
 }
 
 int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key, std::string &name) const
-{
+    {
     struct timeval tv =
-    { 0, 0 };
+        { 0, 0 };
 
     std::chrono::system_clock::time_point t = obj.GetLastModified().UnderlyingTimestamp();
     std::time_t ts = std::chrono::system_clock::to_time_t(t);
@@ -193,7 +195,7 @@ int MaildirFormatter::extractHash(Aws::String name, Aws::String &hash)
 }
 
 std::string MaildirFormatter::mkname(const Aws::S3::Model::Object obj) const
-{
+    {
     Aws::String name = obj.GetKey();
     std::string fname;
 

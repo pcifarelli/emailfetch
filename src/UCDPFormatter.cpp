@@ -26,7 +26,7 @@
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 
-#include "UCDPEmailExtractor.h"
+#include "EmailExtractor.h"
 #include "UCDPFormatter.h"
 
 using namespace std;
@@ -56,7 +56,7 @@ void UCDPFormatter::clean_up()
     string msgid;
     string date;
 
-    UCDPEmailExtractor email(m_fullpath.c_str());
+    EmailExtractor email(m_fullpath.c_str());
     // use rfc2822 msgid, if present.  It usually is, but it isn't strictly required
     if (!email.msgid().length())
         msgid = m_objkey;

@@ -15,7 +15,6 @@
 
 #include <aws/core/utils/json/JsonSerializer.h>
 
-
 enum workflow_type
 {
     NONSLOT,   // send to fast email
@@ -26,22 +25,22 @@ enum workflow_type
 struct location_type
 {
     workflow_type type;
-    std::string   destination;
+    std::string destination;
     struct
     {
-        std::string   user;
+        std::string user;
     } mailbox;
     struct
     {
-        std::string    workdir;
-        bool           UCDP;
+        std::string workdir;
+        bool UCDP;
         unsigned short port;
-        std::string    snihostname;
-        std::string    certificate;
-        std::string    certificatepassword;
-        std::string    trclientid;
-        std::string    trfeedid;
-        std::string    trmessagetype;
+        std::string snihostname;
+        std::string certificate;
+        std::string certificatepassword;
+        std::string trclientid;
+        std::string trfeedid;
+        std::string trmessagetype;
     } rest;
 };
 typedef std::list<location_type> location_list;
@@ -55,12 +54,11 @@ struct config_item
     std::string topic_arn;            // the arn of the topic to wait on
     std::string bucket;               // the S3 bucket to download from
     S3Downloader::Downloader *pdownl; // the downloader object that does the downloading
-    bool has_nonslot_workflow;        // are any of the locations email workflow destinations? (determines which Downloader class to use)
+    bool has_nonslot_workflow;   // are any of the locations email workflow destinations? (determines which Downloader class to use)
     bool enabled;                     // is this mailbox enabled in the configuration
 };
 
 typedef std::list<config_item> config_list;
-
 
 struct program_defaults
 {
@@ -73,14 +71,14 @@ struct program_defaults
     } mailbox_defaults;
     struct
     {
-        std::string    workdir;
+        std::string workdir;
         unsigned short port;
-        std::string    snihostname;
-        std::string    certificate;
-        std::string    certificatepassword;
-        std::string    trclientid;
-        std::string    trfeedid;
-        std::string    trmessagetype;
+        std::string snihostname;
+        std::string certificate;
+        std::string certificatepassword;
+        std::string trclientid;
+        std::string trfeedid;
+        std::string trmessagetype;
     } UCDP_defaults;
 };
 
@@ -88,6 +86,5 @@ extern program_defaults defaults;
 
 int get_config(const std::string location, program_defaults &defaults, config_list &config);
 void print_config(config_list &mailboxconfig);
-
 
 #endif /* SRC_EMAILFETCHERCONFIG_H_ */

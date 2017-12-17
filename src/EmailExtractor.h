@@ -26,68 +26,105 @@ public:
 
     class Body
     {
-      public:
-	const std::string &body()        { return m_body; }
-	const std::string &contenttype() { return m_contenttype; }
-	const std::string &charset()     { return m_charset; }
-	const std::string &transferenc() { return m_transferenc; }
+    public:
+        const std::string &body();
+        const std::string &contenttype();
+        const std::string &charset();
+        const std::string &transferenc();
 
-      private:
-	std::string m_body;
+    private:
+        std::string m_body;
         std::string m_contenttype;
         std::string m_charset;
         std::string m_transferenc;
 
-	friend class EmailExtractor;
+        friend class EmailExtractor;
     };
     typedef std::list<Body> BodyList;
     class Attachment
     {
-      public:
-	const std::string &attachment()        { return m_attachment; }
-	const std::string &filename()          { return m_attachment_filename; }
-	const std::string &creation_time()     { return m_creation_datetime; }
-	const std::string &modification_time() { return m_creation_datetime; }
-	const std::string &contenttype()       { return m_contenttype; }
-	const std::string &charset()           { return m_charset; }
-	const std::string &transferenc()       { return m_transferenc; }
-	const int size()                       { return m_size; }
+    public:
+        const std::string &attachment();
+        const std::string &filename();
+        const std::string &creation_time();
+        const std::string &modification_time();
+        const std::string &contenttype();
+        const std::string &charset();
+        const std::string &transferenc();
+        const int size();
 
-      private:
-	std::string m_attachment;
+    private:
+        std::string m_attachment;
         std::string m_attachment_filename;
         std::string m_creation_datetime;
         std::string m_modification_datetime;
         std::string m_contenttype;
         std::string m_charset;
-	std::string m_transferenc;
+        std::string m_transferenc;
         int m_size;
 
-	friend class EmailExtractor;
+        friend class EmailExtractor;
     };
     typedef std::list<Attachment> AttachmentList;
 
-    const std::string &msgid()       { return m_msgid; }
-    const std::string &to()          { return m_to; }
-    const std::string &from()        { return m_from; }
-    const std::string &subject()     { return m_subject; }
-    const std::string &date()        { return m_date; }
-    const std::string &contenttype() { return m_contenttype; }
-    const std::string &charset()     { return m_charset; }
-    const std::string &transferenc() { return m_transferenc; }
+    const std::string &msgid()
+    {
+        return m_msgid;
+    }
+    const std::string &to()
+    {
+        return m_to;
+    }
+    const std::string &from()
+    {
+        return m_from;
+    }
+    const std::string &subject()
+    {
+        return m_subject;
+    }
+    const std::string &date()
+    {
+        return m_date;
+    }
+    const std::string &contenttype()
+    {
+        return m_contenttype;
+    }
+    const std::string &charset()
+    {
+        return m_charset;
+    }
+    const std::string &transferenc()
+    {
+        return m_transferenc;
+    }
 
-    int num_bodies() const { return m_bodies.size(); }
-    int num_attachments() const { return m_attachments.size(); }
-    BodyList &bodies()            { return m_bodies; }
-    AttachmentList &attachments() { return m_attachments; }
+    int num_bodies() const
+    {
+        return m_bodies.size();
+    }
+    int num_attachments() const
+    {
+        return m_attachments.size();
+    }
+    BodyList &bodies()
+    {
+        return m_bodies;
+    }
+    AttachmentList &attachments()
+    {
+        return m_attachments;
+    }
 
-    static void base64_decode(const std::string                &input, std::string                &output);
-    static void base64_encode(const std::string                &input, std::string                &output);
-    static void base64_decode(const std::string                &input, std::vector<unsigned char> &output);
-    static void base64_encode(const std::vector<unsigned char> &input, std::string                &output);
+    static void base64_decode(const std::string &input, std::string &output);
+    static void base64_encode(const std::string &input, std::string &output);
+    static void base64_decode(const std::string &input, std::vector<unsigned char> &output);
+    static void base64_encode(const std::vector<unsigned char> &input, std::string &output);
     static void base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static void base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
-    
+    static void base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf =
+        false);
+
 private:
     std::string m_fullpath;
     std::string m_msgid;
@@ -99,44 +136,45 @@ private:
     std::string m_charset;
     std::string m_transferenc;
 
-    BodyList       m_bodies;
+    BodyList m_bodies;
     AttachmentList m_attachments;
 
     // saves bodies and attachments in memory
-    int  save_parts(const std::string fname);
+    int save_parts(const std::string fname);
 
     static const int UTF8_MAX = 6;
-    static int scan_headers(const std::string  fname,
-			    std::string       &msgid,
-			    std::string       &to,
-			    std::string       &from,
-			    std::string       &subject,
-			    std::string       &date,
-			    std::string       &contenttype,
-			    std::string       &boundary,
-			    std::string       &charset,
-			    std::string       &transferenc,
-			    std::string       &contentdispositon,
-			    Attachment        &attachment);
+    static int scan_headers(const std::string fname,
+        std::string &msgid,
+        std::string &to,
+        std::string &from,
+        std::string &subject,
+        std::string &date,
+        std::string &contenttype,
+        std::string &boundary,
+        std::string &charset,
+        std::string &transferenc,
+        std::string &contentdispositon,
+        Attachment &attachment);
 
     static int scan_headers(std::ifstream &f,
-			    std::string   &msgid,
-			    std::string   &to,
-			    std::string   &from,
-			    std::string   &subject,
-			    std::string   &date,
-			    std::string   &contenttype,
-			    std::string   &boundary,
-			    std::string   &charset,
-			    std::string   &transferenc,
-			    std::string   &contentdisposition,
-			    Attachment    &attachment);
+        std::string &msgid,
+        std::string &to,
+        std::string &from,
+        std::string &subject,
+        std::string &date,
+        std::string &contenttype,
+        std::string &boundary,
+        std::string &charset,
+        std::string &transferenc,
+        std::string &contentdisposition,
+        Attachment &attachment);
 
     // reads to the end of file
     static void read_ifstream(std::ifstream &infile, std::vector<unsigned char> &rawbody);
-    
+
     // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
-    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary, std::vector<unsigned char> &rawbody, bool strip_crlf = true);
+    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary,
+        std::vector<unsigned char> &rawbody, bool strip_crlf = true);
 
     // some convenience functions
     static inline bool is_utf8(std::string charset);
@@ -151,53 +189,53 @@ private:
 
     // the heavy lifting functions
     bool extract_attachments(std::ifstream &infile,
-			     std::string    prev_boundary,
-			     std::string    contenttype,
-			     std::string    boundary,
-			     std::string    charset,
-			     std::string    transferenc);
-    
-    static int  scan_attachment_headers(std::ifstream &infile,
-					std::string   &contenttype,
-					std::string   &boundary,
-					std::string   &charset,
-					std::string   &transferenc,
-					std::string   &contentdisposition,
-					Attachment    &attachment);
-    
+        std::string prev_boundary,
+        std::string contenttype,
+        std::string boundary,
+        std::string charset,
+        std::string transferenc);
+
+    static int scan_attachment_headers(std::ifstream &infile,
+        std::string &contenttype,
+        std::string &boundary,
+        std::string &charset,
+        std::string &transferenc,
+        std::string &contentdisposition,
+        Attachment &attachment);
+
     bool extract_body(std::ifstream &infile,
-		      std::string    contenttype,
-		      std::string    prev_boundary,
-		      std::string    boundary,
-		      std::string    transferenc,
-		      std::string   &charset,
-		      std::string   &body);
-    
+        std::string contenttype,
+        std::string prev_boundary,
+        std::string boundary,
+        std::string transferenc,
+        std::string &charset,
+        std::string &body);
+
     bool extract_body(std::ifstream &infile,
-		      std::string    contenttype,
-		      std::string    transferenc,
-		      std::string   &charset,
-		      std::string   &body);
-    
+        std::string contenttype,
+        std::string transferenc,
+        std::string &charset,
+        std::string &body);
+
     static void transform_body(std::vector<unsigned char> &rawbody,
-			       std::string                 transferenc,
-			       std::string                &charset,
-			       std::string                &body);
+        std::string transferenc,
+        std::string &charset,
+        std::string &body);
 
     static std::string extract_attr(std::string attr, std::string line);
-    
-    static void extract_contentdisposition_elements(std::string  s,
-						    std::string  next,
-						    std::string &filename,
-						    std::string &cdate,
-						    std::string &mdate,
-						    int         &sz);
 
-    static void extract_contenttype(std::string  s,
-				    std::string  next,
-				    std::string &contenttype,
-				    std::string &boundary,
-				    std::string &charset);
+    static void extract_contentdisposition_elements(std::string s,
+        std::string next,
+        std::string &filename,
+        std::string &cdate,
+        std::string &mdate,
+        int &sz);
+
+    static void extract_contenttype(std::string s,
+        std::string next,
+        std::string &contenttype,
+        std::string &boundary,
+        std::string &charset);
 
 };
 

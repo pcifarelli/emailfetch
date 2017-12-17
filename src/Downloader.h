@@ -18,7 +18,6 @@
 namespace S3Downloader
 {
 
-
 #define SECONDS_PER_DAY        86400
 #define SQS_REQUEST_TIMEOUT_MS 60000
 #define SQS_WAIT_TIME          2
@@ -30,7 +29,6 @@ struct FileTracker
 };
 typedef std::unordered_map<std::string, FileTracker> FileTrackerMap;
 
-
 class Downloader
 {
 public:
@@ -40,13 +38,28 @@ public:
     Downloader(const int days, Aws::String topic_arn, Aws::String bucket_name, FormatterList &fmtlist, int verbose);
     virtual ~Downloader();
 
-    void addFormatter( Formatter *fmt );
+    void addFormatter(Formatter *fmt);
 
-    Aws::String &bucketName()      { return m_bucket_name;      }
-    Aws::String &topicArn()        { return m_topic_arn;        }
-    Aws::String &queueUrl()        { return m_queue_url;    }
-    Aws::String &queueArn()        { return m_queue_arn;    }
-    Aws::String &subscriptionArn() { return m_subscription_arn; }
+    Aws::String &bucketName()
+    {
+        return m_bucket_name;
+    }
+    Aws::String &topicArn()
+    {
+        return m_topic_arn;
+    }
+    Aws::String &queueUrl()
+    {
+        return m_queue_url;
+    }
+    Aws::String &queueArn()
+    {
+        return m_queue_arn;
+    }
+    Aws::String &subscriptionArn()
+    {
+        return m_subscription_arn;
+    }
 
     void start();
     void stop();
@@ -55,7 +68,7 @@ protected:
     struct Tracker
     {
         FileTrackerMap *filemap;
-        Formatter      *fmt;
+        Formatter *fmt;
     };
     typedef std::list<Tracker *> TrackerList;
 
@@ -71,8 +84,8 @@ private:
     FileTrackerMap *mkdirmap(Formatter &fmt, time_t secs_back);
     void purgeMap();                                        // purge m_days back
     void purgeMap(Tracker &trkr);                           // purge mback
-    void purgeMap(std::time_t secs_back );                  // purge secs back
-    void purgeMap(Tracker &trkr, std::time_t secs_back );   // purge secs back
+    void purgeMap(std::time_t secs_back);                  // purge secs back
+    void purgeMap(Tracker &trkr, std::time_t secs_back);   // purge secs back
     void printMap(Tracker &);
 
     void create_sqs_queue(Aws::String queue_name);
@@ -84,10 +97,10 @@ private:
     void unsubscribe_topic();
     void wait_for_message();
 
-    static void *run( void *thisObj );
+    static void *run(void *thisObj);
     pthread_t m_pthread_id;
     bool m_exit_thread;
-    int  m_exit_status;
+    int m_exit_status;
 
     bool m_verbose;
 

@@ -25,7 +25,7 @@ bin_PROGRAMS = emailfetch
 emailfetch_SOURCES = EmailFetcherMain.cpp \
 	EmailFetcherConfig.cpp \
 	UCDPFormatter.cpp \
-	UCDPEmailExtractor.cpp \
+	EmailExtractor.cpp \
 	MaildirFormatter.cpp \
 	S3Get.cpp \
 	Formatter.cpp \
