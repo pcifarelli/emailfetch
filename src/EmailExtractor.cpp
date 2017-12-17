@@ -260,7 +260,7 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttyp
     if (a_contentdisposition.length())
     {
         contentdisposition = a_contentdisposition;
-        if (str_tolower(contentdisposition) == "attachment")
+        if (str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline")
             att = a_att;
     }
 }
@@ -277,7 +277,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
     {
         string a_filename;
 
-        if (str_tolower(contentdisposition) == "attachment")
+        if (str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline")
         {
             reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset,
                 att.m_attachment);
@@ -483,7 +483,7 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
 void EmailExtractor::extract_contentdisposition_elements(string s, string next, string &filename, string &cdate, string &mdate,
     int &sz)
 {
-    regex e_filename("^(.*)([ \t]*)(filename=)\"(.*)\";?(.*)");
+    regex e_filename("^(.*)([ \t]*)(filename=)\"?(.*)\"?;?(.*)");
     regex e_size("^(.*)(size=)(.*);?(.*)");
     regex e_ctime("^(.*)(creation-date=)\"(.*)\";?(.*)");
     regex e_mtime("^(.*)(modification-date=)\"(.*)\";?(.*)");
@@ -495,6 +495,9 @@ void EmailExtractor::extract_contentdisposition_elements(string s, string next, 
     if (sm.size() > 0)
         filename = sm[4];
 
+    // quite annoying that the quotes are optional
+    strip_quotes(filename);
+    
     regex_match(s, sm, e_size);
     if (sm.size() > 0)
     {
@@ -517,9 +520,9 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
     Attachment &att)
 {
     string prev = "", s = "", next = "";
-    regex e_msgid("^(Message-ID:).*<(.*)>(.*)");
-    regex e_to("^(To:)[ \t]*<?(.*)>?");
-    regex e_from("^(From:)[ \t]*<?(.*)>?");
+    regex e_msgid("^(Message-[Ii][Dd]:).*<(.*)>(.*)");
+    regex e_to("^(To:)[ \t]*(.*)");
+    regex e_from("^(From:)[ \t]*(.*)");
     regex e_subject("^(Subject:)(.*)");
     regex e_date("^(Date:)(.*)");
     regex e_trenc("^(Content-Transfer-Encoding:)(.*)");
@@ -531,9 +534,7 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
     bool nexthdr = false;
 
     bool last = false;
-    while ((infile.good() || last)
-        && !(msgid.length() && to.length() && from.length() && subject.length() && date.length() && contenttype.length()
-            && transferenc.length()))
+    while (infile.good() || last)
     {
         getline(infile, next);
 
@@ -592,9 +593,13 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
             else
                 contentdisposition = tmp;
 
-            if (contentdisposition == "attachment")
+            if (str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline")
             {
                 in_content_disposition = true;
+		att.m_size = -1;
+		att.m_attachment_filename.clear();
+		att.m_creation_datetime.clear();
+		att.m_modification_datetime.clear();
                 extract_contentdisposition_elements(s, next, att.m_attachment_filename, att.m_creation_datetime,
                     att.m_modification_datetime, att.m_size);
             }
