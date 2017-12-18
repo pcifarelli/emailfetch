@@ -296,7 +296,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
             if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
             {
                 // also, make sure there's something interesting (not just blanks)
-                regex e_boring("^([ \t\r\n])$");
+                regex e_boring("^([ \t\r\n]*)$");
                 smatch sm;
 
                 regex_match(b.m_body, sm, e_boring);
@@ -435,7 +435,7 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
 {
     regex e_contenttype("^(Content-Type:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
-    regex e_boundary2("^([a-zA-Z]+); (.*)");
+    regex e_boundary2("^([a-zA-Z]+); ([^ \t]+)");
     regex e_boundary3("^([ \t]*)(boundary=)\"(.*)\";?(.*)");
     smatch sm;
     smatch sm1;
