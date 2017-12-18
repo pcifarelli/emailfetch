@@ -140,7 +140,8 @@ EmailExtractor::EmailExtractor(const string fullpath) :
 
 EmailExtractor::~EmailExtractor()
 {
-    // TODO Auto-generated destructor stub
+    m_bodies.clear();
+    m_attachments.clear();
 }
 
 int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<unsigned char> &out)
@@ -275,9 +276,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
 
     while (infile.good() || reached_prev_boundary)
     {
-        string a_filename;
-
-        if (str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline")
+        if ((str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline") && att.m_attachment_filename.length())
         {
             reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset,
                 att.m_attachment);
@@ -296,11 +295,19 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
             // if it has some size, it's not just a newline, and it's content type is not multipart, then we save it
             if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
             {
-                b.m_contenttype = a_contenttype;
-                b.m_charset = a_charset;
-                b.m_transferenc = a_transferenc;
+                // also, make sure there's something interesting (not just blanks)
+                regex e_boring("^([ \t\r\n])$");
+                smatch sm;
 
-                m_bodies.push_back(b);
+                regex_match(b.m_body, sm, e_boring);
+                if (!sm.size())
+                {
+                    b.m_contenttype = a_contenttype;
+                    b.m_charset = a_charset;
+                    b.m_transferenc = a_transferenc;
+
+                    m_bodies.push_back(b);
+                }
             }
         }
 
@@ -754,13 +761,14 @@ void EmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &rawb
 bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
     vector<unsigned char> &rawbody, bool strip_crlf)
 {
-    string next, b = "^(--" + boundary + ")(.*)";
-    string prev_b = "^(--" + prev_boundary + ")(.*)";
+    string next;
+    //string b = "^(--" + boundary + ")(.*)";
+    //string prev_b = "^(--" + prev_boundary + ")(.*)";
     bool reached_prev_boundary = false;
-    regex e_b(b);
-    regex e_prev_b(prev_b);
-    smatch sm;
-    smatch psm;
+    //regex e_b(b);
+    //regex e_prev_b(prev_b);
+    //smatch sm;
+    //smatch psm;
 
     while (infile.good())
     {
@@ -771,14 +779,21 @@ bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_bou
         if (*c == '\r')
             next.erase(c);
 
-        regex_match(next, sm, e_b);
-        if (sm.size() > 0)
+        //regex_match(next, sm, e_b);
+        //if (sm.size() > 0)
+        //    break;
+        if (!next.compare(0, boundary.length() + 2, "--" + boundary))
             break;
 
         if (prev_boundary.length())
         {
-            regex_match(next, psm, e_prev_b);
-            if (psm.size() > 0)
+            //regex_match(next, psm, e_prev_b);
+            //if (psm.size() > 0)
+            //{
+            //    reached_prev_boundary = true;
+            //    break;
+            //}
+            if (!next.compare(0, prev_boundary.length() + 2, "--" + prev_boundary))
             {
                 reached_prev_boundary = true;
                 break;
