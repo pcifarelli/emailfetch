@@ -43,6 +43,18 @@ const string &EmailExtractor::Body::transferenc()
     return m_transferenc;
 }
 
+string EmailExtractor::Body::asBase64() const
+{
+    if (m_transferenc != "base64")
+    {
+	string body;
+	EmailExtractor::base64_encode(m_body, body);
+	return body;
+    }
+
+    return m_body;
+}
+
 const string &EmailExtractor::Attachment::attachment()
 {
     return m_attachment;
@@ -74,6 +86,44 @@ const string &EmailExtractor::Attachment::transferenc()
 const int EmailExtractor::Attachment::size()
 {
     return m_size;
+}
+
+std::string EmailExtractor::Attachment::asBase64() const
+{
+    if (m_transferenc != "base64")
+    {
+	string attachment;
+	EmailExtractor::base64_encode(m_attachment, attachment);
+	return attachment;
+    }
+
+    return m_attachment;
+}
+
+// Save the attachment in the specified directory
+void EmailExtractor::Attachment::save_attachment(string dirname)
+{
+    vector<unsigned char> attachment;
+    string c;
+
+    std::size_t nn = dirname.find_last_of('/');
+    if (nn != string::npos && nn != dirname.length() - 1)
+        c = "/";
+    dirname += c;
+
+    if (m_transferenc == "base64")
+    {
+	EmailExtractor::base64_decode(m_attachment, attachment);
+	ofstream o( dirname + m_attachment_filename );
+	o.write((const char *) &attachment[0], attachment.size());
+	o.close();
+    }
+    else
+    {
+	ofstream o( dirname + m_attachment_filename );
+	o.write((const char *) m_attachment.c_str(), m_attachment.length());
+	o.close();
+    }
 }
 
 const string &EmailExtractor::msgid()
@@ -125,6 +175,7 @@ EmailExtractor::AttachmentList &EmailExtractor::attachments()
 {
     return m_attachments;
 }
+
 
 EmailExtractor::EmailExtractor(const string fullpath) :
     m_fullpath(fullpath)
@@ -281,8 +332,8 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
             reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset,
                 att.m_attachment);
             att.m_contenttype = a_contenttype;
-            att.m_charset = a_charset;
-            att.m_transferenc = a_transferenc;
+            att.m_charset = str_tolower(a_charset);
+            att.m_transferenc = str_tolower(a_transferenc);
 
             m_attachments.push_back(att);
         }
@@ -303,8 +354,8 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
                 if (!sm.size())
                 {
                     b.m_contenttype = a_contenttype;
-                    b.m_charset = a_charset;
-                    b.m_transferenc = a_transferenc;
+                    b.m_charset = str_tolower(a_charset);
+                    b.m_transferenc = str_tolower(a_transferenc);
 
                     m_bodies.push_back(b);
                 }
@@ -352,9 +403,9 @@ int EmailExtractor::save_parts(const string fname)
 
         // simple email
         b.m_contenttype = contenttype;
-        b.m_charset = charset;
-        b.m_transferenc = transferenc;
         extract_body(infile, contenttype, transferenc, charset, b.m_body);
+        b.m_charset = str_tolower(charset);
+        b.m_transferenc = str_tolower(transferenc);
         m_bodies.push_back(b);
     }
 }
@@ -580,11 +631,19 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
 
         regex_match(s, sm, e_subject);
         if (!subject.length() && sm.size() > 0)
+	{
             subject = sm[2];
+	    auto c = subject.cbegin();
+	    if (*c == ' ')
+		subject.erase(c);
+	}
 
         regex_match(s, sm, e_date);
         if (!date.length() && sm.size() > 0)
+	{
             date = sm[2];
+	    trim(date);
+	}
 
         regex_match(s, sm, e_trenc);
         if (!transferenc.length() && sm.size() > 0)
@@ -773,13 +832,9 @@ bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_bou
     vector<unsigned char> &rawbody, bool strip_crlf)
 {
     string next;
-    //string b = "^(--" + boundary + ")(.*)";
-    //string prev_b = "^(--" + prev_boundary + ")(.*)";
     bool reached_prev_boundary = false;
-    //regex e_b(b);
-    //regex e_prev_b(prev_b);
-    //smatch sm;
-    //smatch psm;
+    string b      = "--" + boundary;
+    string prev_b = "--" + prev_boundary;
 
     while (infile.good())
     {
@@ -790,21 +845,12 @@ bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_bou
         if (*c == '\r')
             next.erase(c);
 
-        //regex_match(next, sm, e_b);
-        //if (sm.size() > 0)
-        //    break;
-        if (!next.compare(0, boundary.length() + 2, "--" + boundary))
+        if (!next.compare(0, b.length(), b))
             break;
 
         if (prev_boundary.length())
         {
-            //regex_match(next, psm, e_prev_b);
-            //if (psm.size() > 0)
-            //{
-            //    reached_prev_boundary = true;
-            //    break;
-            //}
-            if (!next.compare(0, prev_boundary.length() + 2, "--" + prev_boundary))
+            if (!next.compare(0, prev_b.length(), prev_b))
             {
                 reached_prev_boundary = true;
                 break;

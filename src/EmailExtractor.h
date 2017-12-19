@@ -31,6 +31,7 @@ public:
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
+	std::string asBase64() const;
 
     private:
         std::string m_body;
@@ -52,6 +53,8 @@ public:
         const std::string &charset();
         const std::string &transferenc();
         const int size();
+	void save_attachment(std::string path);
+	std::string asBase64() const;
 
     private:
         std::string m_attachment;
