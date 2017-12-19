@@ -27,11 +27,13 @@ public:
     class Body
     {
     public:
+	// in received transfer encoding, as indicated by transferenc()
         const std::string &body();
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
 	std::string asBase64() const;
+	std::string asUtf8() const;
 
     private:
         std::string m_body;

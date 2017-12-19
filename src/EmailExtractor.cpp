@@ -55,6 +55,37 @@ string EmailExtractor::Body::asBase64() const
     return m_body;
 }
 
+string EmailExtractor::Body::asUtf8() const
+{
+    string body;
+    vector<unsigned char> uvbody;
+
+    body.clear();
+    // convert everything to utf-8
+    if (m_transferenc == "base64" && !EmailExtractor::is_utf8(m_charset))
+    {
+	vector<unsigned char> vbody;
+	EmailExtractor::base64_decode(m_body, vbody);
+        to_utf8(m_charset, vbody, uvbody);
+	body.insert(body.end(), uvbody.cbegin(), uvbody.cend());
+	return body;
+    }
+    else if (!EmailExtractor::is_utf8(m_charset))
+    {
+        vector<unsigned char> vbody(m_body.cbegin(), m_body.cend());
+        to_utf8(m_charset, vbody, uvbody);
+	body.insert(body.end(), uvbody.cbegin(), uvbody.cend());
+	return body;
+    }
+    else if (m_transferenc == "base64")
+    {
+	EmailExtractor::base64_decode(m_body, body);
+	return body;
+    }
+
+    return m_body;
+}
+
 const string &EmailExtractor::Attachment::attachment()
 {
     return m_attachment;
@@ -220,7 +251,7 @@ int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<un
     iconv_close(cd);
     size_t cnvtd = (size_t) (pout_iconv - pout);
 
-    for (int i; i < cnvtd; i++)
+    for (int i = 0; i < cnvtd; i++)
         out.insert(out.end(), pout[i]);
 
     free(pout);
@@ -256,9 +287,9 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string t
     read_ifstream(infile, rawbody);
     body.clear();
 
-    if (!contenttype.compare(0, 4, "text"))
-        transform_body(rawbody, transferenc, charset, body);
-    else
+    //if (!contenttype.compare(0, 4, "text"))
+    //    transform_body(rawbody, transferenc, charset, body);
+    //else
         body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return false;
@@ -276,9 +307,9 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string p
     reached_prev_boundary = read_ifstream_to_boundary(infile, prev_boundary, boundary, rawbody, strip_crlf);
 
     body.clear();
-    if (rawbody.size() && is_text)
-        transform_body(rawbody, transferenc, charset, body);
-    else
+    //if (rawbody.size() && is_text)
+    //    transform_body(rawbody, transferenc, charset, body);
+    //else
         body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return reached_prev_boundary;
