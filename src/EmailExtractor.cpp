@@ -435,7 +435,7 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
 {
     regex e_contenttype("^(Content-Type:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
-    regex e_boundary2("^([a-zA-Z]+); ([^ \t]+)");
+    regex e_boundary2("^([a-zA-Z]+);[ \t]+(.*)");
     regex e_boundary3("^([ \t]*)(boundary=)\"(.*)\";?(.*)");
     smatch sm;
     smatch sm1;
@@ -500,10 +500,21 @@ void EmailExtractor::extract_contentdisposition_elements(string s, string next, 
 
     regex_match(s, sm, e_filename);
     if (sm.size() > 0)
-        filename = sm[4];
+    {
+	string fs = sm[4];
+	smatch sm2;
+	
+	regex_match(fs, sm2, e_size);
+	if (!sm2.size())
+	    filename = sm[4];
+	else
+	    filename = sm2[1];
 
-    // quite annoying that the quotes are optional
-    strip_quotes(filename);
+	// quite annoying that the quotes are optional
+	trim(filename);
+	strip_semi(filename);
+	strip_quotes(filename);
+    }
     
     regex_match(s, sm, e_size);
     if (sm.size() > 0)
