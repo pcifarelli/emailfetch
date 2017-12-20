@@ -24,22 +24,38 @@ public:
     EmailExtractor(std::string fullpath);
     virtual ~EmailExtractor();
 
+    enum ERRORS
+    {
+	NO_ERROR,
+	ERROR_B64ENCODE,
+	ERROR_B64DECODE,
+	ERROR_UTF8CONV,
+	ERROR_NOOPEN,
+	NUM_ERRORS
+    };
+	
     class Body
     {
     public:
-	// in received transfer encoding, as indicated by transferenc()
+	// as received, transfer encoding as indicated by transferenc() and charset as indicated by charset()
         const std::string &body();
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
-	std::string asBase64() const;
-	std::string asUtf8() const;
+	std::string asBase64();
+	std::string asUtf8();
+	// beware using this on text/html as it may have embedded charset definitions
+	std::string asUtf8Base64();
+	int error() const;
+	std::string str_error() const;
 
     private:
         std::string m_body;
         std::string m_contenttype;
         std::string m_charset;
         std::string m_transferenc;
+	std::string m_str_error;
+	int         m_error;
 
         friend class EmailExtractor;
     };
@@ -56,7 +72,9 @@ public:
         const std::string &transferenc();
         const int size();
 	void save_attachment(std::string path);
-	std::string asBase64() const;
+	std::string asBase64();
+	int error() const;
+	std::string str_error() const;
 
     private:
         std::string m_attachment;
@@ -67,6 +85,8 @@ public:
         std::string m_charset;
         std::string m_transferenc;
         int m_size;
+	std::string m_str_error;
+	int         m_error;
 
         friend class EmailExtractor;
     };
@@ -81,19 +101,25 @@ public:
     const std::string &charset();
     const std::string &transferenc();
 
-    int num_bodies() const;
-    int num_attachments() const;
+    int num_bodies();
+    int num_attachments();
     BodyList &bodies();
     AttachmentList &attachments();
 
-    static void base64_decode(const std::string &input, std::string &output);
-    static void base64_encode(const std::string &input, std::string &output);
-    static void base64_decode(const std::string &input, std::vector<unsigned char> &output);
-    static void base64_encode(const std::vector<unsigned char> &input, std::string &output);
-    static void base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static void base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
+    int error() const;
+    std::string str_error() const;
+    
+    static int base64_decode(const std::string &input, std::string &output);
+    static int base64_encode(const std::string &input, std::string &output);
+    static int base64_decode(const std::string &input, std::vector<unsigned char> &output);
+    static int base64_encode(const std::vector<unsigned char> &input, std::string &output);
+    static int base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
+    static int base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
 
 private:
+    int         m_error;
+    std::string m_str_error;
+    
     std::string m_fullpath;
     std::string m_msgid;
     std::string m_to;
@@ -104,12 +130,31 @@ private:
     std::string m_charset;
     std::string m_transferenc;
 
-    BodyList m_bodies;
+    BodyList       m_bodies;
     AttachmentList m_attachments;
 
     // saves bodies and attachments in memory
     int save_parts(const std::string fname);
 
+    // reads to the end of file
+    static void read_ifstream(std::ifstream &infile, std::vector<unsigned char> &rawbody);
+
+    // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
+    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary,
+        std::vector<unsigned char> &rawbody, bool strip_crlf = true);
+
+    // some convenience functions
+    static inline bool is_utf8(std::string charset);
+    static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
+    static inline std::string str_tolower(std::string s);
+    static inline std::string str_toupper(std::string s);
+    static inline void ltrim(std::string &s);
+    static inline void rtrim(std::string &s);
+    static inline void trim(std::string &s);
+    static inline std::string strip_semi(std::string &s);
+    static inline std::string strip_quotes(std::string &s);
+
+    // the heavy lifting functions
     static const int UTF8_MAX = 6;
     static int scan_headers(const std::string fname,
         std::string &msgid,
@@ -137,32 +182,6 @@ private:
         std::string &contentdisposition,
         Attachment &attachment);
 
-    // reads to the end of file
-    static void read_ifstream(std::ifstream &infile, std::vector<unsigned char> &rawbody);
-
-    // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
-    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary,
-        std::vector<unsigned char> &rawbody, bool strip_crlf = true);
-
-    // some convenience functions
-    static inline bool is_utf8(std::string charset);
-    static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
-    static inline std::string str_tolower(std::string s);
-    static inline std::string str_toupper(std::string s);
-    static inline void ltrim(std::string &s);
-    static inline void rtrim(std::string &s);
-    static inline void trim(std::string &s);
-    static inline std::string strip_semi(std::string &s);
-    static inline std::string strip_quotes(std::string &s);
-
-    // the heavy lifting functions
-    bool extract_attachments(std::ifstream &infile,
-        std::string prev_boundary,
-        std::string contenttype,
-        std::string boundary,
-        std::string charset,
-        std::string transferenc);
-
     static int scan_attachment_headers(std::ifstream &infile,
         std::string &contenttype,
         std::string &boundary,
@@ -171,6 +190,13 @@ private:
         std::string &contentdisposition,
         Attachment &attachment);
 
+    bool extract_attachments(std::ifstream &infile,
+        std::string prev_boundary,
+        std::string contenttype,
+        std::string boundary,
+        std::string charset,
+        std::string transferenc);
+
     bool extract_body(std::ifstream &infile,
         std::string contenttype,
         std::string prev_boundary,
@@ -181,11 +207,6 @@ private:
 
     bool extract_body(std::ifstream &infile,
         std::string contenttype,
-        std::string transferenc,
-        std::string &charset,
-        std::string &body);
-
-    static void transform_body(std::vector<unsigned char> &rawbody,
         std::string transferenc,
         std::string &charset,
         std::string &body);

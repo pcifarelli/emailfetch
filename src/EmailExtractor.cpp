@@ -28,62 +28,121 @@ using namespace std;
 // accessors
 const string &EmailExtractor::Body::body()
 {
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
     return m_body;
 }
 const string &EmailExtractor::Body::contenttype()
 {
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
     return m_contenttype;
 }
 const string &EmailExtractor::Body::charset()
 {
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
     return m_charset;
 }
 const string &EmailExtractor::Body::transferenc()
 {
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
     return m_transferenc;
 }
 
-string EmailExtractor::Body::asBase64() const
+string EmailExtractor::Body::asBase64()
 {
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
     if (m_transferenc != "base64")
     {
 	string body;
-	EmailExtractor::base64_encode(m_body, body);
+	if (EmailExtractor::base64_encode(m_body, body))
+	{
+	    m_str_error = "Unable to encode as base64";
+	    m_error = EmailExtractor::ERROR_B64ENCODE;
+	}
 	return body;
     }
 
     return m_body;
 }
 
-string EmailExtractor::Body::asUtf8() const
+string EmailExtractor::Body::asUtf8()
 {
     string body;
     vector<unsigned char> uvbody;
 
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
     body.clear();
     // convert everything to utf-8
     if (m_transferenc == "base64" && !EmailExtractor::is_utf8(m_charset))
     {
 	vector<unsigned char> vbody;
-	EmailExtractor::base64_decode(m_body, vbody);
-        to_utf8(m_charset, vbody, uvbody);
+	if (EmailExtractor::base64_decode(m_body, vbody))
+	{
+	    m_str_error = "Unable to decode from base64";
+	    m_error = EmailExtractor::ERROR_B64DECODE;
+	}
+        if (to_utf8(m_charset, vbody, uvbody))
+	{
+	    m_str_error = "Unable to convert to utf8";
+	    m_error = EmailExtractor::ERROR_UTF8CONV;
+	}
 	body.insert(body.end(), uvbody.cbegin(), uvbody.cend());
 	return body;
     }
     else if (!EmailExtractor::is_utf8(m_charset))
     {
         vector<unsigned char> vbody(m_body.cbegin(), m_body.cend());
-        to_utf8(m_charset, vbody, uvbody);
+        if (to_utf8(m_charset, vbody, uvbody))
+	{
+	    m_str_error = "Unable to convert to utf8";
+	    m_error = EmailExtractor::ERROR_UTF8CONV;
+	}
 	body.insert(body.end(), uvbody.cbegin(), uvbody.cend());
 	return body;
     }
     else if (m_transferenc == "base64")
     {
-	EmailExtractor::base64_decode(m_body, body);
+	if (EmailExtractor::base64_decode(m_body, body))
+	{
+	    m_str_error = "Unable to decode from base64";
+	    m_error = EmailExtractor::ERROR_B64DECODE;	    
+	}
 	return body;
     }
 
     return m_body;
+}
+
+string EmailExtractor::Body::asUtf8Base64()
+{
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
+    string ubody = asUtf8();
+    string body;
+    
+    if (!m_error)
+	if (EmailExtractor::base64_encode(m_body, body))
+	{
+	    m_str_error = "Unable to encode as base64";
+	    m_error = EmailExtractor::ERROR_B64ENCODE;
+	}
+    
+    return body;
+}
+
+int EmailExtractor::Body::error() const
+{
+    return m_error;
+}
+
+string EmailExtractor::Body::str_error() const
+{
+    return m_str_error;
 }
 
 const string &EmailExtractor::Attachment::attachment()
@@ -119,12 +178,19 @@ const int EmailExtractor::Attachment::size()
     return m_size;
 }
 
-std::string EmailExtractor::Attachment::asBase64() const
+string EmailExtractor::Attachment::asBase64()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     if (m_transferenc != "base64")
     {
 	string attachment;
-	EmailExtractor::base64_encode(m_attachment, attachment);
+	if (EmailExtractor::base64_encode(m_attachment, attachment))
+	{
+	    m_error = EmailExtractor::ERROR_B64ENCODE;
+	    m_str_error = "Unable to encode as base64";
+	}
 	return attachment;
     }
 
@@ -137,6 +203,9 @@ void EmailExtractor::Attachment::save_attachment(string dirname)
     vector<unsigned char> attachment;
     string c;
 
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     std::size_t nn = dirname.find_last_of('/');
     if (nn != string::npos && nn != dirname.length() - 1)
         c = "/";
@@ -144,66 +213,127 @@ void EmailExtractor::Attachment::save_attachment(string dirname)
 
     if (m_transferenc == "base64")
     {
-	EmailExtractor::base64_decode(m_attachment, attachment);
+	if (EmailExtractor::base64_decode(m_attachment, attachment))
+	{
+	    m_error = EmailExtractor::ERROR_B64DECODE;
+	    m_str_error = "Unable to decode base64 for attachment " + m_attachment_filename;
+	    return;
+	}
 	ofstream o( dirname + m_attachment_filename );
+	if (!o.is_open() || !o.good())
+	{
+	    m_error = EmailExtractor::ERROR_NOOPEN;
+	    m_str_error = "Unable to open file for writing attachment " + m_attachment_filename;
+	}
 	o.write((const char *) &attachment[0], attachment.size());
 	o.close();
     }
     else
     {
 	ofstream o( dirname + m_attachment_filename );
+	if (!o.is_open() || !o.good())
+	{
+	    m_error = EmailExtractor::ERROR_NOOPEN;
+	    m_str_error = "Unable to open file for writing attachment " + m_attachment_filename;
+	}
 	o.write((const char *) m_attachment.c_str(), m_attachment.length());
 	o.close();
     }
 }
 
+int EmailExtractor::Attachment::error() const
+{
+    return m_error;
+}
+
+string EmailExtractor::Attachment::str_error() const
+{
+    return m_str_error;
+}
+
 const string &EmailExtractor::msgid()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_msgid;
 }
 const string &EmailExtractor::to()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_to;
 }
 const string &EmailExtractor::from()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_from;
 }
 const string &EmailExtractor::subject()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_subject;
 }
 const string &EmailExtractor::date()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_date;
 }
 const string &EmailExtractor::contenttype()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_contenttype;
 }
 const string &EmailExtractor::charset()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_charset;
 }
 const string &EmailExtractor::transferenc()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_transferenc;
 }
 
-int EmailExtractor::num_bodies() const
+int EmailExtractor::num_bodies()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_bodies.size();
 }
-int EmailExtractor::num_attachments() const
+int EmailExtractor::num_attachments()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_attachments.size();
 }
 EmailExtractor::BodyList &EmailExtractor::bodies()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_bodies;
 }
 EmailExtractor::AttachmentList &EmailExtractor::attachments()
 {
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
     return m_attachments;
 }
 
@@ -215,8 +345,22 @@ EmailExtractor::EmailExtractor(const string fullpath) :
     std::string contentdisposition;
     Attachment att;
 
-    scan_headers(m_fullpath.c_str(), m_msgid, m_to, m_from, m_subject, m_date, m_contenttype, boundary, m_charset, m_transferenc,
-        contentdisposition, att);
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+    
+    scan_headers(m_fullpath.c_str(),
+		 m_msgid,
+		 m_to,
+		 m_from,
+		 m_subject,
+		 m_date,
+		 m_contenttype,
+		 boundary,
+		 m_charset,
+		 m_transferenc,
+		 contentdisposition,
+		 att);
+    
     save_parts(m_fullpath.c_str());
 }
 
@@ -224,6 +368,16 @@ EmailExtractor::~EmailExtractor()
 {
     m_bodies.clear();
     m_attachments.clear();
+}
+
+int EmailExtractor::error() const
+{
+    return m_error;
+}
+
+string EmailExtractor::str_error() const
+{
+    return m_str_error;
 }
 
 int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<unsigned char> &out)
@@ -259,26 +413,6 @@ int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<un
     return 0;
 }
 
-void EmailExtractor::transform_body(vector<unsigned char> &rawbody, string transferenc, string &charset, string &body)
-{
-    // convert everything to utf-8
-    if (str_tolower(transferenc) == "base64" && !is_utf8(charset))
-    {
-        vector<unsigned char> vbody, uvbody;
-        base64_decode(rawbody, vbody);
-        if (!to_utf8(charset, vbody, uvbody))
-            charset = "utf-8";
-        base64_encode(uvbody, rawbody);
-    }
-    else if (!is_utf8(charset))
-    {
-        vector<unsigned char> vbody(rawbody.cbegin(), rawbody.cend());
-        if (!to_utf8(charset, vbody, rawbody))
-            charset = "utf-8";
-    }
-
-    body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
-}
 
 bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string transferenc, string &charset, string &body)
 {
@@ -286,11 +420,7 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string t
 
     read_ifstream(infile, rawbody);
     body.clear();
-
-    //if (!contenttype.compare(0, 4, "text"))
-    //    transform_body(rawbody, transferenc, charset, body);
-    //else
-        body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
+    body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return false;
 }
@@ -307,10 +437,7 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string p
     reached_prev_boundary = read_ifstream_to_boundary(infile, prev_boundary, boundary, rawbody, strip_crlf);
 
     body.clear();
-    //if (rawbody.size() && is_text)
-    //    transform_body(rawbody, transferenc, charset, body);
-    //else
-        body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
+    body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
 
     return reached_prev_boundary;
 }
@@ -420,6 +547,13 @@ int EmailExtractor::save_parts(const string fname)
     string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition;
     Attachment att;
 
+    if (!infile.is_open() || !infile.good())
+    {
+	m_error = ERROR_NOOPEN;
+	m_str_error = "Unable to open file";
+	return -1;
+    }
+    
     // this version of scan_headers leaves the ifstream pointing to the first line after the header block
     scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition, att);
 
@@ -439,6 +573,8 @@ int EmailExtractor::save_parts(const string fname)
         b.m_transferenc = str_tolower(transferenc);
         m_bodies.push_back(b);
     }
+
+    return 0;
 }
 
 // trim from start (in place)
@@ -536,6 +672,7 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
         if (sm1.size() > 0)
         {
             string mpt = sm1[2].str();
+	    trim(mpt);
             regex_match(mpt, sm2, e_boundary2);
             if (sm2.size())
             {
@@ -544,7 +681,8 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
                 regex_match(b, smb, e_boundary3);
                 boundary = smb[3];
                 contenttype = "multipart/" + sm2[1].str();
-                charset = extract_attr("charset", b);
+		if (b.find("charset") != string::npos)
+		    charset = extract_attr("charset", b);
 
             }
             else if (sm_next.size())
@@ -757,7 +895,7 @@ int EmailExtractor::scan_headers(const string fname, string &msgid, string &to, 
     return 0;
 }
 
-void EmailExtractor::base64_encode(const vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
+int EmailExtractor::base64_encode(const vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)
 {
     BIO *bmem, *b64;
     BUF_MEM *bptr;
@@ -765,7 +903,9 @@ void EmailExtractor::base64_encode(const vector<unsigned char> &input, vector<un
     b64 = BIO_new(BIO_f_base64());
     bmem = BIO_new(BIO_s_mem());
     b64 = BIO_push(b64, bmem);
-    BIO_write(b64, &input[0], input.size());
+    if (BIO_write(b64, &input[0], input.size()) <= 0)
+	return -1;
+    
     BIO_flush(b64);
     BIO_get_mem_ptr(b64, &bptr);
 
@@ -774,10 +914,10 @@ void EmailExtractor::base64_encode(const vector<unsigned char> &input, vector<un
             output.insert(output.end(), bptr->data[i]);
 
     BIO_free_all(b64);
-
+    return 0;
 }
 
-void EmailExtractor::base64_decode(const vector<unsigned char> &input, vector<unsigned char> &output)
+int EmailExtractor::base64_decode(const vector<unsigned char> &input, vector<unsigned char> &output)
 {
     BIO *b64, *bmem;
     int length = input.size();
@@ -791,43 +931,56 @@ void EmailExtractor::base64_decode(const vector<unsigned char> &input, vector<un
 
     int i = 0;
     if ((i = BIO_read(bmem, &output[0], length)) <= 0)
-        cout << "base64 decode failed length=" << length << endl;
+	return -1;
     else
         output.resize(i);
 
     BIO_free_all(bmem);
+    return 0;
 }
 
-void EmailExtractor::base64_decode(const string &input, string &output)
+int EmailExtractor::base64_decode(const string &input, string &output)
 {
     vector<unsigned char> vinput(input.begin(), input.end());
     vector<unsigned char> voutput;
-    base64_decode(vinput, voutput);
+    if (base64_decode(vinput, voutput))
+	return -1;
+    
     output.clear();
     output.insert(output.end(), voutput.begin(), voutput.end());
+
+    return 0;
 }
 
-void EmailExtractor::base64_encode(const string &input, string &output)
+int EmailExtractor::base64_encode(const string &input, string &output)
 {
     vector<unsigned char> vinput(input.begin(), input.end());
     vector<unsigned char> voutput;
-    base64_encode(vinput, voutput);
+    if (base64_encode(vinput, voutput))
+	return -1;
+    
     output.clear();
     output.insert(output.end(), voutput.begin(), voutput.end());
+
+    return 0;
 }
 
-void EmailExtractor::base64_decode(const string &input, vector<unsigned char> &output)
+int EmailExtractor::base64_decode(const string &input, vector<unsigned char> &output)
 {
     vector<unsigned char> vinput(input.begin(), input.end());
-    base64_decode(vinput, output);
+    return base64_decode(vinput, output);
 }
 
-void EmailExtractor::base64_encode(const vector<unsigned char> &input, string &output)
+int EmailExtractor::base64_encode(const vector<unsigned char> &input, string &output)
 {
     vector<unsigned char> voutput;
-    base64_decode(input, voutput);
+    if (base64_decode(input, voutput))
+	return -1;
+    
     output.clear();
     output.insert(output.end(), voutput.begin(), voutput.end());
+
+    return 0;
 }
 
 string EmailExtractor::str_tolower(string s)
@@ -883,10 +1036,10 @@ bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_bou
         if (*c == '\r')
             next.erase(c);
 
-        if (!next.compare(0, b.length(), b))
+        if (boundary.length() && !next.compare(0, b.length(), b))
             break;
 
-        if (prev_boundary.length())
+        if (prev_boundary.length() && prev_boundary.length())
         {
             if (!next.compare(0, prev_b.length(), prev_b))
             {
