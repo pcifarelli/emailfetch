@@ -518,11 +518,13 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
     regex e_contenttype("^(Content-Type:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
     regex e_boundary2("^([a-zA-Z]+);[ \t]+(.*)");
-    regex e_boundary3("^([ \t]*)(boundary=)\"(.*)\";?(.*)");
+    regex e_boundary3("^([ \t]*)(boundary=)\"?(.*)\"?;?(.*)");
     smatch sm;
     smatch sm1;
     smatch sm2;
     smatch sm_next;
+    regex e_semi("[; \t]");
+    smatch sm_semi;
 
     regex_match(s, sm, e_contenttype);
     if (!contenttype.length() && sm.size() > 0)
@@ -550,6 +552,13 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
                 boundary = sm_next[3];
                 contenttype = sm[2];
             }
+
+            regex_search(boundary, sm_semi, e_semi);
+            if (sm_semi.size())
+                boundary = boundary.substr(0, sm_semi.position(0));
+
+            strip_semi(boundary);
+            strip_quotes(boundary);
         }
         else
             contenttype = sm[2];
@@ -559,11 +568,9 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
 
         trim(contenttype);
 
-        regex e("[; \t]");
-        smatch sm;
-        regex_search(contenttype, sm, e);
+        regex_search(contenttype, sm_semi, e_semi);
         if (sm.size())
-            contenttype = contenttype.substr(0, sm.position(0));
+            contenttype = contenttype.substr(0, sm_semi.position(0));
 
         strip_semi(contenttype);
     }
