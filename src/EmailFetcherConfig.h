@@ -54,7 +54,7 @@ struct config_item
     std::string topic_arn;            // the arn of the topic to wait on
     std::string bucket;               // the S3 bucket to download from
     S3Downloader::Downloader *pdownl; // the downloader object that does the downloading
-    bool has_nonslot_workflow;   // are any of the locations email workflow destinations? (determines which Downloader class to use)
+    bool has_nonslot_workflow;        // are any of the locations email workflow destinations? (determines which Downloader class to use)
     bool enabled;                     // is this mailbox enabled in the configuration
 };
 
