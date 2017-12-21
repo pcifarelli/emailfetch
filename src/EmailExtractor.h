@@ -138,9 +138,6 @@ private:
     // saves bodies and attachments in memory
     int save_parts(const std::string fname);
 
-    // reads to the end of file
-    static void read_ifstream(std::ifstream &infile, std::vector<unsigned char> &rawbody);
-
     // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
     static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary,
         std::vector<unsigned char> &rawbody, bool strip_crlf = true);
@@ -203,12 +200,6 @@ private:
         std::string contenttype,
         std::string prev_boundary,
         std::string boundary,
-        std::string transferenc,
-        std::string &charset,
-        std::string &body);
-
-    bool extract_body(std::ifstream &infile,
-        std::string contenttype,
         std::string transferenc,
         std::string &charset,
         std::string &body);

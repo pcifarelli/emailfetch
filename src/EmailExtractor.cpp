@@ -412,17 +412,6 @@ int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<un
     return 0;
 }
 
-bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string transferenc, string &charset, string &body)
-{
-    vector<unsigned char> rawbody;
-
-    read_ifstream(infile, rawbody);
-    body.clear();
-    body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
-
-    return false;
-}
-
 bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc,
     string &charset, string &body)
 {
@@ -497,8 +486,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
         else
         {
             Body b;
-            reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset,
-                b.m_body);
+            reached_prev_boundary = extract_body(infile, a_contenttype, prev_boundary, boundary, a_transferenc, a_charset, b.m_body);
 
             // if it has some size, it's not just a newline, and it's content type is not multipart, then we save it
             if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
@@ -567,7 +555,7 @@ int EmailExtractor::save_parts(const string fname)
 
         // simple email
         b.m_contenttype = contenttype;
-        extract_body(infile, contenttype, transferenc, charset, b.m_body);
+        extract_body(infile, contenttype, "", "", transferenc, charset, b.m_body);
         b.m_charset = str_tolower(charset);
         b.m_transferenc = str_tolower(transferenc);
         m_bodies.push_back(b);
@@ -775,6 +763,8 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
     smatch sm;
 
     bool in_content_disposition = false;
+    bool in_multiline_subject = false;
+    bool in_multiline_to = false;
     bool nexthdr = false;
 
     bool last = false;
@@ -796,21 +786,47 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
         if (!msgid.length() && sm.size() > 0)
             msgid = sm[2];
 
+	if (in_multiline_to)
+	{
+	    if (nexthdr)
+		in_multiline_to = false;
+	    else
+	    {
+		string moreto = s;
+		trim(moreto);
+		to += moreto;
+	    }
+	}
         regex_match(s, sm, e_to);
-        if (!to.length() && sm.size() > 0)
+        if (sm.size() > 0)
+	{
             to = sm[2];
-
+	    in_multiline_to = true;
+	}
+	
         regex_match(s, sm, e_from);
         if (!from.length() && sm.size() > 0)
             from = sm[2];
 
+	if (in_multiline_subject)
+	{
+	    if (nexthdr)
+		in_multiline_subject = false;
+	    else
+	    {
+		string moresubject = s;
+		trim(moresubject);
+		subject += moresubject;
+	    }
+	}
         regex_match(s, sm, e_subject);
-        if (!subject.length() && sm.size() > 0)
+        if (sm.size() > 0)
         {
             subject = sm[2];
             auto c = subject.cbegin();
             if (*c == ' ')
                 subject.erase(c);
+	    in_multiline_subject = true;
         }
 
         regex_match(s, sm, e_date);
@@ -1000,22 +1016,6 @@ bool EmailExtractor::is_utf8(string charset)
 {
     charset = str_tolower(charset);
     return ((charset == "utf8" || charset == "utf-8"));
-}
-
-void EmailExtractor::read_ifstream(ifstream &infile, vector<unsigned char> &rawbody)
-{
-    streamsize n2;
-    vector<unsigned char> buf2(1024);
-    do
-    {
-        if (buf2.size() < 1024)
-            buf2.reserve(1024);
-        n2 = infile.readsome((char *) &buf2[0], 1024);
-        if (n2 < 1024)
-            buf2.resize(n2);
-        rawbody.insert(rawbody.end(), buf2.begin(), buf2.end());
-    } while (infile.good() && n2);
-
 }
 
 bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
