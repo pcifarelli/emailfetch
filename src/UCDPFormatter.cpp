@@ -73,7 +73,6 @@ void UCDPFormatter::clean_up()
 
 }
 
-
 string UCDPFormatter::escape_json(const string &s)
 {
     ostringstream o;
@@ -81,36 +80,36 @@ string UCDPFormatter::escape_json(const string &s)
     {
         switch (*c)
         {
-        case '"':
-            o << "\\\"";
-            break;
-        case '\\':
-            o << "\\\\";
-            break;
-        case '\b':
-            o << "\\b";
-            break;
-        case '\f':
-            o << "\\f";
-            break;
-        case '\n':
-            o << "\\n";
-            break;
-        case '\r':
-            o << "\\r";
-            break;
-        case '\t':
-            o << "\\t";
-            break;
-        default:
-            if ('\x00' <= *c && *c <= '\x1f')
-            {
-                o << "\\u" << hex << setw(4) << setfill('0') << (int) *c;
-            }
-            else
-            {
-                o << *c;
-            }
+            case '"':
+                o << "\\\"";
+                break;
+            case '\\':
+                o << "\\\\";
+                break;
+            case '\b':
+                o << "\\b";
+                break;
+            case '\f':
+                o << "\\f";
+                break;
+            case '\n':
+                o << "\\n";
+                break;
+            case '\r':
+                o << "\\r";
+                break;
+            case '\t':
+                o << "\\t";
+                break;
+            default:
+                if ('\x00' <= *c && *c <= '\x1f')
+                {
+                    o << "\\u" << hex << setw(4) << setfill('0') << (int) *c;
+                }
+                else
+                {
+                    o << *c;
+                }
         }
     }
     return o.str();
@@ -129,54 +128,52 @@ std::string UCDPFormatter::unescape_json(const string &s)
             {
                 switch (*p)
                 {
-                case '"':
-                    o << '"';
-                    break;
-                case '\\':
-                    o << '\\';
-                    break;
-                case 'b':
-                    o << '\b';
-                    break;
-                case 'f':
-                    o << '\f';
-                    break;
-                case 'n':
-                    o << '\n';
-                    break;
-                case 'r':
-                    o << '\r';
-                    break;
-                case 't':
-                    o << '\t';
-                    break;
-                case 'u':
-                {
-                    if ((p + 1) != s.cend() && (p + 2) != s.cend() && (p + 3) != s.cend() && (p + 4) != s.cend())
-                    {
-                        char *stop;
-                        string hex = "0x";
-                        p++;
-                        hex += *p;
-                        p++;
-                        hex += *p;
-                        p++;
-                        hex += *p;
-                        p++;
-                        hex += *p;
-                        o << (char) strtol(hex.c_str(), &stop, 16);
-                    }
-                    else
-                    {
+                    case '"':
+                        o << '"';
+                        break;
+                    case '\\':
                         o << '\\';
-                        while (p != s.cend())
+                        break;
+                    case 'b':
+                        o << '\b';
+                        break;
+                    case 'f':
+                        o << '\f';
+                        break;
+                    case 'n':
+                        o << '\n';
+                        break;
+                    case 'r':
+                        o << '\r';
+                        break;
+                    case 't':
+                        o << '\t';
+                        break;
+                    case 'u':
+                        if ((p + 1) != s.cend() && (p + 2) != s.cend() && (p + 3) != s.cend() && (p + 4) != s.cend())
                         {
-                            o << *p;
+                            char *stop;
+                            string hex = "0x";
                             p++;
+                            hex += *p;
+                            p++;
+                            hex += *p;
+                            p++;
+                            hex += *p;
+                            p++;
+                            hex += *p;
+                            o << (char) strtol(hex.c_str(), &stop, 16);
                         }
-                    }
-                }
-                    break;
+                        else
+                        {
+                            o << '\\';
+                            while (p != s.cend())
+                            {
+                                o << *p;
+                                p++;
+                            }
+                        }
+                        break;
                 }
                 c = p;
             }

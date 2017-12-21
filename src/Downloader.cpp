@@ -152,7 +152,7 @@ void Downloader::saveNewObjects(Tracker &trkr)
                     s3accessor.objSaveAs(s3_object, *trkr.fmt);
                     std::string fullpath = dirname + fname;
                     FileTracker ft =
-                    { fullpath, ts };
+                        { fullpath, ts };
 
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                     trkr.filemap->insert(hashent);

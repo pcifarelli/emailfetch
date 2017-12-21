@@ -26,40 +26,41 @@ public:
 
     enum ERRORS
     {
-	NO_ERROR,
-	ERROR_B64ENCODE,
-	ERROR_B64DECODE,
-	ERROR_UTF8CONV,
-	ERROR_NOOPEN,
-	NUM_ERRORS
+        NO_ERROR,
+        ERROR_B64ENCODE,
+        ERROR_B64DECODE,
+        ERROR_UTF8CONV,
+        ERROR_NOOPEN,
+        NUM_ERRORS
     };
-	
+
     class Body
     {
     public:
-	// as received, transfer encoding as indicated by transferenc() and charset as indicated by charset()
+        // as received, transfer encoding as indicated by transferenc() and charset as indicated by charset()
         const std::string &body();
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
-	std::string asBase64();
-	std::string asUtf8();
-	// beware using this on text/html as it may have embedded charset definitions
-	std::string asUtf8Base64();
-	int error() const;
-	std::string str_error() const;
+        std::string asBase64();
+        std::string asUtf8();
+        // beware using this on text/html as it may have embedded charset definitions
+        std::string asUtf8Base64();
+        int error() const;
+        std::string str_error() const;
 
     private:
         std::string m_body;
         std::string m_contenttype;
         std::string m_charset;
         std::string m_transferenc;
-	std::string m_str_error;
-	int         m_error;
+        std::string m_str_error;
+        int m_error;
 
         friend class EmailExtractor;
     };
     typedef std::list<Body> BodyList;
+
     class Attachment
     {
     public:
@@ -71,10 +72,10 @@ public:
         const std::string &charset();
         const std::string &transferenc();
         const int size();
-	void save_attachment(std::string path);
-	std::string asBase64();
-	int error() const;
-	std::string str_error() const;
+        void save_attachment(std::string path);
+        std::string asBase64();
+        int error() const;
+        std::string str_error() const;
 
     private:
         std::string m_attachment;
@@ -85,8 +86,8 @@ public:
         std::string m_charset;
         std::string m_transferenc;
         int m_size;
-	std::string m_str_error;
-	int         m_error;
+        std::string m_str_error;
+        int m_error;
 
         friend class EmailExtractor;
     };
@@ -108,18 +109,19 @@ public:
 
     int error() const;
     std::string str_error() const;
-    
+
     static int base64_decode(const std::string &input, std::string &output);
     static int base64_encode(const std::string &input, std::string &output);
     static int base64_decode(const std::string &input, std::vector<unsigned char> &output);
     static int base64_encode(const std::vector<unsigned char> &input, std::string &output);
     static int base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static int base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
+    static int base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output,
+        bool preserve_crlf = false);
 
 private:
-    int         m_error;
+    int m_error;
     std::string m_str_error;
-    
+
     std::string m_fullpath;
     std::string m_msgid;
     std::string m_to;
@@ -130,7 +132,7 @@ private:
     std::string m_charset;
     std::string m_transferenc;
 
-    BodyList       m_bodies;
+    BodyList m_bodies;
     AttachmentList m_attachments;
 
     // saves bodies and attachments in memory

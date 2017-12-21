@@ -57,22 +57,22 @@ int main(int argc, char** argv)
     while ((option_char = getopt(argc, argv, "f:m:v:h")) != -1)
         switch (option_char)
         {
-        case 'f':
-            config_file = optarg;
-            break;
-        case 'v':
-            if (!strncmp(optarg, "1", 1))
-                verbose = 1;
-            else if (!strncmp(optarg, "2", 1))
-                verbose = 2;
-            else if (!strncmp(optarg, "3", 1))
-                verbose = 3;
-            else
+            case 'f':
+                config_file = optarg;
+                break;
+            case 'v':
+                if (!strncmp(optarg, "1", 1))
+                    verbose = 1;
+                else if (!strncmp(optarg, "2", 1))
+                    verbose = 2;
+                else if (!strncmp(optarg, "3", 1))
+                    verbose = 3;
+                else
+                    usage();
+                break;
+            case 'h':
+                default:
                 usage();
-            break;
-        case 'h':
-            default:
-            usage();
         }
 
     if (verbose)
@@ -146,35 +146,34 @@ int main(int argc, char** argv)
                 {
                     switch (loc.type)
                     {
-                    case NONSLOT:
+                        case NONSLOT:
                         {
-                        // a "Formatter" is responsible for providing services to stream and route the mail to a destination
-                        // a "MaildirFormatter" saves emails in maildir format to be served via imap
-                        MaildirFormatter *mailfmt;
+                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                            // a "MaildirFormatter" saves emails in maildir format to be served via imap
+                            MaildirFormatter *mailfmt;
 
-                        Aws::String dir = loc.destination.c_str();
-                        mailfmt = new MaildirFormatter(dir);
-                        item.pdownl->addFormatter(mailfmt);
-                        if (verbose)
-                            cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
-                    }
-                        break;
-                    case SLOT:
+                            Aws::String dir = loc.destination.c_str();
+                            mailfmt = new MaildirFormatter(dir);
+                            item.pdownl->addFormatter(mailfmt);
+                            if (verbose)
+                                cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                            break;
+                        }
+                        case SLOT:
                         {
-                        // a "Formatter" is responsible for providing services to stream and route the mail to a destination
-                        // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
-                        UCDPFormatter *ucdpfmt;
+                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                            // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
+                            UCDPFormatter *ucdpfmt;
 
-                        Aws::String workdir = loc.rest.workdir.c_str();
-                        ucdpfmt = new UCDPFormatter(workdir);
-                        item.pdownl->addFormatter(ucdpfmt);
-                        if (verbose)
-                            cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
-                    }
-                        break;
-                    default:
-                        cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring"
-                            << endl;
+                            Aws::String workdir = loc.rest.workdir.c_str();
+                            ucdpfmt = new UCDPFormatter(workdir);
+                            item.pdownl->addFormatter(ucdpfmt);
+                            if (verbose)
+                                cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                            break;
+                        }
+                        default:
+                            cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
                     }
                 }
                 // start the thread
