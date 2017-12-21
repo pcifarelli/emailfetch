@@ -41,6 +41,8 @@ public:
     static std::string unescape_json(const std::string &s);
 
 private:
+    void postToUCDP(std::string msgid, std::string date, EmailExtractor *email);
+
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
     UCDPCurlPoster m_poster;

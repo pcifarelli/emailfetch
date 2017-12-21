@@ -66,10 +66,14 @@ void UCDPFormatter::clean_up()
     string msgid;
     string date;
 
-    EmailExtractor email(m_fullpath.c_str());
+    // Since the email extractor saves everything in memory, lets keep it on the heap
+    EmailExtractor *email = new EmailExtractor(m_fullpath.c_str());
+
     // use rfc2822 msgid, if present.  It usually is, but it isn't strictly required
-    if (!email.msgid().length())
+    if (!email->msgid().length())
         msgid = m_objkey;
+    else
+        msgid = email->msgid() + "^" + m_objkey;
 
     most_of_the_date = m_message_drop_time.ToGmtString("%Y-%m-%dT%H:%M:%S");
     int64_t secs_ms = m_message_drop_time.Millis(); // milliseconds since epoch
@@ -81,6 +85,21 @@ void UCDPFormatter::clean_up()
     o << most_of_the_date << '.' << setfill('0') << setw(3) << ms << "Z";
     date = o.str();
 
+    postToUCDP(msgid, date, email);
+
+    delete email;
+}
+
+void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email)
+{
+    ostringstream o;
+
+    // Message 1
+    o << "{";
+    o << "\"" << "messageId" << "\":\"" << msgid         << "\"" << ",";
+    o << "\"" << "dateTime"  << "\":\"" << date          << "\"" << ",";
+    o << "\"" << "from"      << "\":\"" << email->from() << "\"" << ",";
+    o << "}";
 }
 
 string UCDPFormatter::escape_json(const string &s)
