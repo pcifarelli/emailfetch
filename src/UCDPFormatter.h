@@ -23,7 +23,16 @@
 class UCDPFormatter: public S3Downloader::Formatter
 {
 public:
-    UCDPFormatter(Aws::String workdir);
+    UCDPFormatter(
+        Aws::String workdir,
+        std::string ip,
+        std::string snihostname,
+        unsigned short port,
+        std::string certificate,
+        std::string certpassword,
+        std::string trclientid,
+        std::string trfeedid,
+        std::string trmessagetype);
     virtual ~UCDPFormatter();
     virtual void open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
     virtual void clean_up();
@@ -34,6 +43,7 @@ public:
 private:
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
+    UCDPCurlPoster m_poster;
 };
 
 #endif /* SRC_UCDPFORMATTER_H_ */

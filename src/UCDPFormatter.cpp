@@ -31,8 +31,18 @@
 
 using namespace std;
 
-UCDPFormatter::UCDPFormatter(Aws::String dir) :
-    Formatter(dir + "full/")
+UCDPFormatter::UCDPFormatter(
+    Aws::String dir,
+    std::string ip,
+    std::string snihostname,
+    unsigned short port,
+    std::string certificate,
+    std::string certpassword,
+    std::string trclientid,
+    std::string trfeedid,
+    std::string trmessagetype) :
+    Formatter(dir + "full/"),
+    m_poster(ip, certificate, certpassword, snihostname, port, true, trclientid, trfeedid, trmessagetype)
 {
 
 }

@@ -166,7 +166,16 @@ int main(int argc, char** argv)
                             UCDPFormatter *ucdpfmt;
 
                             Aws::String workdir = loc.rest.workdir.c_str();
-                            ucdpfmt = new UCDPFormatter(workdir);
+                            ucdpfmt = new UCDPFormatter(
+                                workdir,
+                                loc.destination,
+                                loc.rest.snihostname,
+                                loc.rest.port,
+                                loc.rest.certificate,
+                                loc.rest.certificatepassword,
+                                loc.rest.trclientid,
+                                loc.rest.trfeedid,
+                                loc.rest.trmessagetype);
                             item.pdownl->addFormatter(ucdpfmt);
                             if (verbose)
                                 cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
