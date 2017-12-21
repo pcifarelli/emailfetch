@@ -19,8 +19,6 @@
 #include "UCDPCurlPoster.h"
 using namespace std;
 
-namespace S3Downloader
-{
 
 UCDPCurlPoster::UCDPCurlPoster(std::string url, bool chunked) :
     m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
@@ -297,4 +295,4 @@ int UCDPCurlPoster::postIt(const char *url, const char *data, int sz)
     return 0;
 }
 
-} /* namespace S3Downloader */
+

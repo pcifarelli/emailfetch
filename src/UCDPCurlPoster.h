@@ -16,8 +16,6 @@
 #include <curl/curl.h>
 #include <iostream>
 
-namespace S3Downloader
-{
 
 class UCDPCurlPoster
 {
@@ -27,11 +25,11 @@ public:
         std::string ip,                                                       // the ip to post to
         std::string certificate,                                              // the certificate filename
         std::string certpassword,                                             // the certificate password
-        std::string hostname = "eapfastemail.ucdp.thomsonreuters.com",   // the hostname (the "Server" in "Server Name Indication")
-        unsigned short port = 8301,                                     // the port
-        bool chunked = false,                                    // chunked transfer or not
-        std::string trclientid = "eapfastemail",                           // the TR client id
-        std::string trfeedid = "news_eapfe",                             // the TR feed id
+        std::string hostname = "eapfastemail.ucdp.thomsonreuters.com",        // the hostname (the "Server" in "Server Name Indication")
+        unsigned short port = 8301,                                           // the port
+        bool chunked = false,                                                 // chunked transfer or not
+        std::string trclientid = "eapfastemail",                              // the TR client id
+        std::string trfeedid = "news_eapfe",                                  // the TR feed id
         std::string trmessagetype = "EmailML");                               // the UCDP message type (format of the content)
     virtual ~UCDPCurlPoster();
 
@@ -85,6 +83,6 @@ private:
     int postIt(const char *url, const char *data, int sz);
 };
 
-} /* namespace S3Downloader */
+
 
 #endif /* SRC_UCDPCURLPOSTER_H_ */
