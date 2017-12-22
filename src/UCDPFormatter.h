@@ -33,7 +33,7 @@ public:
         std::string trclientid,
         std::string trfeedid,
         std::string trmessagetype,
-        std::string trmessageprio,
+        int trmessageprio,
         bool validate_json,
         int verbose = 0);
     virtual ~UCDPFormatter();
@@ -46,13 +46,26 @@ public:
 private:
     void postToUCDP(std::string msgid, std::string date, EmailExtractor *email, bool validate = true);
     std::string fmtToField( std::string csstr );
+    std::string formatMessage1(std::ostringstream &o, std::string msgid, std::string date, EmailExtractor *email, bool validate);
+    std::string formatMessage2(std::ostringstream &o, std::string msgid, std::string date, EmailExtractor *email, bool validate);
+    std::string formatMessage3(std::ostringstream &o, std::string msgid, std::string date, EmailExtractor *email, bool validate);
+    std::string formatMessage4(std::ostringstream &o, int num, std::string msgid, std::string date, EmailExtractor::Body &body, bool validate);
+    std::string formatMessage5(std::ostringstream &o, int num, std::string msgid, std::string date, EmailExtractor::Attachment &attachment, bool validate);
+    void check_result(std::string result, std::string trmsgid);
 
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
-    UCDPCurlPoster m_poster;
     int m_verbose;
-    std::string m_trmessageprio;
     bool m_validate_json;
+    int m_trmessageprio;
+    std::string m_ip;
+    std::string m_certificate;
+    std::string m_certpassword;
+    std::string m_snihostname;
+    unsigned short m_port;
+    std::string m_trclientid;
+    std::string m_trfeedid;
+    std::string m_trmessagetype;
 };
 
 #endif /* SRC_UCDPFORMATTER_H_ */
