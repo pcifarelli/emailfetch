@@ -44,7 +44,7 @@ void usage()
 {
     cout << "Usage: emailfetch [-f <config file>] [-vN] [-h]" << endl
         << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
-        << "         -vN\t\t\tverbose output level, N=1,2 or 3" << endl << "         -h\t\t\tthis help" << endl;
+        << "         -vN\t\t\tverbose output level, N=1,2,3 or 4" << endl << "         -h\t\t\tthis help" << endl;
     exit(0);
 }
 
@@ -67,6 +67,8 @@ int main(int argc, char** argv)
                     verbose = 2;
                 else if (!strncmp(optarg, "3", 1))
                     verbose = 3;
+                else if (!strncmp(optarg, "4", 1))
+                    verbose = 4;
                 else
                     usage();
                 break;
@@ -113,22 +115,6 @@ int main(int argc, char** argv)
     sigaction(SIGTERM, &termaction, 0);
     sigaction(SIGINT, &termaction, 0);
     sigaction(SIGQUIT, &termaction, 0);
-
-//    UCDPCurlPoster cp("159.220.49.19", "./cfg/ucdp_eapfastemail.pem", "password");
-//
-//    cp.setNoProxy();
-//    cp.post(3, "7384e2839472943875349873977",
-//        "{\"type\":\"Test\", \
-//          \"title\":\"Me\", \
-//          \"description\":\"this is a test\"}");
-//    cout << cp.getResult();
-//
-//    cp.post(3, "8485e2839472943875349873988",
-//        "{\"type\":\"Test\", \
-//          \"title\":\"Me 2\", \
-//          \"description\":\"this is a test - the second one\"}");
-//    cout << cp.getResult();
-//
 
     // setup the AWS SDK
     SDKOptions options;
