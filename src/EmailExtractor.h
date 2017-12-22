@@ -118,6 +118,17 @@ public:
     static int base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output,
         bool preserve_crlf = false);
 
+    // some convenience functions
+    static bool is_utf8(std::string charset);
+    static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
+    static std::string str_tolower(std::string s);
+    static std::string str_toupper(std::string s);
+    static void ltrim(std::string &s);
+    static void rtrim(std::string &s);
+    static void trim(std::string &s);
+    static std::string strip_semi(std::string &s);
+    static std::string strip_quotes(std::string &s);
+
 private:
     int m_error;
     std::string m_str_error;
@@ -141,17 +152,6 @@ private:
     // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
     static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary,
         std::vector<unsigned char> &rawbody, bool strip_crlf = true);
-
-    // some convenience functions
-    static inline bool is_utf8(std::string charset);
-    static int to_utf8(std::string charset, std::vector<unsigned char> &in, std::vector<unsigned char> &out);
-    static inline std::string str_tolower(std::string s);
-    static inline std::string str_toupper(std::string s);
-    static inline void ltrim(std::string &s);
-    static inline void rtrim(std::string &s);
-    static inline void trim(std::string &s);
-    static inline std::string strip_semi(std::string &s);
-    static inline std::string strip_quotes(std::string &s);
 
     // the heavy lifting functions
     static const int UTF8_MAX = 6;
