@@ -42,7 +42,7 @@ struct location_type
         std::string trclientid;
         std::string trfeedid;
         std::string trmessagetype;
-        std::string trmessageprio;
+        int         trmessageprio;
     } rest;
 };
 typedef std::list<location_type> location_list;
@@ -82,7 +82,7 @@ struct program_defaults
         std::string trclientid;
         std::string trfeedid;
         std::string trmessagetype;
-        std::string trmessageprio;
+        int         trmessageprio;
     } UCDP_defaults;
 };
 

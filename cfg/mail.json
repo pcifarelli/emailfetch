@@ -12,9 +12,10 @@
     },
    "UCDP"  : 
    {
-     "trmessagepriority"   : "3",
+     "trmessagepriority"   : 3,
      "validate_json"       : true,
      "port"                : 8301,
+     "snihostname"         : "eapfastemail.ucdp.thomsonreuters.com",
      "certificate"         : "./cfg/ucdp_eapfastemail.pem",
      "certificatepassword" : "password",
      "trclientid"          : "eapfastemail",
@@ -52,7 +53,7 @@
          "description"      : "Feed 2 Mailbox",
          "email"       : "feed2@testaws.pcifarelli.net",
          "locations" : [ { "mailbox" : true, "workdir" : "./mail2" },
-                         { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19", "validate_json" : false, "trmessagepriority" : "4" } 
+                         { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19", "validate_json" : false, "trmessagepriority" : 4 } 
          ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",
