@@ -32,7 +32,10 @@ public:
         std::string certpassword,
         std::string trclientid,
         std::string trfeedid,
-        std::string trmessagetype);
+        std::string trmessagetype,
+        std::string trmessageprio,
+        bool validate_json,
+        int verbose = 0);
     virtual ~UCDPFormatter();
     virtual void open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
     virtual void clean_up();
@@ -41,11 +44,15 @@ public:
     static std::string unescape_json(const std::string &s);
 
 private:
-    void postToUCDP(std::string msgid, std::string date, EmailExtractor *email);
+    void postToUCDP(std::string msgid, std::string date, EmailExtractor *email, bool validate = true);
+    std::string fmtToField( std::string csstr );
 
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
     UCDPCurlPoster m_poster;
+    int m_verbose;
+    std::string m_trmessageprio;
+    bool m_validate_json;
 };
 
 #endif /* SRC_UCDPFORMATTER_H_ */

@@ -25,9 +25,13 @@
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
+#include <aws/core/utils/json/JsonSerializer.h>
 
 #include "EmailExtractor.h"
 #include "UCDPFormatter.h"
+
+// for the SHA functions
+#include "MaildirFormatter.h"
 
 using namespace std;
 
@@ -40,9 +44,15 @@ UCDPFormatter::UCDPFormatter(
     std::string certpassword,
     std::string trclientid,
     std::string trfeedid,
-    std::string trmessagetype) :
+    std::string trmessagetype,
+    std::string trmessageprio,
+    bool validate_json,
+    int verbose) :
     Formatter(dir + "full/"),
-    m_poster(ip, certificate, certpassword, snihostname, port, true, trclientid, trfeedid, trmessagetype)
+    m_poster(ip, certificate, certpassword, snihostname, port, true, trclientid, trfeedid, trmessagetype),
+    m_trmessageprio(trmessageprio),
+    m_validate_json(validate_json),
+    m_verbose(verbose)
 {
 
 }
@@ -85,21 +95,152 @@ void UCDPFormatter::clean_up()
     o << most_of_the_date << '.' << setfill('0') << setw(3) << ms << "Z";
     date = o.str();
 
-    postToUCDP(msgid, date, email);
+    postToUCDP(msgid, date, email, m_validate_json);
 
     delete email;
 }
 
-void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email)
+string UCDPFormatter::fmtToField( string csstr )
 {
+    std::istringstream iss(csstr);
+    std::string innerarr;
+    int num_tos = 0;
+
+    // tokenize by comma
+    std::string s;
+    while (std::getline(iss, s, ','))
+    {
+        EmailExtractor::trim(s);
+        if (s != "")
+        {
+            innerarr += "\"" + s + "\",";
+            num_tos++;
+        }
+    }
+
+    // remove the last comma
+    auto c = innerarr.cend();
+    c--;
+    if (*c == ',')
+        innerarr.erase(c);
+
+    if (num_tos > 1)
+        return "[" + innerarr + "]";
+
+    return innerarr;
+}
+
+void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email, bool validate)
+{
+    string trmsgid, post_trmsgid;
     ostringstream o;
 
     // Message 1
     o << "{";
     o << "\"" << "messageId" << "\":\"" << msgid         << "\"" << ",";
     o << "\"" << "dateTime"  << "\":\"" << date          << "\"" << ",";
-    o << "\"" << "from"      << "\":\"" << email->from() << "\"" << ",";
+    o << "\"" << "from"      << "\":\"" << email->from() << "\"";
     o << "}";
+
+    if (validate)
+    {
+        istringstream istrm( o.str() );
+        Aws::Utils::Json::JsonValue jv(istrm);
+        if (!jv.WasParseSuccessful())
+        {
+            cout << "Failed to validate json (Message 1): " << endl;
+            cout << o.str() << endl;
+        }
+    }
+
+    // append a "1" and sha to get the trmsgid.  If it fails, just use the pre-sha trmsgid
+    trmsgid = msgid + "_1";
+    if (MaildirFormatter::sha256_as_str((void *) trmsgid.c_str(), trmsgid.length(), post_trmsgid))
+        trmsgid = post_trmsgid;
+
+    if (m_verbose >= 3)
+    {
+        cout << "Message 1: " << endl;
+        cout << trmsgid << endl;
+        cout << o.str() << endl;
+    }
+
+    // Now post
+    // m_poster.post( m_trmessageprio, trmsgid, o.str() );
+
+    o.str("");
+    o.clear();
+
+    // Message 2
+    o << "{";
+    o << "\"" << "messageId" << "\":\"" << msgid         << "\"" << ",";
+    o << "\"" << "dateTime"  << "\":\"" << date          << "\"" << ",";
+    o << "\"" << "to"        << "\":" << fmtToField(email->to());
+    o << "}";
+
+    if (validate)
+    {
+        istringstream istrm( o.str() );
+        Aws::Utils::Json::JsonValue jv(istrm);
+        if (!jv.WasParseSuccessful())
+        {
+            cout << "Failed to validate json (Message 2): " << endl;
+            cout << o.str() << endl;
+        }
+    }
+
+    trmsgid = msgid + "_2";
+    if (MaildirFormatter::sha256_as_str((void *) trmsgid.c_str(), trmsgid.length(), post_trmsgid))
+        trmsgid = post_trmsgid;
+
+    if (m_verbose >= 3)
+    {
+        cout << "Message 2: " << endl;
+        cout << trmsgid << endl;
+        cout << o.str() << endl;
+    }
+
+    // Now post
+    // m_poster.post( m_trmessageprio, trmsgid, o.str() );
+
+    o.str("");
+    o.clear();
+
+    // Message 3
+    o << "{";
+    o << "\"" << "messageId" << "\":\"" << msgid            << "\"" << ",";
+    o << "\"" << "dateTime"  << "\":\"" << date             << "\"" << ",";
+    o << "\"" << "subject"   << "\":\"" << email->subject() << "\"";
+    o << "}";
+
+    if (validate)
+    {
+        istringstream istrm( o.str() );
+        Aws::Utils::Json::JsonValue jv(istrm);
+        if (!jv.WasParseSuccessful())
+        {
+            cout << "Failed to validate json (Message 3): " << endl;
+            cout << o.str() << endl;
+        }
+    }
+
+    trmsgid = msgid + "_3";
+    if (MaildirFormatter::sha256_as_str((void *) trmsgid.c_str(), trmsgid.length(), post_trmsgid))
+        trmsgid = post_trmsgid;
+
+    if (m_verbose >= 3)
+    {
+        cout << "Message 3: " << endl;
+        cout << trmsgid << endl;
+        cout << o.str() << endl;
+    }
+
+    // Now post
+    // m_poster.post( m_trmessageprio, trmsgid, o.str() );
+
+    o.str("");
+    o.clear();
+
 }
 
 string UCDPFormatter::escape_json(const string &s)
