@@ -39,6 +39,7 @@ struct program_defaults defaults =
             "./mail/%d/%u@%d/"
         },
         {
+            false,
             "./mail/slot/%f",
             8301,
             "eapfastemail.ucdp.thomsonreuters.com",
@@ -46,7 +47,8 @@ struct program_defaults defaults =
             "password",
             "eapfastemail",
             "news_eapfe",
-            "EmailML"
+            "EmailML",
+            "3"
         }
     };
 
@@ -126,6 +128,10 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
             defaults.UCDP_defaults.trmessagetype = ucdpdefaults.GetString("trmessagetype").c_str();
         if (ucdpdefaults.ValueExists("workdir"))
             defaults.UCDP_defaults.workdir = ucdpdefaults.GetString("workdir").c_str();
+        if (ucdpdefaults.ValueExists("trmessagepriority"))
+            defaults.UCDP_defaults.trmessageprio = ucdpdefaults.GetString("trmessagepriority").c_str();
+        if (ucdpdefaults.ValueExists("validate_json"))
+            defaults.UCDP_defaults.validate_json = ucdpdefaults.GetString("validate_json").c_str();
     }
 }
 
@@ -329,6 +335,16 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                             loc.rest.trmessagetype = locations[j].GetString("trmessagetype").c_str();
                         else
                             loc.rest.trmessagetype = defaults.UCDP_defaults.trmessagetype;
+
+                        if (locations[j].ValueExists("trmessagepriority"))
+                            loc.rest.trmessageprio = locations[j].GetString("trmessagepriority").c_str();
+                        else
+                            loc.rest.trmessageprio = defaults.UCDP_defaults.trmessageprio;
+
+                        if (locations[j].ValueExists("validate_json"))
+                            loc.rest.validate_json = locations[j].GetBool("validate_json");
+                        else
+                            loc.rest.validate_json = defaults.UCDP_defaults.validate_json;
                     }
                     else
                     {
@@ -406,11 +422,13 @@ void print_config(config_list &mailboxconfig)
                 if (loc.rest.UCDP)
                 {
                     cout << "CONFIG:       " << i << ". Type:     " << "SLOT: UCDP destination" << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   IP:          " << loc.destination << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   Port:        " << loc.rest.port << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   ClientId:    " << loc.rest.trclientid << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   FeedId:      " << loc.rest.trfeedid << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   MessageType: " << loc.rest.trmessagetype << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   IP:            " << loc.destination << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   Port:          " << loc.rest.port << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   ClientId:      " << loc.rest.trclientid << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   FeedId:        " << loc.rest.trfeedid << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   MessageType:   " << loc.rest.trmessagetype << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   MessagePrio:   " << loc.rest.trmessageprio << endl;
+                    cout << "CONFIG:       " << i << ". Slot:     " << "   ValidateJson?: " << loc.rest.validate_json << endl;
                 }
                 else
                 {

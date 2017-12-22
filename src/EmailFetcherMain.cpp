@@ -153,7 +153,7 @@ int main(int argc, char** argv)
                             MaildirFormatter *mailfmt;
 
                             Aws::String dir = loc.destination.c_str();
-                            mailfmt = new MaildirFormatter(dir);
+                            mailfmt = new MaildirFormatter(dir, verbose);
                             item.pdownl->addFormatter(mailfmt);
                             if (verbose)
                                 cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
@@ -175,7 +175,10 @@ int main(int argc, char** argv)
                                 loc.rest.certificatepassword,
                                 loc.rest.trclientid,
                                 loc.rest.trfeedid,
-                                loc.rest.trmessagetype);
+                                loc.rest.trmessagetype,
+                                loc.rest.trmessageprio,
+                                loc.rest.validate_json,
+                                verbose);
                             item.pdownl->addFormatter(ucdpfmt);
                             if (verbose)
                                 cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
