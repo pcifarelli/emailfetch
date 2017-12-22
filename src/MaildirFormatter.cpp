@@ -147,7 +147,7 @@ int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key
     tv.tv_sec = ts;
     tv.tv_usec = std::chrono::duration_cast < std::chrono::microseconds > (t - ts_m).count();
 
-    if (m_verbose >= 3)
+    if (m_verbose >= 4)
     {
         std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count() << std::endl;
 
