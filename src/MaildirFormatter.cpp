@@ -19,8 +19,8 @@
 
 unsigned int MaildirFormatter::m_q_sequence = 0;
 
-MaildirFormatter::MaildirFormatter(Aws::String dir) :
-    Formatter(dir), m_isopen(false)
+MaildirFormatter::MaildirFormatter(Aws::String dir, int verbose) :
+    Formatter(dir), m_isopen(false), m_verbose(verbose)
 {
     char host[NI_MAXHOST];
 
@@ -146,16 +146,17 @@ int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key
 
     tv.tv_sec = ts;
     tv.tv_usec = std::chrono::duration_cast < std::chrono::microseconds > (t - ts_m).count();
-    //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count() << std::endl;
 
-    //std::cout << "Key: " << obj.GetKey() << std::endl;
-    //std::cout << "Size: " << obj.GetSize() << std::endl;
-    //std::cout << "LastModified: " << obj.GetLastModified().ToGmtString("%F %T") << std::endl;
-    //std::cout << "LastModified TS: " << ts << std::endl;
-    //std::cout << "ETag: " << obj.GetETag() << std::endl;
+    if (m_verbose >= 3)
+    {
+        std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count() << std::endl;
 
-    //snprintf(usecs, sizeof(usecs), "%06ld", tv.tv_usec);
-    //std::cout << tv.tv_usec << "   " << usecs << std::endl;
+        std::cout << "Key: " << obj.GetKey() << std::endl;
+        std::cout << "Size: " << obj.GetSize() << std::endl;
+        std::cout << "LastModified: " << obj.GetLastModified().ToGmtString("%F %T") << std::endl;
+        std::cout << "LastModified TS: " << ts << std::endl;
+        std::cout << "ETag: " << obj.GetETag() << std::endl;
+    }
 
     // increment the Q for this process
     ++m_q_sequence;

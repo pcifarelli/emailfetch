@@ -24,7 +24,7 @@
 class MaildirFormatter: public S3Downloader::Formatter
 {
 public:
-    MaildirFormatter(Aws::String dir);
+    MaildirFormatter(Aws::String dir, int verbose = 0);
     virtual ~MaildirFormatter();
 
     // open the file
@@ -62,6 +62,7 @@ protected:
     Aws::String m_curdir;
     Aws::String m_tmpdir;
     Aws::String m_newdir;
+    int m_verbose;
 };
 
 #endif /* SRC_MAILDIRFORMATTER_H_ */
