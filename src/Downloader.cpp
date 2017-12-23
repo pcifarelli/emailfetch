@@ -170,6 +170,7 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
 
     DIR *dir;
     struct dirent *ent;
+    struct dirent entry;
     struct stat fstats;
     std::string fname;
     std::string fullpath;
@@ -183,14 +184,20 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
     {
         do
         {
-            // funny, readdir_r is deprecated, and readdir reentrant in modern implementations.  who knew
+#if defined(__GLIBC__) && __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 24
+            // funny, readdir_r is deprecated in glibc and above, and readdir reentrant in those implementations.  who knew
             ent = readdir(dir);
+#else
+            readdir_r(dir, &entry, &ent);
+#endif
             if (ent)
             {
                 fname = ent->d_name;
+                auto cc = fname.cbegin();
+
                 fullpath = dirname + c + fname;
                 if (!stat(fullpath.c_str(), &fstats))
-                    if (S_ISREG(fstats.st_mode))
+                    if (S_ISREG(fstats.st_mode) && (*cc != '.')) // only regular files and ones that are not *achem* "hidden"
                     {
                         auto n = std::chrono::system_clock::now();
                         std::time_t now = std::chrono::system_clock::to_time_t(n);
