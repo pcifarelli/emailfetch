@@ -64,13 +64,32 @@ UCDPFormatter::~UCDPFormatter()
 
 void UCDPFormatter::open(const Aws::S3::Model::Object obj, const ios_base::openmode mode)
 {
-    // see if we failed to post the last email we were working on to completion, and finish it up before working on this one
-    recover();
-
     m_objkey = obj.GetKey().c_str();
     m_message_drop_time = obj.GetLastModified();
 
-    Formatter::open(obj, mode);
+    // open the filename with a prefixed '.' - the Downloader will ignore files beginning with '.'
+    // (we will rename the file back to the name returned by mkname() when we are done processing it)
+    // this way if we are killed before finishing the post, the downloader will downloading it again on restart
+    Aws::String pathname = getSaveDir();
+    std::string stash_name = "." + mkname(obj);
+    Aws::String filename = stash_name.c_str();
+
+    Aws::String c = "";
+    close(); // close any still open
+
+    // make sure we have a '/' at the end of the path
+    std::size_t n = pathname.find_last_of('/');
+    if (n != std::string::npos && n != pathname.length() - 1)
+        c = "/";
+
+    // contruct the full path
+    m_fullpath = pathname + c + filename;
+
+    // save the name
+    m_name = filename;
+
+    // open the local_file stream
+    m_local_file.open(m_fullpath.c_str(), mode);
 }
 
 void UCDPFormatter::recover()
@@ -82,31 +101,18 @@ void UCDPFormatter::recover()
     // remove the markers
 }
 
-string UCDPFormatter::stash(string fname)
+void UCDPFormatter::unstash()
 {
-    string nfname = fname;
-    std::size_t nn = nfname.find_last_of('/');
-    if (nn != std::string::npos)
-        nfname.insert(nn+1, 1, '.');
-    else
-        nfname.insert(0, 1, '.');
-
-    rename(fname.c_str(), nfname.c_str());
-    return nfname;
-}
-
-string UCDPFormatter::unstash(std::string fname)
-{
-    string nfname = fname;
+    string nfname = m_fullpath.c_str();
 
     std::size_t nn = nfname.find_last_of('/');
     if (nn != std::string::npos)
-        nfname.insert(nn+1, 1, '.');
-    else
-        nfname.insert(0, 1, '.');
+        nfname.erase(nn+1, 1);
 
-    rename(nfname.c_str(), fname.c_str());
-    return fname;
+    rename(m_fullpath.c_str(), nfname.c_str());
+
+    m_name = m_objkey.c_str();
+    m_fullpath = nfname.c_str();
 }
 
 
@@ -144,11 +150,12 @@ void UCDPFormatter::processEmail(std::string fname)
 void UCDPFormatter::clean_up()
 {
     // the idea is that the downloader will ignore files that start with a '.'
-    // stash() renames the file to start with the '.' - this way if we are interrupted
+    // the file was opened with the '.' - this way if we are interrupted
     // while processing this file, the downloader will fetch it again when we restart.
-    string fname = stash(m_fullpath.c_str());
-    processEmail(fname);
-    unstash(m_fullpath.c_str());
+    processEmail(m_fullpath.c_str());
+
+    // remove the '.' so that the file gets tracked
+    unstash();
 }
 
 string UCDPFormatter::fmtToField( string csstr )

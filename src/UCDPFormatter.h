@@ -55,8 +55,7 @@ private:
 
     void recover();
     void processEmail(std::string fname);
-    std::string static inline stash(std::string fname);
-    std::string static inline unstash(std::string fname);
+    void unstash();
 
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
