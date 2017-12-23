@@ -53,6 +53,11 @@ private:
     std::string formatMessage5(std::ostringstream &o, int num, std::string msgid, std::string date, EmailExtractor::Attachment &attachment, bool validate);
     void check_result(std::string result, std::string trmsgid);
 
+    void recover();
+    void processEmail(std::string fname);
+    std::string static inline stash(std::string fname);
+    std::string static inline unstash(std::string fname);
+
     std::string m_objkey;
     Aws::Utils::DateTime m_message_drop_time;
     int m_verbose;

@@ -11,6 +11,7 @@
 #include <aws/s3/model/Object.h>
 #include <aws/s3/model/GetObjectRequest.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <iconv.h>
 #include <cstddef>
 #include <string>
@@ -63,20 +64,60 @@ UCDPFormatter::~UCDPFormatter()
 
 void UCDPFormatter::open(const Aws::S3::Model::Object obj, const ios_base::openmode mode)
 {
+    // see if we failed to post the last email we were working on to completion, and finish it up before working on this one
+    recover();
+
     m_objkey = obj.GetKey().c_str();
     m_message_drop_time = obj.GetLastModified();
 
     Formatter::open(obj, mode);
 }
 
-void UCDPFormatter::clean_up()
+void UCDPFormatter::recover()
+{
+    // check for markers indicating incomplete process
+
+    // process the old email
+
+    // remove the markers
+}
+
+string UCDPFormatter::stash(string fname)
+{
+    string nfname = fname;
+    std::size_t nn = nfname.find_last_of('/');
+    if (nn != std::string::npos)
+        nfname.insert(nn+1, 1, '.');
+    else
+        nfname.insert(0, 1, '.');
+
+    rename(fname.c_str(), nfname.c_str());
+    return nfname;
+}
+
+string UCDPFormatter::unstash(std::string fname)
+{
+    string nfname = fname;
+
+    std::size_t nn = nfname.find_last_of('/');
+    if (nn != std::string::npos)
+        nfname.insert(nn+1, 1, '.');
+    else
+        nfname.insert(0, 1, '.');
+
+    rename(nfname.c_str(), fname.c_str());
+    return fname;
+}
+
+
+void UCDPFormatter::processEmail(std::string fname)
 {
     Aws::String most_of_the_date;
     string msgid;
     string date;
 
     // Since the email extractor saves everything in memory, lets keep it on the heap
-    EmailExtractor *email = new EmailExtractor(m_fullpath.c_str());
+    EmailExtractor *email = new EmailExtractor(fname);
 
     // use rfc2822 msgid, if present.  It usually is, but it isn't strictly required
     if (!email->msgid().length())
@@ -97,6 +138,17 @@ void UCDPFormatter::clean_up()
     postToUCDP(msgid, date, email, m_validate_json);
 
     delete email;
+}
+
+
+void UCDPFormatter::clean_up()
+{
+    // the idea is that the downloader will ignore files that start with a '.'
+    // stash() renames the file to start with the '.' - this way if we are interrupted
+    // while processing this file, the downloader will fetch it again when we restart.
+    string fname = stash(m_fullpath.c_str());
+    processEmail(fname);
+    unstash(m_fullpath.c_str());
 }
 
 string UCDPFormatter::fmtToField( string csstr )
