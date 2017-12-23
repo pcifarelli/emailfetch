@@ -185,7 +185,7 @@ FileTrackerMap *Downloader::mkdirmap(Formatter &fmt, time_t secs_back)
         do
         {
 #if defined(__GLIBC__) && __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 24
-            // funny, readdir_r is deprecated in glibc and above, and readdir reentrant in those implementations.  who knew
+            // funny, readdir_r is deprecated in glibc 2.24 and above, and readdir reentrant in those implementations.  who knew
             ent = readdir(dir);
 #else
             readdir_r(dir, &entry, &ent);
