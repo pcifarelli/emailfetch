@@ -13,14 +13,18 @@
     },
    "UCDP"  : 
    {
-   		"port"                : 8301,
-   		"certificate"         : "./cfg/ucdp_eapfastemail.pem",
-   		"certificatepassword" : "password",
-   		"trclientid"          : "eapfastemail",
-   		"trfeedid"            : "news_eapfe",
-   		"trmessagetype"       : "EmailML",
-   		"workdir"             : "/vmail/slot/%f/%a"
+   	"port"                : 8301,
+     	"snihostname"         : "eapfastemail.ucdp.thomsonreuters.com",
+   	"certificate"         : "./cfg/ucdp_eapfastemail.pem",
+   	"certificatepassword" : "password",
+   	"trclientid"          : "eapfastemail",
+   	"trfeedid"            : "news_eapfe",
+   	"trmessagetype"       : "EmailML",
+     	"trmessagepriority"   : 3,
+   	"workdir"             : "/vmail/slot/%f/%a",
+     	"validate_json"       : true
    }
+   
 },
 
 "mailbox"   : 
@@ -44,8 +48,7 @@
          "locations" : [ 
             { "mailbox" : true , "public" : false, "user" : "paul" },
             { "mailbox" : true,  "public" : true },
-            { "mailbox" : false, "UCDP"    : false,  "url" : "https://10.51.13.4/ucdprest/publish" },
-            { "mailbox" : false, "UCDP"    : true,   "ip" : "159.220.49.19" }
+            { "mailbox" : false, "UCDP"   : true,   "ip" : "159.220.49.19" }
          ]
       },
       { 
