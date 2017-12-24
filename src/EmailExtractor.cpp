@@ -672,10 +672,11 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
                     charset = extract_attr("charset", b);
 
             }
-            else if (sm_next.size())
+            if (sm_next.size())
             {
                 boundary = sm_next[3];
-                contenttype = sm[2];
+                if (!contenttype.length())
+                    contenttype = sm[2];
             }
 
             regex_search(boundary, sm_semi, e_semi);
