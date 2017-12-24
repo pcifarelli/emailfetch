@@ -672,51 +672,28 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
     {
         string ct = sm[2].str();
 
-        regex_match(ct, sm1, e_boundary1);
-        regex_match(next, sm_next, e_boundary3);
-        if (sm1.size() > 0)
-        {
-            string mpt = sm1[2].str();
-            trim(mpt);
-            regex_match(mpt, sm2, e_boundary2);
-            if (sm2.size())
-            {
-                smatch smb;
-                string b = sm2[2].str();
-                regex_match(b, smb, e_boundary3);
-                boundary = smb[3];
-                contenttype = "multipart/" + sm2[1].str();
-                if (b.find("charset") != string::npos)
-                    charset = extract_attr("charset", b);
+	auto c = next.cbegin();
+	if (*c == ' ' || *c == '\t')
+	    ct += next;
 
-            }
-            if (sm_next.size())
-            {
-                boundary = sm_next[3];
-                if (!contenttype.length())
-                    contenttype = sm[2];
-            }
-
-            regex_search(boundary, sm_semi, e_semi);
-            if (sm_semi.size())
-                boundary = boundary.substr(0, sm_semi.position(0));
-
-            strip_semi(boundary);
-            strip_quotes(boundary);
-        }
-        else
-            contenttype = sm[2];
-
-        if (!charset.length())
-            charset = extract_attr("charset", contenttype);
-
-        trim(contenttype);
-
-        regex_search(contenttype, sm_semi, e_semi);
-        if (sm.size())
-            contenttype = contenttype.substr(0, sm_semi.position(0));
-
-        strip_semi(contenttype);
+	string attr;
+	istringstream iss(ct);
+	getline(iss, attr, ';');
+	trim(attr);
+	contenttype = attr;
+	while (getline(iss, attr, ';'))
+	{
+	    trim(attr);
+	    size_t pos_eq = attr.find('=');
+	    string a = attr.substr(0, pos_eq);
+	    string v = attr.substr(pos_eq + 1);
+	    trim(v);
+	    strip_quotes(v);
+	    if (a == "charset")
+		charset = str_tolower( v );
+	    else if (a == "boundary")
+		boundary = v;
+	}
     }
 }
 
