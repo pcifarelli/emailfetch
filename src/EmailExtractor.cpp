@@ -654,7 +654,7 @@ string EmailExtractor::extract_attr(string attr, string line)
     return value;
 }
 
-void EmailExtractor::extract_contenttype(string s, string next, string &contenttype, string &boundary, string &charset)
+void EmailExtractor::extract_contenttype(vector<string> &lines, string &contenttype, string &boundary, string &charset, string &name)
 {
     regex e_contenttype("^(Content-Type:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
@@ -667,15 +667,19 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
     regex e_semi("[; \t]");
     smatch sm_semi;
 
-    regex_match(s, sm, e_contenttype);
+    regex_match(lines.front(), sm, e_contenttype);
     if (!contenttype.length() && sm.size() > 0)
     {
-        string ct = sm[2].str();
-
-	auto c = next.cbegin();
-	if (*c == ' ' || *c == '\t')
-	    ct += next;
-
+	string ct = sm[2].str();
+	trim(ct);
+	
+	for (auto it = lines.cbegin(); it != lines.cend(); ++it)
+	{
+	    auto c = it->cbegin();
+	    if (*c == ' ' || *c == '\t')
+		ct += *it;
+	}
+	
 	string attr;
 	istringstream iss(ct);
 	getline(iss, attr, ';');
@@ -691,6 +695,10 @@ void EmailExtractor::extract_contenttype(string s, string next, string &contentt
 	    strip_quotes(v);
 	    if (a == "charset")
 		charset = str_tolower( v );
+//	    else if (a == "type")
+//		contenttype = v;
+	    else if (a == "name")
+		name = v;
 	    else if (a == "boundary")
 		boundary = v;
 	}
@@ -758,6 +766,7 @@ int EmailExtractor::scan_headers(ifstream &infile,
 				 Attachment &att)
 {
     string prev = "", s = "", next = "";
+    regex e_contenttype("^(Content-Type:)(.*)");
     regex e_msgid("^(Message-[Ii][Dd]:).*<(.*)>(.*)");
     regex e_to("^(To:)[ \t]*(.*)");
     regex e_from("^(From:)[ \t]*(.*)");
@@ -769,11 +778,14 @@ int EmailExtractor::scan_headers(ifstream &infile,
     regex e_nexthdr("^([^ \t]+)(.*)");
     smatch sm;
 
+    bool in_contenttype = false;
     bool in_content_disposition = false;
     bool in_multiline_subject = false;
     bool in_multiline_to = false;
     bool nexthdr = false;
 
+    vector<string> contenttypelines;
+    
     bool last = false;
     while (infile.good() || last)
     {
@@ -854,7 +866,25 @@ int EmailExtractor::scan_headers(ifstream &infile,
             trim(transferenc);
         }
 
-        extract_contenttype(s, next, contenttype, boundary, charset);
+	regex_match(s, sm, e_contenttype);
+	if (!contenttype.length() && sm.size() > 0)
+	{
+	    in_contenttype = true;
+	    contenttypelines.insert(contenttypelines.cend(), s);
+	}
+	else if (in_contenttype)
+	{
+	    
+	    if (!nexthdr && !last)
+		contenttypelines.insert(contenttypelines.cend(), s);
+	    else
+	    {
+		in_contenttype = false;
+		extract_contenttype(contenttypelines, contenttype, boundary, charset, att.m_attachment_filename);
+		if (att.m_attachment_filename.length())
+		    contentdisposition = "inline";
+	    }
+	}
 
         regex_match(s, sm, e_disp);
         if (sm.size() > 0)
@@ -902,7 +932,15 @@ int EmailExtractor::scan_headers(ifstream &infile,
         }
 
         if (!s.length()) // end of header section
+	{
+	    if (in_contenttype)
+	    {
+		extract_contenttype(contenttypelines, contenttype, boundary, charset, att.m_attachment_filename);
+		if (att.m_attachment_filename.length())
+		    contentdisposition = "inline";
+	    }
             break;
+	}
     }
 
 }

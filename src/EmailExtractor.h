@@ -217,11 +217,11 @@ private:
         std::string &mdate,
         int &sz);
 
-    static void extract_contenttype(std::string s,
-        std::string next,
+    static void extract_contenttype(std::vector<std::string> &lines,
         std::string &contenttype,
         std::string &boundary,
-        std::string &charset);
+	std::string &charset,
+	std::string &name);
 
 };
 
