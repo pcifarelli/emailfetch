@@ -50,6 +50,12 @@ const string &EmailExtractor::Body::transferenc()
     m_error = EmailExtractor::NO_ERROR;
     return m_transferenc;
 }
+const string &EmailExtractor::Body::contentID()
+{
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
+    return m_contentid;
+}
 
 string EmailExtractor::Body::asBase64()
 {
@@ -342,6 +348,7 @@ EmailExtractor::EmailExtractor(const string fullpath) :
 {
     std::string boundary;
     std::string contentdisposition;
+    std::string contentid;
     Attachment att;
 
     m_error = EmailExtractor::NO_ERROR;
@@ -357,6 +364,7 @@ EmailExtractor::EmailExtractor(const string fullpath) :
         boundary,
         m_charset,
         m_transferenc,
+	contentid,
         contentdisposition,
         att);
 
@@ -429,11 +437,17 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string p
     return reached_prev_boundary;
 }
 
-int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttype, string &boundary, string &charset,
-    string &transferenc, string &contentdisposition, Attachment &att)
+int EmailExtractor::scan_attachment_headers(ifstream &infile,
+					    string &contenttype,
+					    string &boundary,
+					    string &charset,
+					    string &transferenc,
+					    string &contentid,
+					    string &contentdisposition,
+					    Attachment &att)
 {
     string dummy;
-    string a_contenttype, a_boundary, a_charset, a_transferenc, a_contentdisposition;
+    string a_contenttype, a_boundary, a_charset, a_transferenc, a_contentid, a_contentdisposition;
     Attachment a_att;
     contenttype.clear();
     boundary.clear();
@@ -444,8 +458,7 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttyp
     att.m_creation_datetime.clear();
     att.m_modification_datetime.clear();
     att.m_size = 0;
-    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc,
-        a_contentdisposition, a_att);
+    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc, a_contentid, a_contentdisposition, a_att);
     if (a_contenttype.length())
         contenttype = a_contenttype;
     if (a_boundary.length())
@@ -454,6 +467,8 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile, string &contenttyp
         charset = a_charset;
     if (a_transferenc.length())
         transferenc = a_transferenc;
+    if (a_contentid.length())
+        contentid = a_contentid;
     if (a_contentdisposition.length())
     {
         contentdisposition = a_contentdisposition;
@@ -466,6 +481,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
     string charset, string transferenc)
 {
     string a_contenttype = contenttype, a_boundary = boundary, a_charset = charset, a_transferenc = transferenc;
+    string contentid = "";
     bool reached_prev_boundary = false;
     string contentdisposition = "";
     Attachment att;
@@ -501,6 +517,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
                     b.m_contenttype = a_contenttype;
                     b.m_charset = str_tolower(a_charset);
                     b.m_transferenc = str_tolower(a_transferenc);
+		    b.m_contentid = contentid;
 
                     m_bodies.push_back(b);
                 }
@@ -514,14 +531,14 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
         }
 
         // see if there are new headers to deal with
-        scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentdisposition, att);
+        scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentid, contentdisposition, att);
 
         if (a_boundary.length() && (a_boundary != boundary))
         {
             extract_attachments(infile, boundary, a_contenttype, a_boundary, a_charset, a_transferenc);
 
             // we returned because we reached the prev boundary, so we are possibly pointing to attchment headers, so check
-            scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentdisposition, att);
+            scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentid, contentdisposition, att);
         }
     }
 
@@ -531,7 +548,7 @@ bool EmailExtractor::extract_attachments(ifstream &infile, string prev_boundary,
 int EmailExtractor::save_parts(const string fname)
 {
     ifstream infile(fname, ifstream::in);
-    string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition;
+    string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition;
     Attachment att;
 
     if (!infile.is_open() || !infile.good())
@@ -542,7 +559,7 @@ int EmailExtractor::save_parts(const string fname)
     }
 
     // this version of scan_headers leaves the ifstream pointing to the first line after the header block
-    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition, att);
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition, att);
 
     if (!contenttype.compare(0, 9, "multipart"))
     {
@@ -558,6 +575,7 @@ int EmailExtractor::save_parts(const string fname)
         extract_body(infile, contenttype, "", "", transferenc, charset, b.m_body);
         b.m_charset = str_tolower(charset);
         b.m_transferenc = str_tolower(transferenc);
+	b.m_contentid = contentid;
         m_bodies.push_back(b);
     }
 
@@ -748,9 +766,19 @@ void EmailExtractor::extract_contentdisposition_elements(string s, string next, 
         mdate = sm[3];
 }
 
-int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, string &from, string &subject, string &date,
-    string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
-    Attachment &att)
+int EmailExtractor::scan_headers(ifstream &infile,
+				 string &msgid,
+				 string &to,
+				 string &from,
+				 string &subject,
+				 string &date,
+				 string &contenttype,
+				 string &boundary,
+				 string &charset,
+				 string &transferenc,
+				 string &contentid,
+				 string &contentdisposition,
+				 Attachment &att)
 {
     string prev = "", s = "", next = "";
     regex e_msgid("^(Message-[Ii][Dd]:).*<(.*)>(.*)");
@@ -760,6 +788,7 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
     regex e_date("^(Date:)(.*)");
     regex e_trenc("^(Content-Transfer-Encoding:)(.*)");
     regex e_disp("^(Content-Disposition:)(.*)");
+    regex e_contentid("^(Content-[Ii][Dd]:).*<(.*)>(.*)");
     regex e_nexthdr("^([^ \t]+)(.*)");
     smatch sm;
 
@@ -786,6 +815,10 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
         regex_match(s, sm, e_msgid);
         if (!msgid.length() && sm.size() > 0)
             msgid = sm[2];
+
+        regex_match(s, sm, e_contentid);
+        if (!contentid.length() && sm.size() > 0)
+            contentid = sm[2];
 
 	if (in_multiline_to)
 	{
@@ -897,15 +930,25 @@ int EmailExtractor::scan_headers(ifstream &infile, string &msgid, string &to, st
 
 }
 
-int EmailExtractor::scan_headers(const string fname, string &msgid, string &to, string &from, string &subject, string &date,
-    string &contenttype, string &boundary, string &charset, string &transferenc, string &contentdisposition,
-    Attachment &att)
+int EmailExtractor::scan_headers(const string fname,
+				 string &msgid,
+				 string &to,
+				 string &from,
+				 string &subject,
+				 string &date,
+				 string &contenttype,
+				 string &boundary,
+				 string &charset,
+				 string &transferenc,
+				 string &contentid,
+				 string &contentdisposition,
+				 Attachment &att)
 {
     ifstream infile(fname, ifstream::in);
 
     msgid = to = from = subject = date = contenttype = boundary = charset = transferenc = "";
 
-    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentdisposition, att);
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition, att);
 
     infile.close();
     return 0;

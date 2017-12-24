@@ -5,7 +5,6 @@
  *      Author: paulc
  *
  * Parses an email into it's bodies and attachments, extracting relevant information like it's charset and transfer encoding
- * tries to convert text content types to utf-8 if they are not already
  * extracts the whole email into memory, so be careful of huge attachments
  */
 
@@ -42,6 +41,7 @@ public:
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
+	const std::string &contentID();
         std::string asBase64();
         std::string asUtf8();
         // beware using this on text/html as it may have embedded charset definitions
@@ -54,6 +54,7 @@ public:
         std::string m_contenttype;
         std::string m_charset;
         std::string m_transferenc;
+	std::string m_contentid;
         std::string m_str_error;
         int m_error;
 
@@ -165,6 +166,7 @@ private:
         std::string &boundary,
         std::string &charset,
         std::string &transferenc,
+	std::string &contentid,
         std::string &contentdispositon,
         Attachment &attachment);
 
@@ -178,6 +180,7 @@ private:
         std::string &boundary,
         std::string &charset,
         std::string &transferenc,
+	std::string &contentid,
         std::string &contentdisposition,
         Attachment &attachment);
 
@@ -186,6 +189,7 @@ private:
         std::string &boundary,
         std::string &charset,
         std::string &transferenc,
+	std::string &contentid,
         std::string &contentdisposition,
         Attachment &attachment);
 
