@@ -655,7 +655,7 @@ string EmailExtractor::extract_attr(string attr, string line)
 
 void EmailExtractor::extract_contenttype(vector<string> &lines, string &contenttype, string &boundary, string &charset, string &name)
 {
-    regex e_contenttype("^(Content-Type:)(.*)");
+    regex e_contenttype("^(Content-[Tt]ype:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
     regex e_boundary2("^([a-zA-Z]+);[ \t]+(.*)");
     regex e_boundary3("^([ \t]*)(boundary=)\"?(.*)\"?;?(.*)");
@@ -765,7 +765,7 @@ int EmailExtractor::scan_headers(ifstream &infile,
 				 Attachment &att)
 {
     string prev = "", s = "", next = "";
-    regex e_contenttype("^(Content-Type:)(.*)");
+    regex e_contenttype("^(Content-[Tt]ype:)(.*)");
     regex e_msgid("^(Message-[Ii][Dd]:).*<(.*)>(.*)");
     regex e_to("^(To:)[ \t]*(.*)");
     regex e_from("^(From:)[ \t]*(.*)");
