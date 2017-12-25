@@ -193,7 +193,7 @@ private:
         std::string &contentdisposition,
         Attachment &attachment);
 
-    bool extract_attachments(std::ifstream &infile,
+    bool extract_all(std::ifstream &infile,
         std::string prev_boundary,
         std::string contenttype,
         std::string boundary,
