@@ -84,7 +84,7 @@ string EmailExtractor::Body::asUtf8()
     m_error = EmailExtractor::NO_ERROR;
     body.clear();
     // convert everything to utf-8
-    if (m_transferenc == "base64" && !EmailExtractor::is_utf8(m_charset))
+    if (m_transferenc == "base64" && m_charset != "" && !EmailExtractor::is_utf8(m_charset))
     {
         vector<unsigned char> vbody;
         if (EmailExtractor::base64_decode(m_body, vbody))
@@ -100,7 +100,25 @@ string EmailExtractor::Body::asUtf8()
         body.insert(body.end(), uvbody.cbegin(), uvbody.cend());
         return body;
     }
-    else if (!EmailExtractor::is_utf8(m_charset))
+    else if (m_transferenc == "quoted-printable" && m_charset != "" && !EmailExtractor::is_utf8(m_charset))
+    {
+        vector<unsigned char> vbody;
+        if (EmailExtractor::quoted_printable_decode(m_body, body))
+        {
+            m_str_error = "Unable to decode from quoted-printable";
+            m_error = EmailExtractor::ERROR_QPDECODE;
+        }
+	vbody.insert(vbody.end(), body.cbegin(), body.cend());
+	body.clear();
+        if (to_utf8(m_charset, vbody, uvbody))
+        {
+            m_str_error = "Unable to convert to utf8";
+            m_error = EmailExtractor::ERROR_UTF8CONV;
+        }
+        body.insert(body.end(), uvbody.cbegin(), uvbody.cend());
+        return body;
+    }
+    else if (m_charset != "" && !EmailExtractor::is_utf8(m_charset))
     {
         vector<unsigned char> vbody(m_body.cbegin(), m_body.cend());
         if (to_utf8(m_charset, vbody, uvbody))
@@ -117,6 +135,15 @@ string EmailExtractor::Body::asUtf8()
         {
             m_str_error = "Unable to decode from base64";
             m_error = EmailExtractor::ERROR_B64DECODE;
+        }
+        return body;
+    }
+    else if (m_transferenc == "quoted-printable")
+    {
+        if (EmailExtractor::quoted_printable_decode(m_body, body))
+        {
+            m_str_error = "Unable to decode from quoted-printable";
+            m_error = EmailExtractor::ERROR_QPDECODE;
         }
         return body;
     }
@@ -1053,6 +1080,40 @@ int EmailExtractor::base64_encode(const vector<unsigned char> &input, string &ou
     output.clear();
     output.insert(output.end(), voutput.begin(), voutput.end());
 
+    return 0;
+}
+
+int EmailExtractor::quoted_printable_decode(const std::string &input, std::string &output)
+{
+    auto c = input.cbegin();
+    output.clear();
+
+    while (c != input.cend())
+    {
+	if (*c == '=')
+	{
+	    char c1, c2;
+	    c++;
+	    c1 = *c;
+	    c++;
+	    c2 = *c;
+	    if ( !(c1 == '\r' && c2 == '\n') )
+	    {
+		ostringstream o;
+		char *stop;
+		string hex = "0x";
+		hex += c1;
+		hex += c2;
+		o << (char) strtol(hex.c_str(), &stop, 16);
+		string s = o.str();
+		output.insert(output.end(), s.cbegin(), s.cend());
+	    }
+	}
+	else
+	    output.insert(output.end(), *c);
+
+	c++;
+    }
     return 0;
 }
 

@@ -28,6 +28,7 @@ public:
         NO_ERROR,
         ERROR_B64ENCODE,
         ERROR_B64DECODE,
+	ERROR_QPDECODE,
         ERROR_UTF8CONV,
         ERROR_NOOPEN,
         NUM_ERRORS
@@ -116,8 +117,9 @@ public:
     static int base64_decode(const std::string &input, std::vector<unsigned char> &output);
     static int base64_encode(const std::vector<unsigned char> &input, std::string &output);
     static int base64_decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
-    static int base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output,
-        bool preserve_crlf = false);
+    static int base64_encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, bool preserve_crlf = false);
+
+    static int quoted_printable_decode(const std::string &input, std::string &output);
 
     // some convenience functions
     static bool is_utf8(std::string charset);
