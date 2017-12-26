@@ -32,7 +32,5 @@ ENV LD_LIBRARY_PATH /emailfetch/lib
 #RUN pip install awscli --upgrade --user
 
 # run emailfetch
-ENTRYPOINT ["/emailfetch/bin/emailfetch"]
-#if you need to debug, make this the entry point
-#ENTRYPOINT ["/bin/sh"]
+ENTRYPOINT ["/emailfetch/bin/emailfetch","-m","/vmail/cfg/emailfetch.json"]
 
