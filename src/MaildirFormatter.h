@@ -2,7 +2,9 @@
  * MaildirFormatter.h
  *
  *  Created on: Aug 27, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
+ *
+ *      The Maildir Formatter will save emails in Maildir format, so that an IMAP server can serve them.
  */
 
 #ifndef SRC_MAILDIRFORMATTER_H_

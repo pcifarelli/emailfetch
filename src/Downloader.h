@@ -2,7 +2,18 @@
  * Downloader.h
  *
  *  Created on: Sep 9, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
+ *
+ *      The Downloader class is responsible for creating the SQS queue, subscribing to the SNS topic, and pulling the emails from S3 when notified.
+ *
+ *      A Downloader needs a Formatter to tell it how to open files (what to name them and such).
+ *      The Downloader keeps track of what it has already downloaded so as to prevent duplicates.
+ *
+ *      It also "forgets" whether it downloaded a file after the number of days it was told at construction.  It does so by maintaining a map,
+ *      which it reconstructs if restarted based on the names of the files in its working directory.  It must work with a Formatter, since
+ *      Formatters know how to name files.
+ *
+ *      Note that it will always ignore "hidden" files (those that begin with a '.')
  */
 
 #ifndef SRC_DOWNLOADER_H_

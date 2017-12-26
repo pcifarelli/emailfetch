@@ -2,10 +2,11 @@
  * EmailExtractor.h
  *
  *  Created on: Dec 10, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
  *
  * Parses an email into it's bodies and attachments, extracting relevant information like it's charset and transfer encoding
- * extracts the whole email into memory, so be careful of huge attachments
+ * It extracts the whole email into memory, so be careful of huge attachments
+ *
  */
 
 #ifndef SRC_EMAILEXTRACTOR_H_
@@ -28,7 +29,7 @@ public:
         NO_ERROR,
         ERROR_B64ENCODE,
         ERROR_B64DECODE,
-	ERROR_QPDECODE,
+        ERROR_QPDECODE,
         ERROR_UTF8CONV,
         ERROR_NOOPEN,
         NUM_ERRORS
@@ -42,7 +43,7 @@ public:
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
-	const std::string &contentID();
+        const std::string &contentID();
         std::string asBase64();
         std::string asUtf8();
         // beware using this on text/html as it may have embedded charset definitions
@@ -55,7 +56,7 @@ public:
         std::string m_contenttype;
         std::string m_charset;
         std::string m_transferenc;
-	std::string m_contentid;
+        std::string m_contentid;
         std::string m_str_error;
         int m_error;
 
@@ -168,7 +169,7 @@ private:
         std::string &boundary,
         std::string &charset,
         std::string &transferenc,
-	std::string &contentid,
+        std::string &contentid,
         std::string &contentdispositon,
         Attachment &attachment);
 
@@ -182,7 +183,7 @@ private:
         std::string &boundary,
         std::string &charset,
         std::string &transferenc,
-	std::string &contentid,
+        std::string &contentid,
         std::string &contentdisposition,
         Attachment &attachment);
 
@@ -191,7 +192,7 @@ private:
         std::string &boundary,
         std::string &charset,
         std::string &transferenc,
-	std::string &contentid,
+        std::string &contentid,
         std::string &contentdisposition,
         Attachment &attachment);
 
@@ -222,8 +223,8 @@ private:
     static void extract_contenttype(std::vector<std::string> &lines,
         std::string &contenttype,
         std::string &boundary,
-	std::string &charset,
-	std::string &name);
+        std::string &charset,
+        std::string &name);
 
 };
 

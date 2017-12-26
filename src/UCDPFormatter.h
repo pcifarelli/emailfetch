@@ -2,7 +2,9 @@
  * UCDPFormatter.h
  *
  *  Created on: Oct 29, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
+ *
+ *      The UCDPFormatter is responsible for formatting and posting emails to UCDP in EmailML format
  */
 
 #ifndef SRC_UCDPFORMATTER_H_

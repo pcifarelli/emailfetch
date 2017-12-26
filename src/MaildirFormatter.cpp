@@ -149,7 +149,7 @@ int MaildirFormatter::construct_name(Aws::S3::Model::Object obj, Aws::String key
 
     if (m_verbose >= 4)
     {
-        std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t - ts_m).count() << std::endl;
+        std::cout << std::chrono::duration_cast < std::chrono::microseconds > (t - ts_m).count() << std::endl;
 
         std::cout << "Key: " << obj.GetKey() << std::endl;
         std::cout << "Size: " << obj.GetSize() << std::endl;

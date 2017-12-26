@@ -2,7 +2,9 @@
  * S3Get.h
  *
  *  Created on: Aug 26, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
+ *
+ *      The S3Get class is responsible for pulling files from AWS S3 and writing them to disk, using a Formatter
  */
 
 #ifndef SRC_S3GET_H_

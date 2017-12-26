@@ -133,43 +133,44 @@ int main(int argc, char** argv)
                     switch (loc.type)
                     {
                         case NONSLOT:
-                        {
-                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
-                            // a "MaildirFormatter" saves emails in maildir format to be served via imap
-                            MaildirFormatter *mailfmt;
+                            {
+                                // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                                // a "MaildirFormatter" saves emails in maildir format to be served via imap
+                                MaildirFormatter *mailfmt;
 
-                            Aws::String dir = loc.destination.c_str();
-                            mailfmt = new MaildirFormatter(dir, verbose);
-                            item.pdownl->addFormatter(mailfmt);
-                            if (verbose)
-                                cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                                Aws::String dir = loc.destination.c_str();
+                                mailfmt = new MaildirFormatter(dir, verbose);
+                                item.pdownl->addFormatter(mailfmt);
+                                if (verbose)
+                                    cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                            }
                             break;
-                        }
                         case SLOT:
-                        {
-                            // a "Formatter" is responsible for providing services to stream and route the mail to a destination
-                            // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
-                            UCDPFormatter *ucdpfmt;
+                            {
+                                // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                                // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP
+                                UCDPFormatter *ucdpfmt;
 
-                            Aws::String workdir = loc.rest.workdir.c_str();
-                            ucdpfmt = new UCDPFormatter(
-                                workdir,
-                                loc.destination,
-                                loc.rest.snihostname,
-                                loc.rest.port,
-                                loc.rest.certificate,
-                                loc.rest.certificatepassword,
-                                loc.rest.trclientid,
-                                loc.rest.trfeedid,
-                                loc.rest.trmessagetype,
-                                loc.rest.trmessageprio,
-                                loc.rest.validate_json,
-                                verbose);
-                            item.pdownl->addFormatter(ucdpfmt);
-                            if (verbose)
-                                cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                                Aws::String workdir = loc.rest.workdir.c_str();
+                                ucdpfmt = new UCDPFormatter(
+                                    workdir,
+                                    loc.destination,
+                                    loc.rest.snihostname,
+                                    loc.rest.port,
+                                    loc.rest.certificate,
+                                    loc.rest.certificatepassword,
+                                    loc.rest.trclientid,
+                                    loc.rest.trfeedid,
+                                    loc.rest.trmessagetype,
+                                    loc.rest.trmessageprio,
+                                    loc.rest.validate_json,
+                                    verbose);
+                                item.pdownl->addFormatter(ucdpfmt);
+                                if (verbose)
+                                    cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                            }
                             break;
-                        }
+
                         default:
                             cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
                     }

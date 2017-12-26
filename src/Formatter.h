@@ -2,7 +2,7 @@
  * Formatter.h
  *
  *  Created on: Aug 27, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
  *
  *      This simple formatter just saves each file using the object name as the file
  */

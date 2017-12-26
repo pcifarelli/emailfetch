@@ -46,14 +46,14 @@ UCDPFormatter::UCDPFormatter(
     std::string trclientid,
     std::string trfeedid,
     std::string trmessagetype,
-    int         trmessageprio,
+    int trmessageprio,
     bool validate_json,
     int verbose) :
     Formatter(dir + "full/"),
-    m_ip(ip), m_certificate(certificate), m_certpassword(certpassword), m_snihostname(snihostname), m_port(port),
-    m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype), m_trmessageprio(trmessageprio),
-    m_validate_json(validate_json),
-    m_verbose(verbose)
+        m_ip(ip), m_certificate(certificate), m_certpassword(certpassword), m_snihostname(snihostname), m_port(port),
+        m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype), m_trmessageprio(trmessageprio),
+        m_validate_json(validate_json),
+        m_verbose(verbose)
 {
 }
 
@@ -107,14 +107,13 @@ void UCDPFormatter::unstash()
 
     std::size_t nn = nfname.find_last_of('/');
     if (nn != std::string::npos)
-        nfname.erase(nn+1, 1);
+        nfname.erase(nn + 1, 1);
 
     rename(m_fullpath.c_str(), nfname.c_str());
 
     m_name = m_objkey.c_str();
     m_fullpath = nfname.c_str();
 }
-
 
 void UCDPFormatter::processEmail(std::string fname)
 {
@@ -146,7 +145,6 @@ void UCDPFormatter::processEmail(std::string fname)
     delete email;
 }
 
-
 void UCDPFormatter::clean_up()
 {
     // the idea is that the downloader will ignore files that start with a '.'
@@ -158,7 +156,7 @@ void UCDPFormatter::clean_up()
     unstash();
 }
 
-string UCDPFormatter::fmtToField( string csstr )
+string UCDPFormatter::fmtToField(string csstr)
 {
     std::istringstream iss(csstr);
     std::string innerarr;
@@ -194,14 +192,14 @@ string UCDPFormatter::formatMessage1(ostringstream &o, string msgid, string date
 
     // Message 1
     o << "{";
-    o << "\"" << "messageId" << "\":\"" << msgid         << "\"" << ",";
-    o << "\"" << "dateTime"  << "\":\"" << date          << "\"" << ",";
-    o << "\"" << "from"      << "\":\"" << email->from() << "\"";
+    o << "\"" << "messageId" << "\":\"" << msgid << "\"" << ",";
+    o << "\"" << "dateTime" << "\":\"" << date << "\"" << ",";
+    o << "\"" << "from" << "\":\"" << email->from() << "\"";
     o << "}";
 
     if (validate)
     {
-        istringstream istrm( o.str() );
+        istringstream istrm(o.str());
         Aws::Utils::Json::JsonValue jv(istrm);
         if (!jv.WasParseSuccessful())
         {
@@ -231,14 +229,14 @@ string UCDPFormatter::formatMessage2(ostringstream &o, string msgid, string date
     string trmsgid, post_trmsgid;
     // Message 2
     o << "{";
-    o << "\"" << "messageId" << "\":\"" << msgid         << "\"" << ",";
-    o << "\"" << "dateTime"  << "\":\"" << date          << "\"" << ",";
-    o << "\"" << "to"        << "\":" << fmtToField(email->to());
+    o << "\"" << "messageId" << "\":\"" << msgid << "\"" << ",";
+    o << "\"" << "dateTime" << "\":\"" << date << "\"" << ",";
+    o << "\"" << "to" << "\":" << fmtToField(email->to());
     o << "}";
 
     if (validate)
     {
-        istringstream istrm( o.str() );
+        istringstream istrm(o.str());
         Aws::Utils::Json::JsonValue jv(istrm);
         if (!jv.WasParseSuccessful())
         {
@@ -268,14 +266,14 @@ string UCDPFormatter::formatMessage3(ostringstream &o, string msgid, string date
 
     // Message 3
     o << "{";
-    o << "\"" << "messageId" << "\":\"" << msgid            << "\"" << ",";
-    o << "\"" << "dateTime"  << "\":\"" << date             << "\"" << ",";
-    o << "\"" << "subject"   << "\":\"" << email->subject() << "\"";
+    o << "\"" << "messageId" << "\":\"" << msgid << "\"" << ",";
+    o << "\"" << "dateTime" << "\":\"" << date << "\"" << ",";
+    o << "\"" << "subject" << "\":\"" << email->subject() << "\"";
     o << "}";
 
     if (validate)
     {
-        istringstream istrm( o.str() );
+        istringstream istrm(o.str());
         Aws::Utils::Json::JsonValue jv(istrm);
         if (!jv.WasParseSuccessful())
         {
@@ -303,10 +301,9 @@ string UCDPFormatter::formatMessage4(ostringstream &o, int num, string msgid, st
 {
     string trmsgid, post_trmsgid;
 
-
     o << "{";
-    o << "\"" << "messageId"   << "\":\"" << msgid            << "\"" << ",";
-    o << "\"" << "dateTime"    << "\":\"" << date             << "\"" << ",";
+    o << "\"" << "messageId" << "\":\"" << msgid << "\"" << ",";
+    o << "\"" << "dateTime" << "\":\"" << date << "\"" << ",";
     if (b.contenttype() != "" && b.charset() != "")
         o << "\"" << "contentType" << "\":\"" << b.contenttype() << "; " << "charset=" << b.charset() << "\"" << ",";
     else if (b.contenttype() != "")
@@ -320,7 +317,7 @@ string UCDPFormatter::formatMessage4(ostringstream &o, int num, string msgid, st
 
     if (validate)
     {
-        istringstream istrm( o.str() );
+        istringstream istrm(o.str());
         Aws::Utils::Json::JsonValue jv(istrm);
         if (!jv.WasParseSuccessful())
         {
@@ -352,8 +349,8 @@ string UCDPFormatter::formatMessage5(ostringstream &o, int num, string msgid, st
     // the EmailExtractor catagorizes something as an attachment if it has a filename - with out one, it adds it to the list of bodies
     // so we can assume that filename() always returns something
     o << "{";
-    o << "\"" << "messageId" << "\":\"" << msgid            << "\"" << ",";
-    o << "\"" << "dateTime"  << "\":\"" << date             << "\"" << ",";
+    o << "\"" << "messageId" << "\":\"" << msgid << "\"" << ",";
+    o << "\"" << "dateTime" << "\":\"" << date << "\"" << ",";
     if (a.contenttype() != "")
         o << "\"" << "contentType" << "\":\"" << a.contenttype() << "; " << "name=\\\"" << a.filename() << "\\\"\"" << ",";
     else
@@ -366,7 +363,7 @@ string UCDPFormatter::formatMessage5(ostringstream &o, int num, string msgid, st
 
     if (validate)
     {
-        istringstream istrm( o.str() );
+        istringstream istrm(o.str());
         Aws::Utils::Json::JsonValue jv(istrm);
         if (!jv.WasParseSuccessful())
         {
@@ -393,12 +390,12 @@ string UCDPFormatter::formatMessage5(ostringstream &o, int num, string msgid, st
 
 void UCDPFormatter::check_result(string result, string trmsgid)
 {
-    istringstream istrm( result );
+    istringstream istrm(result);
     Aws::Utils::Json::JsonValue jv(istrm);
     if (jv.ValueExists("tr-message-id"))
     {
         string res_trmsgid = jv.GetString("tr-message-id").c_str();
-        if ( res_trmsgid != trmsgid)
+        if (res_trmsgid != trmsgid)
         {
             cout << "ERROR: Unexpected result returned from post to UCDP (\"tr-message-id\" returned does not agree with posted tr-message-id) ";
             cout << "S3 objkey=" << m_objkey << endl;
@@ -413,7 +410,7 @@ void UCDPFormatter::check_result(string result, string trmsgid)
     if (jv.ValueExists("status"))
     {
         string res_status = jv.GetString("status").c_str();
-        if ( res_status != "success" )
+        if (res_status != "success")
         {
             cout << "ERROR: Unexpected result returned from post to UCDP (\"status\" returned is not \"success\" ";
             cout << "S3 objkey=" << m_objkey << endl;
@@ -434,9 +431,9 @@ void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email,
     UCDPCurlPoster poster(m_ip, m_certificate, m_certpassword, m_snihostname, m_port, true, m_trclientid, m_trfeedid, m_trmessagetype);
 
     trmsgid = formatMessage1(o, msgid, date, email, validate);
-    poster.post( m_trmessageprio, trmsgid, o.str() );
+    poster.post(m_trmessageprio, trmsgid, o.str());
     result = poster.getResult();
-    if (m_verbose >=3 )
+    if (m_verbose >= 3)
         cout << result << endl;
     check_result(result, trmsgid);
 
@@ -444,20 +441,22 @@ void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email,
     o.clear();
 
     trmsgid = formatMessage2(o, msgid, date, email, validate);
-    poster.post( m_trmessageprio, trmsgid, o.str() );
+    poster.post(m_trmessageprio, trmsgid, o.str());
     result = poster.getResult();
-    if (m_verbose >=3 )
-        cout << result << endl;;
+    if (m_verbose >= 3)
+        cout << result << endl;
+    ;
     check_result(result, trmsgid);
 
     o.str("");
     o.clear();
 
     trmsgid = formatMessage3(o, msgid, date, email, validate);
-    poster.post( m_trmessageprio, trmsgid, o.str() );
+    poster.post(m_trmessageprio, trmsgid, o.str());
     result = poster.getResult();
-    if (m_verbose >=3 )
-        cout << result << endl;;
+    if (m_verbose >= 3)
+        cout << result << endl;
+    ;
     check_result(result, trmsgid);
 
     o.str("");
@@ -469,10 +468,11 @@ void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email,
     {
         num++;
         trmsgid = formatMessage4(o, num, msgid, date, b, validate);
-        poster.post( m_trmessageprio, trmsgid, o.str() );
+        poster.post(m_trmessageprio, trmsgid, o.str());
         result = poster.getResult();
-        if (m_verbose >=3 )
-            cout << result << endl;;
+        if (m_verbose >= 3)
+            cout << result << endl;
+        ;
         check_result(result, trmsgid);
 
         o.str("");
@@ -485,10 +485,11 @@ void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email,
     {
         num++;
         trmsgid = formatMessage5(o, num, msgid, date, a, validate);
-        poster.post( m_trmessageprio, trmsgid, o.str() );
+        poster.post(m_trmessageprio, trmsgid, o.str());
         result = poster.getResult();
-        if (m_verbose >=3 )
-            cout << result << endl;;
+        if (m_verbose >= 3)
+            cout << result << endl;
+        ;
         check_result(result, trmsgid);
 
         o.str("");

@@ -1,8 +1,10 @@
 /*
- * CurlPoster.h
+ * UCDPCurlPoster.h
  *
  *  Created on: Oct 28, 2017
- *      Author: paulc
+ *      Author: Paul Cifarelli
+ *
+ *      The UCDPCurlPoster is responsible for posting a json string to UCDP, as its name implies
  */
 
 #ifndef SRC_UCDPCURLPOSTER_H_
