@@ -61,14 +61,32 @@ string EmailExtractor::Body::asBase64()
 {
     m_str_error = "";
     m_error = EmailExtractor::NO_ERROR;
+    string body;
     if (m_transferenc != "base64")
     {
-        string body;
-        if (EmailExtractor::base64_encode(m_body, body))
-        {
-            m_str_error = "Unable to encode as base64";
-            m_error = EmailExtractor::ERROR_B64ENCODE;
-        }
+	string qpdbody;
+	if (m_transferenc == "quoted-printable")
+	{
+	    if (EmailExtractor::quoted_printable_decode(m_body, qpdbody))
+	    {
+		m_str_error = "Unable to decode from quoted-printable";
+		m_error = EmailExtractor::ERROR_QPDECODE;
+	    }
+	    
+	    if (EmailExtractor::base64_encode(qpdbody, body))
+	    {
+		m_str_error = "Unable to encode as base64";
+		m_error = EmailExtractor::ERROR_B64ENCODE;
+	    }
+	}
+	else
+	{
+	    if (EmailExtractor::base64_encode(m_body, body))
+	    {
+		m_str_error = "Unable to encode as base64";
+		m_error = EmailExtractor::ERROR_B64ENCODE;
+	    }
+	}
         return body;
     }
 
