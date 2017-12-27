@@ -12,11 +12,15 @@ AC_CONFIG_HEADERS(config.h)
 AC_ARG_ENABLE([docker],
 [ --enable-docker		Build docker image],
 [case "${enableval}" in
-  yes) docker=true ;;
+  yes) docker=amazonlinux ;;
+  amazonlinux) docker=amazonlinux ;;
+  ubuntu) docker=ubuntu ;;
   no)  docker=false ;;
   *) AC_MSG_ERROR([bad value ${enableval} for --with-docker]) ;;
 esac], [docker=false])
-AM_CONDITIONAL([DOCKER], [test x$docker = xtrue])
+AM_CONDITIONAL([DOCKER], [test x$docker = xamazonlinux -o x$docker = xubuntu])
+AM_CONDITIONAL([AMAZONLINUX], [test x$docker = xamazonlinux])
+AM_CONDITIONAL([UBUNTU], [test x$docker = xubuntu])
 
 # Checks for programs.
 AC_PROG_CXX
