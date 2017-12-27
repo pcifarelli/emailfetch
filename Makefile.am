@@ -1,3 +1,9 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src
+if DOCKER
+DOCKERSRC = docker
+else
+DOCKERSRC = 
+endif
+
+SUBDIRS = src $(DOCKERSRC)

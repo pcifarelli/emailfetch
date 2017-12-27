@@ -9,6 +9,14 @@ AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(config.h)
 
+AC_ARG_ENABLE([docker],
+[ --enable-docker		Build docker image],
+[case "${enableval}" in
+  yes) docker=true ;;
+  no)  docker=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --with-docker]) ;;
+esac], [docker=false])
+AM_CONDITIONAL([DOCKER], [test x$docker = xtrue])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -25,4 +33,4 @@ AC_CHECK_LIB([crypto], [SHA256_Init])
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([curl],[curl_global_cleanup])
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT(Makefile src/Makefile docker/Makefile)
