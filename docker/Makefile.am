@@ -25,8 +25,10 @@ docker$(EXEEXT):  $(DEPS)
 	cp ../Dockerfile.$(DOCKERFILE) ./Dockerfile
 	mkdir -p emailfetch
 	cp $(EXEDEPS) emailfetch/
-	mkdir -p emailfetch/libs
-	cp $(LIBDEPS) emailfetch/libs
+	mkdir -p emailfetch/lib
+	cp $(LIBDEPS) emailfetch/lib
+	mkdir -p emailfetch/cfg
+	cp ../cfg/* emailfetch/cfg
 	/bin/bash ./docker-build.sh
 	touch docker$(EXEEXT)
 
