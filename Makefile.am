@@ -1,9 +1,31 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 if DOCKER
-DOCKERSRC = docker
+DOCKERSRC=docker
 else
-DOCKERSRC = 
+DOCKERSRC= 
 endif
+
+if UBUNTU
+DOCKEREXT=ubuntu
+else
+DOCKEREXT=amazonlinux
+endif
+
+if AWSSDKPATH_NOT_SET
+AWS_SDK_PATH=/usr/local
+else
+AWS_SDK_PATH=$(AWSSDKPATH)
+endif
+
+if AWSSDKLIB_NOT_SET
+AWS_LIBDIR=lib
+else
+AWS_LIBDIR=$(AWSSDKLIB)
+endif
+
+export AWS_SDK_PATH
+export AWS_LIBDIR
+export DOCKEREXT
 
 SUBDIRS = src $(DOCKERSRC)

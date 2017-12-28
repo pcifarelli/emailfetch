@@ -26,3 +26,4 @@ config.sub
 libtool
 ltmain.sh
 m4/
+.deps/

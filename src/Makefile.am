@@ -1,8 +1,7 @@
-AWS_SDK_PATH=${HOME}/develop/aws-sdk-cpp
-#AWS_SDK_PATH=${HOME}/develop/ucdp_core_bins/local/aws-sdk-cpp
-#AWS_SDK_PATH=/usr/local
+
 #AWS_LIBDIR = lib64
-AWS_LIBDIR = lib
+#AWS_LIBDIR = lib
+
 AWS_LIBS = \
 	-laws-cpp-sdk-core \
 	-laws-cpp-sdk-s3 \
