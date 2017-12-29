@@ -27,7 +27,7 @@ AM_CONDITIONAL([AMAZONLINUX], [test x$docker = xamazonlinux])
 AM_CONDITIONAL([UBUNTU], [test x$docker = xubuntu])
 
 # Check for the environment variable AWSSDKPATH being set (default is /usr/local otherwise)
-AC_ARG_VAR([AWSSDKPATH],[AWS C++ SDK path] )
+AC_ARG_VAR([AWSSDKPATH],[AWS C++ SDK path (default=/usr/local) e.g. AWSSDKPATH=/opt/aws] )
 AM_CONDITIONAL([AWSSDKPATH_NOT_SET], [test -z "$AWSSDKPATH"])
 
 # Check for the environment variable AWSSDKLIB being set (default is /lib otherwise)
