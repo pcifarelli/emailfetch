@@ -29,10 +29,15 @@ AM_CONDITIONAL([UBUNTU], [test x$docker = xubuntu])
 # Check for the environment variable AWSSDKPATH being set (default is /usr/local otherwise)
 AC_ARG_VAR([AWSSDKPATH],[AWS C++ SDK path (default=/usr/local) e.g. AWSSDKPATH=/opt/aws] )
 AM_CONDITIONAL([AWSSDKPATH_NOT_SET], [test -z "$AWSSDKPATH"])
+AM_CONDITIONAL([AWSSDKPATH_ENV_SET], [test ! -z "$AWS_SDK_PATH"])
 
-# Check for the environment variable AWSSDKLIB being set (default is /lib otherwise)
-AC_ARG_VAR([AWSSDKLIB],[AWS C++ SDK lib directory name (default=lib) - e.g. AWSSDKLIB=lib64] )
-AM_CONDITIONAL([AWSSDKLIB_NOT_SET], [test -z "$AWSSDKLIB"])
+# Check whether the AWS SDK libs are in lib or lib64
+AM_COND_IF([AWSSDKPATH_NOT_SET],
+           [AM_COND_IF([AWSSDKPATH_ENV_SET],
+                       [AM_CONDITIONAL([AWSLIB64], [test -e ${AWS_SDK_PATH}/lib64/libaws-cpp-sdk-core.so])],
+                       [AM_CONDITIONAL([AWSLIB64], [test -e /usr/local/lib64/libaws-cpp-sdk-core.so])])],
+           [AM_CONDITIONAL([AWSLIB64], [test -e $AWSSDKPATH/lib64/libaws-cpp-sdk-core.so])]
+           )
 
 # Checks for programs.
 AC_PROG_CXX

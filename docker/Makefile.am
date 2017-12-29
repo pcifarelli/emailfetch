@@ -1,5 +1,11 @@
-#AWS_LIBDIR = lib64
-#AWS_LIBDIR = lib
+
+# AWS_SDK_PATH is defined through an AC_CONDITION defined in configure.ac, and may be specified on the configure command line
+# by setting AWSSDKPATH
+#    e.g. ./configure --enable-docker AWSSDKPATH=/usr/local
+# note that /usr/local is the default
+#
+# AWS_LIBDIR is either lib64 or lib, depending on AC_CONDITIONAL defined in configure.ac and if in top level Makefile.am
+
 AWS_LIBS = \
 	$(AWS_SDK_PATH)/$(AWS_LIBDIR)/libaws-cpp-sdk-core.so \
 	$(AWS_SDK_PATH)/$(AWS_LIBDIR)/libaws-cpp-sdk-s3.so \
@@ -25,3 +31,4 @@ docker$(EXEEXT):  $(DEPS)
 
 clean-local:
 	rm -f docker$(EXEEXT)
+	rm -rf emailfetch

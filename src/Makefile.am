@@ -1,6 +1,10 @@
 
-#AWS_LIBDIR = lib64
-#AWS_LIBDIR = lib
+# AWS_SDK_PATH is defined through an AC_CONDITION defined in configure.ac, and may be specified on the configure command line
+# by setting AWSSDKPATH
+#    e.g. ./configure --enable-docker AWSSDKPATH=/usr/local
+# note that /usr/local is the default
+#
+# AWS_LIBDIR is either lib64 or lib, depending on AC_CONDITIONAL defined in configure.ac and if in top level Makefile.am
 
 AWS_LIBS = \
 	-laws-cpp-sdk-core \
@@ -8,6 +12,7 @@ AWS_LIBS = \
 	-laws-cpp-sdk-sqs \
 	-laws-cpp-sdk-sns
 
+# in case we are building on a UCDP machine.  If not, these do no harm
 CURLINC = -I/data/ucdp/local/curl/include
 CURLLIB = -L/data/ucdp/local/curl/lib
 
