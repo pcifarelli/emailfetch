@@ -20,7 +20,7 @@ AC_ARG_ENABLE([docker],
   amazonlinux) docker=amazonlinux ;;
   ubuntu) docker=ubuntu ;;
   no)  docker=false ;;
-  *) AC_MSG_ERROR([bad value ${enableval} for --with-docker]) ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-docker]) ;;
 esac], [docker=false])
 AM_CONDITIONAL([DOCKER], [test x$docker = xamazonlinux -o x$docker = xubuntu])
 AM_CONDITIONAL([AMAZONLINUX], [test x$docker = xamazonlinux])
