@@ -1,4 +1,4 @@
-libtoolize --quiet --force
+#libtoolize --quiet --force
 aclocal
 autoconf
 autoheader
