@@ -16,7 +16,7 @@ EXEDEPS = ../src/emailfetch
 LIBDEPS = $(AWS_LIBS)
 DEPS = $(EXEDEPS) $(LIBDEPS)
 
-noinst_PROGRAMS = docker
+noinst_PROGRAMS = docker$(EXEEXT)
 
 docker$(EXEEXT):  $(DEPS)
 	cp ../Dockerfile.$(DOCKEREXT) ./Dockerfile
@@ -30,5 +30,4 @@ docker$(EXEEXT):  $(DEPS)
 	touch docker$(EXEEXT)
 
 clean-local:
-	rm -f docker$(EXEEXT)
 	rm -rf emailfetch
