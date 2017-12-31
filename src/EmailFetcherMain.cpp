@@ -17,7 +17,6 @@
 #include <errno.h>
 
 #include "S3Get.h"
-#include "MaildirDownloader.h"
 #include "MaildirFormatter.h"
 #include "UCDPFormatter.h"
 #include "UCDPCurlPoster.h"
