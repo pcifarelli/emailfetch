@@ -42,7 +42,7 @@ S3Get::~S3Get()
 }
 
 void S3Get::listBuckets(void) const
-    {
+{
     auto outcome = m_s3_client->ListBuckets();
 
     if (outcome.IsSuccess())
@@ -99,7 +99,7 @@ s3object_list &S3Get::getObjectList(void)
 }
 
 bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Formatter &local_fmt) const
-    {
+{
     Aws::S3::Model::GetObjectRequest object_request;
     object_request.WithBucket(m_bucket_name).WithKey(obj.GetKey());
 
@@ -116,7 +116,7 @@ bool S3Get::objSaveAs(const Aws::S3::Model::Object obj, Formatter &local_fmt) co
 }
 
 bool S3Get::objGet(const Aws::S3::Model::Object obj, void *buf, size_t sz) const
-    {
+{
     Formatter fmt;
     Aws::S3::Model::GetObjectRequest object_request;
     object_request.WithBucket(m_bucket_name).WithKey(obj.GetKey());
