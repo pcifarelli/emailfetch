@@ -150,60 +150,68 @@ private:
     BodyList m_bodies;
     AttachmentList m_attachments;
 
+    typedef std::list<std::string> BoundaryList;
+    BoundaryList m_boundaries;
+
     // saves bodies and attachments in memory
     int save_parts(const std::string fname);
+    int save_parts(std::string &buffer);
+    int save_parts(std::istream &in);
 
     // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
-    static bool read_ifstream_to_boundary(std::ifstream &infile, std::string prev_boundary, std::string boundary,
+    static bool read_istream_to_boundary(std::istream &infile, BoundaryList &boundaries,
         std::vector<unsigned char> &rawbody, bool strip_crlf = true);
 
     // the heavy lifting functions
     static const int UTF8_MAX = 6;
     static int scan_headers(const std::string fname,
-        std::string &msgid,
-        std::string &to,
-        std::string &from,
-        std::string &subject,
-        std::string &date,
-        std::string &contenttype,
-        std::string &boundary,
-        std::string &charset,
-        std::string &transferenc,
-        std::string &contentid,
-        std::string &contentdispositon,
-        Attachment &attachment);
+        std::string  &msgid,
+        std::string  &to,
+        std::string  &from,
+        std::string  &subject,
+        std::string  &date,
+        std::string  &contenttype,
+        std::string  &boundary,
+        std::string  &charset,
+        std::string  &transferenc,
+        std::string  &contentid,
+        std::string  &contentdispositon,
+        BoundaryList &boundaries,
+        Attachment   &attachment);
 
-    static int scan_headers(std::ifstream &f,
-        std::string &msgid,
-        std::string &to,
-        std::string &from,
-        std::string &subject,
-        std::string &date,
-        std::string &contenttype,
-        std::string &boundary,
-        std::string &charset,
-        std::string &transferenc,
-        std::string &contentid,
-        std::string &contentdisposition,
-        Attachment &attachment);
+    static int scan_headers(std::istream &in,
+        std::string  &msgid,
+        std::string  &to,
+        std::string  &from,
+        std::string  &subject,
+        std::string  &date,
+        std::string  &contenttype,
+        std::string  &boundary,
+        std::string  &charset,
+        std::string  &transferenc,
+        std::string  &contentid,
+        std::string  &contentdisposition,
+        BoundaryList &boundaries,
+        Attachment   &attachment);
 
-    static int scan_attachment_headers(std::ifstream &infile,
-        std::string &contenttype,
-        std::string &boundary,
-        std::string &charset,
-        std::string &transferenc,
-        std::string &contentid,
-        std::string &contentdisposition,
-        Attachment &attachment);
+    static int scan_attachment_headers(std::istream &in,
+        std::string  &contenttype,
+        std::string  &boundary,
+        std::string  &charset,
+        std::string  &transferenc,
+        std::string  &contentid,
+        std::string  &contentdisposition,
+        BoundaryList &boundaries,
+        Attachment   &attachment);
 
-    bool extract_all(std::ifstream &infile,
+    bool extract_all(std::istream &in,
         std::string prev_boundary,
         std::string contenttype,
         std::string boundary,
         std::string charset,
         std::string transferenc);
 
-    bool extract_body(std::ifstream &infile,
+    bool extract_body(std::istream &in,
         std::string contenttype,
         std::string prev_boundary,
         std::string boundary,
@@ -221,10 +229,11 @@ private:
         int &sz);
 
     static void extract_contenttype(std::vector<std::string> &lines,
-        std::string &contenttype,
-        std::string &boundary,
-        std::string &charset,
-        std::string &name);
+        std::string  &contenttype,
+        std::string  &boundary,
+        BoundaryList &boundaries,
+        std::string  &charset,
+        std::string  &name);
 
 };
 

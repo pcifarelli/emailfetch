@@ -396,6 +396,8 @@ EmailExtractor::EmailExtractor(const string fullpath) :
     std::string contentid;
     Attachment att;
 
+    m_boundaries.clear();
+
     m_error = EmailExtractor::NO_ERROR;
     m_str_error = "";
 
@@ -406,6 +408,7 @@ EmailExtractor::~EmailExtractor()
 {
     m_bodies.clear();
     m_attachments.clear();
+    m_boundaries.clear();
 }
 
 int EmailExtractor::error() const
@@ -451,7 +454,7 @@ int EmailExtractor::to_utf8(string charset, vector<unsigned char> &in, vector<un
     return 0;
 }
 
-bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string prev_boundary, string boundary, string transferenc,
+bool EmailExtractor::extract_body(istream &infile, string contenttype, string prev_boundary, string boundary, string transferenc,
     string &charset, string &body)
 {
     bool is_text = !contenttype.compare(0, 4, "text");
@@ -460,7 +463,7 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string p
     bool reached_prev_boundary;
 
     rawbody.clear();
-    reached_prev_boundary = read_ifstream_to_boundary(infile, prev_boundary, boundary, rawbody, strip_crlf);
+    reached_prev_boundary = read_istream_to_boundary(infile, m_boundaries, rawbody, strip_crlf);
 
     body.clear();
     body.insert(body.end(), rawbody.cbegin(), rawbody.cend());
@@ -468,13 +471,14 @@ bool EmailExtractor::extract_body(ifstream &infile, string contenttype, string p
     return reached_prev_boundary;
 }
 
-int EmailExtractor::scan_attachment_headers(ifstream &infile,
+int EmailExtractor::scan_attachment_headers(istream &infile,
     string &contenttype,
     string &boundary,
     string &charset,
     string &transferenc,
     string &contentid,
     string &contentdisposition,
+    BoundaryList &boundaries,
     Attachment &att)
 {
     string dummy;
@@ -489,7 +493,7 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile,
     att.m_creation_datetime.clear();
     att.m_modification_datetime.clear();
     att.m_size = 0;
-    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc, a_contentid, a_contentdisposition, a_att);
+    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_boundary, a_charset, a_transferenc, a_contentid, a_contentdisposition, boundaries, a_att);
     if (a_contenttype.length())
         contenttype = a_contenttype;
     if (a_boundary.length())
@@ -506,9 +510,11 @@ int EmailExtractor::scan_attachment_headers(ifstream &infile,
         if (str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline")
             att = a_att;
     }
+
+    return 0;
 }
 
-bool EmailExtractor::extract_all(ifstream &infile,
+bool EmailExtractor::extract_all(istream &infile,
     string prev_boundary,
     string contenttype,
     string boundary,
@@ -534,6 +540,35 @@ bool EmailExtractor::extract_all(ifstream &infile,
 
             m_attachments.push_back(att);
         }
+        else if (a_contenttype == "message/rfc822")
+        {
+            string msgid, to, from, subject, date;
+            string contenttype = "";
+            string boundary = "";
+            string charset = a_charset;
+            string transferenc = "";
+            string contentid = "";
+            string contentdisposition = "";
+            Attachment att;
+
+            scan_headers(infile,
+                msgid,
+                to,
+                from,
+                subject,
+                date,
+                contenttype,
+                boundary,
+                charset,
+                transferenc,
+                contentid,
+                contentdisposition,
+                m_boundaries,
+                att);
+
+            // extracting an attached email
+            reached_prev_boundary = extract_all(infile, boundary, contenttype, boundary, charset, transferenc);
+        }
         else
         {
             Body b;
@@ -544,6 +579,7 @@ bool EmailExtractor::extract_all(ifstream &infile,
             if (b.m_body.size() && b.m_body != "\r\n" && a_contenttype.compare(0, 9, "multipart"))
             {
                 // also, make sure there's something interesting
+
                 regex e_boring("^([ \t\r\n]*)$");
                 smatch sm;
 
@@ -569,14 +605,14 @@ bool EmailExtractor::extract_all(ifstream &infile,
         }
 
         // see if there are new headers to deal with
-        scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentid, contentdisposition, att);
+        scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentid, contentdisposition, m_boundaries, att);
 
         if (a_boundary.length() && (a_boundary != boundary))
         {
             extract_all(infile, boundary, a_contenttype, a_boundary, a_charset, a_transferenc);
 
-            // we returned because we reached the prev boundary, so we are possibly pointing to attchment headers, so check
-            scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentid, contentdisposition, att);
+            // we returned because we reached the prev boundary, so we are possibly pointing to attachment headers, so check
+            scan_attachment_headers(infile, a_contenttype, a_boundary, a_charset, a_transferenc, contentid, contentdisposition, m_boundaries, att);
         }
     }
 
@@ -586,8 +622,6 @@ bool EmailExtractor::extract_all(ifstream &infile,
 int EmailExtractor::save_parts(const string fname)
 {
     ifstream infile(fname, ifstream::in);
-    string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition;
-    Attachment att;
 
     if (!infile.is_open() || !infile.good())
     {
@@ -596,7 +630,26 @@ int EmailExtractor::save_parts(const string fname)
         return -1;
     }
 
-    // this version of scan_headers leaves the ifstream pointing to the first line after the header block
+    save_parts(infile);
+
+    return 0;
+}
+
+int EmailExtractor::save_parts(string &buffer)
+{
+    stringstream in(buffer);
+
+    save_parts(in);
+
+    return 0;
+}
+
+int EmailExtractor::save_parts(std::istream &infile)
+{
+    string msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition;
+    Attachment att;
+
+    // scan_headers leaves the ifstream pointing to the first line after the header block
     scan_headers(infile,
         m_msgid,
         m_to,
@@ -609,6 +662,7 @@ int EmailExtractor::save_parts(const string fname)
         m_transferenc,
         contentid,
         contentdisposition,
+        m_boundaries,
         att);
 
     extract_all(infile, "", m_contenttype, boundary, m_charset, m_transferenc);
@@ -699,8 +753,7 @@ string EmailExtractor::extract_attr(string attr, string line)
     return value;
 }
 
-void EmailExtractor::extract_contenttype(vector<string> &lines, string &contenttype, string &boundary, string &charset,
-    string &name)
+void EmailExtractor::extract_contenttype(vector<string> &lines, string &contenttype, string &boundary, BoundaryList &boundaries, string &charset, string &name)
 {
     regex e_contenttype("^(Content-[Tt]ype:)(.*)");
     regex e_boundary1("^([ \t]*multipart/)(.*)");
@@ -746,7 +799,11 @@ void EmailExtractor::extract_contenttype(vector<string> &lines, string &contentt
             else if (a == "name")
                 name = v;
             else if (a == "boundary")
+            {
                 boundary = v;
+                //cout << "Found new boundary " << v << endl;
+                boundaries.push_back(v);
+            }
         }
     }
 }
@@ -797,7 +854,7 @@ void EmailExtractor::extract_contentdisposition_elements(string s, string next, 
         mdate = sm[3];
 }
 
-int EmailExtractor::scan_headers(ifstream &infile,
+int EmailExtractor::scan_headers(istream &infile,
     string &msgid,
     string &to,
     string &from,
@@ -809,6 +866,7 @@ int EmailExtractor::scan_headers(ifstream &infile,
     string &transferenc,
     string &contentid,
     string &contentdisposition,
+    BoundaryList &boundaries,
     Attachment &att)
 {
     string prev = "", s = "", next = "";
@@ -926,7 +984,7 @@ int EmailExtractor::scan_headers(ifstream &infile,
             else
             {
                 in_contenttype = false;
-                extract_contenttype(contenttypelines, contenttype, boundary, charset, att.m_attachment_filename);
+                extract_contenttype(contenttypelines, contenttype, boundary, boundaries, charset, att.m_attachment_filename);
                 if (att.m_attachment_filename.length())
                     contentdisposition = "inline";
             }
@@ -981,7 +1039,7 @@ int EmailExtractor::scan_headers(ifstream &infile,
         {
             if (in_contenttype)
             {
-                extract_contenttype(contenttypelines, contenttype, boundary, charset, att.m_attachment_filename);
+                extract_contenttype(contenttypelines, contenttype, boundary, boundaries, charset, att.m_attachment_filename);
                 if (att.m_attachment_filename.length())
                     contentdisposition = "inline";
             }
@@ -1003,14 +1061,14 @@ int EmailExtractor::scan_headers(const string fname,
     string &transferenc,
     string &contentid,
     string &contentdisposition,
+    BoundaryList &boundaries,
     Attachment &att)
 {
     ifstream infile(fname, ifstream::in);
 
     msgid = to = from = subject = date = contenttype = boundary = charset = transferenc = "";
 
-    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition,
-        att);
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, boundary, charset, transferenc, contentid, contentdisposition, boundaries, att);
 
     infile.close();
     return 0;
@@ -1158,12 +1216,27 @@ bool EmailExtractor::is_utf8(string charset)
     return ((charset == "utf8" || charset == "utf-8"));
 }
 
-bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_boundary, string boundary,
-    vector<unsigned char> &rawbody, bool strip_crlf)
+bool EmailExtractor::read_istream_to_boundary(istream &infile, BoundaryList &boundaries, vector<unsigned char> &rawbody, bool strip_crlf)
 {
     string next;
     bool reached_prev_boundary = false;
+
+    string boundary = "";
+    if (boundaries.size())
+        boundary = boundaries.back();
+
+    string prev_boundary = "";
+    if (boundaries.size() > 1)
+    {
+        auto bi = boundaries.end();
+        bi--;
+        bi--;
+        prev_boundary = *bi;
+    }
+
+
     string b = "--" + boundary;
+    string end_b = b + "--";
     string prev_b = "--" + prev_boundary;
 
     while (infile.good())
@@ -1176,7 +1249,16 @@ bool EmailExtractor::read_ifstream_to_boundary(ifstream &infile, string prev_bou
             next.erase(c);
 
         if (boundary.length() && !next.compare(0, b.length(), b))
+        {
+            // we have reached the boundary.  Is it the last of its kind?
+            if (!next.compare(0, end_b.length(), end_b))
+            {
+                // yes it is
+                //cout << "Reached last of " << boundaries.back() << endl;;
+                boundaries.pop_back();
+            }
             break;
+        }
 
         if (prev_boundary.length() && prev_boundary.length())
         {
