@@ -158,9 +158,8 @@ private:
     int save_parts(std::string &buffer);
     int save_parts(std::istream &in);
 
-    // reads up to the boundary (defined as "--" + boundary, as per rfc2046)
-    static bool read_istream_to_boundary(std::istream &infile, BoundaryList &boundaries,
-        std::vector<unsigned char> &rawbody, bool strip_crlf = true);
+    // reads up to the current boundary (defined as "--" + boundary, as per rfc2046)
+    static bool read_istream_to_boundary(std::istream &infile, BoundaryList &boundaries, std::vector<unsigned char> &rawbody, bool strip_crlf = true);
 
     // the heavy lifting functions
     static const int UTF8_MAX = 6;
@@ -171,7 +170,6 @@ private:
         std::string  &subject,
         std::string  &date,
         std::string  &contenttype,
-        std::string  &boundary,
         std::string  &charset,
         std::string  &transferenc,
         std::string  &contentid,
@@ -186,7 +184,6 @@ private:
         std::string  &subject,
         std::string  &date,
         std::string  &contenttype,
-        std::string  &boundary,
         std::string  &charset,
         std::string  &transferenc,
         std::string  &contentid,
@@ -196,7 +193,6 @@ private:
 
     static int scan_attachment_headers(std::istream &in,
         std::string  &contenttype,
-        std::string  &boundary,
         std::string  &charset,
         std::string  &transferenc,
         std::string  &contentid,
@@ -205,16 +201,12 @@ private:
         Attachment   &attachment);
 
     bool extract_all(std::istream &in,
-        std::string prev_boundary,
         std::string contenttype,
-        std::string boundary,
         std::string charset,
         std::string transferenc);
 
     bool extract_body(std::istream &in,
         std::string contenttype,
-        std::string prev_boundary,
-        std::string boundary,
         std::string transferenc,
         std::string &charset,
         std::string &body);
@@ -230,7 +222,6 @@ private:
 
     static void extract_contenttype(std::vector<std::string> &lines,
         std::string  &contenttype,
-        std::string  &boundary,
         BoundaryList &boundaries,
         std::string  &charset,
         std::string  &name);
