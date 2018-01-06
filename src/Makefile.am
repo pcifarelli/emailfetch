@@ -34,6 +34,7 @@ emailfetch_SOURCES = EmailFetcherMain.cpp \
 	S3Get.cpp \
 	Formatter.cpp \
 	Downloader.cpp \
+	SMTPSender.cpp \
 	UCDPCurlPoster.cpp
 
 emailfetch_LDADD = ${CURLLIB} -L$(AWS_SDK_PATH)/${AWS_LIBDIR} $(AWS_LIBS)
