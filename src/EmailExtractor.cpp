@@ -617,6 +617,7 @@ int EmailExtractor::save_parts(const string fname)
     }
 
     save_parts(infile);
+    infile.close();
 
     return 0;
 }
