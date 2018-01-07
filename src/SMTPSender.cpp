@@ -12,6 +12,7 @@
 #include <curl/curl.h>
 
 #include "SMTPSender.h"
+#include "EmailExtractor.h"
 
 using namespace std;
 
@@ -53,7 +54,7 @@ size_t SMTPSender::read_callback(void *dest, size_t size, size_t nmemb, void *us
     return 0; /* no more data left to deliver */
 }
 
-int SMTPSender::send(std::string email, std::string to, std::string from)
+int SMTPSender::send(string email, string to, string from)
 {
     CURL *curl;
     struct curl_slist *recipients = NULL;
@@ -68,6 +69,15 @@ int SMTPSender::send(std::string email, std::string to, std::string from)
     curl = curl_easy_init();
     if (curl)
     {
+        // because we are multithreaded
+        m_curl_status = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        if (m_curl_status != CURLE_OK)
+            cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+
+        m_curl_status = curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L); //0 disable messages
+        if (m_curl_status != CURLE_OK)
+            cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+
         /* This is the URL for your mailserver */
         m_curl_status = curl_easy_setopt(curl, CURLOPT_URL, m_smtpurl.c_str());
         if (m_curl_status != CURLE_OK)
@@ -133,7 +143,7 @@ int SMTPSender::send(std::string email, std::string to, std::string from)
     return 0;
 }
 
-int SMTPSender::sendFile(std::string fname, std::string to, std::string from)
+int SMTPSender::sendFile(string fname, string to, string from)
 {
     CURL *curl;
     struct curl_slist *recipients = NULL;
@@ -200,6 +210,29 @@ int SMTPSender::sendFile(std::string fname, std::string to, std::string from)
          */
         curl_easy_cleanup(curl);
     }
+    return 0;
+}
+
+
+int SMTPSender::forward(string email, string to)
+{
+    string dummy, from, returnpath, envelope_from;
+    EmailExtractor::ToSet original_to, delivered_to, envelope_to;
+    stringstream estrm(email);
+
+    EmailExtractor::scan_headers(estrm, dummy, dummy, from, dummy, dummy, dummy, dummy, dummy, returnpath, envelope_from, original_to, delivered_to, envelope_to);
+    if (!returnpath.length())
+    {
+        // there was no Return-Path header.  In this case we need to use the From: as the envelope header and set the Return-Path
+        // We print a warning because this is not always reliable.
+    }
+
+    return 0;
+}
+
+int SMTPSender::forwardFile(string fname, string to)
+{
+
     return 0;
 }
 

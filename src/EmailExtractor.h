@@ -17,6 +17,7 @@
 #include <regex>
 #include <list>
 #include <vector>
+#include <unordered_set>
 
 class EmailExtractor
 {
@@ -96,6 +97,8 @@ public:
     };
     typedef std::list<Attachment> AttachmentList;
 
+    typedef std::unordered_set<std::string> ToSet;
+
     const std::string &msgid();
     const std::string &to();
     const std::string &from();
@@ -104,6 +107,13 @@ public:
     const std::string &contenttype();
     const std::string &charset();
     const std::string &transferenc();
+    const std::string &returnpath();
+
+    const std::string &envelope_from();
+    const ToSet &original_to();
+    const ToSet &delivered_to();
+    const ToSet &envelope_to();
+
 
     int num_bodies();
     int num_attachments();
@@ -132,6 +142,37 @@ public:
     static void trim(std::string &s);
     static std::string strip_semi(std::string &s);
     static std::string strip_quotes(std::string &s);
+    static std::string strip_anglebrackets(std::string &s);
+
+    // for other classes that may need to extract some header info
+    static int scan_headers(const std::string fname,
+        std::string  &msgid,
+        std::string  &to,
+        std::string  &from,
+        std::string  &subject,
+        std::string  &date,
+        std::string  &contenttype,
+        std::string  &charset,
+        std::string  &transferenc,
+        std::string  &returnpath,
+        std::string  &envelope_from,
+        ToSet        &original_to,
+        ToSet        &delivered_to,
+        ToSet        &envelope_to);
+    static int scan_headers(std::istream &in,
+        std::string  &msgid,
+        std::string  &to,
+        std::string  &from,
+        std::string  &subject,
+        std::string  &date,
+        std::string  &contenttype,
+        std::string  &charset,
+        std::string  &transferenc,
+        std::string  &returnpath,
+        std::string  &envelope_from,
+        ToSet        &original_to,
+        ToSet        &delivered_to,
+        ToSet        &envelope_to);
 
 private:
     int m_error;
@@ -146,6 +187,12 @@ private:
     std::string m_contenttype;
     std::string m_charset;
     std::string m_transferenc;
+    std::string m_returnpath;
+    std::string m_envelope_from;
+
+    ToSet m_original_to;
+    ToSet m_delivered_to;
+    ToSet m_envelope_to;
 
     BodyList m_bodies;
     AttachmentList m_attachments;
@@ -173,7 +220,12 @@ private:
         std::string  &charset,
         std::string  &transferenc,
         std::string  &contentid,
+        std::string  &returnpath,
         std::string  &contentdispositon,
+        std::string  &envelope_from,
+        ToSet        &original_to,
+        ToSet        &delivered_to,
+        ToSet        &envelope_to,
         BoundaryList &boundaries,
         Attachment   &attachment);
 
@@ -187,7 +239,12 @@ private:
         std::string  &charset,
         std::string  &transferenc,
         std::string  &contentid,
+        std::string  &returnpath,
         std::string  &contentdisposition,
+        std::string  &envelope_from,
+        ToSet        &original_to,
+        ToSet        &delivered_to,
+        ToSet        &envelope_to,
         BoundaryList &boundaries,
         Attachment   &attachment);
 

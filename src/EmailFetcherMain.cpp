@@ -125,6 +125,8 @@ int main(int argc, char** argv)
         {
             if (item.enabled)
             {
+                string email = item.name + "@" + item.domainname;
+
                 // instantiating a Downloader and calling "start()" results in a new thread that waits on the notification
                 item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), verbose);
                 for (auto &loc : item.locations)
@@ -153,6 +155,7 @@ int main(int argc, char** argv)
                                 Aws::String workdir = loc.rest.workdir.c_str();
                                 ucdpfmt = new UCDPFormatter(
                                     workdir,
+                                    email,
                                     loc.destination,
                                     loc.rest.snihostname,
                                     loc.rest.port,

@@ -57,7 +57,7 @@
          ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",
-         "enabled"   : false
+         "enabled"   : true
       } 
    ]
 }

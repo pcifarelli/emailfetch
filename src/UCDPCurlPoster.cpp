@@ -141,6 +141,9 @@ void UCDPCurlPoster::init()
         if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK) //0 disable messages
             return;
 
+        // because we are multithreaded
+        if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_NOSIGNAL, 1L)) != CURLE_OK)
+            return;
     }
 }
 

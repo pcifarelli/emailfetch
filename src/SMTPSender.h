@@ -21,6 +21,15 @@ public:
     int send(std::string email, std::string to, std::string from);
     int sendFile(std::string fname, std::string to, std::string from);
 
+    // the only difference between the forward functions and the send functions
+    // is that the forward functions use the Return-Path as the envelope "from"
+    // if it's in the header, and make sure there is a Return-Path header if it
+    // isn't there, in which case it uses the "From:" header as the "from"
+    // envelope and adds a Return-Path set to the same value (note that the latter
+    // is not always reliable, so a warning is printed if it's done)
+    int forward(std::string email, std::string to);
+    int forwardFile(std::string fname, std::string to);
+
     CURLcode status() const
     {
         return m_curl_status;

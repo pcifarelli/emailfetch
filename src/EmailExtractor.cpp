@@ -358,6 +358,45 @@ const string &EmailExtractor::transferenc()
 
     return m_transferenc;
 }
+const string &EmailExtractor::returnpath()
+{
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+
+    return m_returnpath;
+}
+
+const string &EmailExtractor::envelope_from()
+{
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+
+    return m_envelope_from;
+}
+
+const EmailExtractor::ToSet &EmailExtractor::original_to()
+{
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+
+    return m_original_to;
+}
+
+const EmailExtractor::ToSet &EmailExtractor::delivered_to()
+{
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+
+    return m_delivered_to;
+}
+
+const EmailExtractor::ToSet &EmailExtractor::envelope_to()
+{
+    m_error = EmailExtractor::NO_ERROR;
+    m_str_error = "";
+
+    return m_envelope_to;
+}
 
 int EmailExtractor::num_bodies()
 {
@@ -476,6 +515,8 @@ int EmailExtractor::scan_attachment_headers(istream &infile,
 {
     string dummy;
     string a_contenttype, a_charset, a_transferenc, a_contentid, a_contentdisposition;
+    string envelope_from;
+    ToSet original_to, delivered_to, envelope_to;
     Attachment a_att;
     contenttype.clear();
     charset.clear();
@@ -485,7 +526,8 @@ int EmailExtractor::scan_attachment_headers(istream &infile,
     att.m_creation_datetime.clear();
     att.m_modification_datetime.clear();
     att.m_size = 0;
-    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_charset, a_transferenc, a_contentid, a_contentdisposition, boundaries, a_att);
+    int ret = scan_headers(infile, dummy, dummy, dummy, dummy, dummy, a_contenttype, a_charset, a_transferenc, a_contentid,
+                           dummy, a_contentdisposition, envelope_from, original_to, delivered_to, envelope_to, boundaries, a_att);
     if (a_contenttype.length())
         contenttype = a_contenttype;
     if (a_charset.length())
@@ -527,12 +569,13 @@ bool EmailExtractor::extract_all(istream &infile, string contenttype, string cha
         else if (a_contenttype == "message/rfc822" ||
                  a_contenttype == "message/rfc2046")    // would anyone use this as a contenttype? rfc822 is really about simple mail
         {
-            string msgid, to, from, subject, date;
+            string msgid, to, from, subject, date, returnpath, envelope_from;
             string contenttype = "";
             string charset = a_charset;
             string transferenc = "";
             string contentid = "";
             string contentdisposition = "";
+            ToSet original_to, delivered_to, envelope_to;
             Attachment att;
 
             scan_headers(infile,
@@ -545,7 +588,12 @@ bool EmailExtractor::extract_all(istream &infile, string contenttype, string cha
                 charset,
                 transferenc,
                 contentid,
+                returnpath,
                 contentdisposition,
+                envelope_from,
+                original_to,
+                delivered_to,
+                envelope_to,
                 m_boundaries,
                 att);
 
@@ -647,7 +695,12 @@ int EmailExtractor::save_parts(std::istream &infile)
         m_charset,
         m_transferenc,
         contentid,
+        m_returnpath,
         contentdisposition,
+        m_envelope_from,
+        m_original_to,
+        m_delivered_to,
+        m_envelope_to,
         m_boundaries,
         att);
 
@@ -713,6 +766,21 @@ string EmailExtractor::strip_quotes(string &s)
 
     c = s.cbegin();
     if (*c == '\"')
+        s.erase(c);
+
+    return s;
+}
+
+string EmailExtractor::strip_anglebrackets(string &s)
+{
+    // strip the quotes if there
+    auto c = s.cend();
+    c--;
+    if (*c == '>')
+        s.erase(c);
+
+    c = s.cbegin();
+    if (*c == '<')
         s.erase(c);
 
     return s;
@@ -836,6 +904,57 @@ void EmailExtractor::extract_contentdisposition_elements(string s, string next, 
         mdate = sm[3];
 }
 
+int EmailExtractor::scan_headers(const string fname,
+    string  &msgid,
+    string  &to,
+    string  &from,
+    string  &subject,
+    string  &date,
+    string  &contenttype,
+    string  &charset,
+    string  &transferenc,
+    string  &returnpath,
+    string  &envelope_from,
+    ToSet   &original_to,
+    ToSet   &delivered_to,
+    ToSet   &envelope_to)
+{
+    string dummy;
+    ifstream infile(fname, ifstream::in);
+    BoundaryList boundaries;
+    Attachment att;
+
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, charset, transferenc, dummy, returnpath, dummy, envelope_from, original_to, delivered_to, envelope_to, boundaries, att);
+
+    infile.close();
+    return 0;
+}
+
+int EmailExtractor::scan_headers(istream &in,
+    string  &msgid,
+    string  &to,
+    string  &from,
+    string  &subject,
+    string  &date,
+    string  &contenttype,
+    string  &charset,
+    string  &transferenc,
+    string  &returnpath,
+    string  &envelope_from,
+    ToSet   &original_to,
+    ToSet   &delivered_to,
+    ToSet   &envelope_to)
+{
+    string dummy;
+    BoundaryList boundaries;
+    Attachment att;
+
+    scan_headers(in, msgid, to, from, subject, date, contenttype, charset, transferenc, dummy, returnpath, dummy, envelope_from, original_to, delivered_to, envelope_to, boundaries, att);
+
+    return 0;
+}
+
+
 int EmailExtractor::scan_headers(istream &infile,
     string &msgid,
     string &to,
@@ -846,7 +965,12 @@ int EmailExtractor::scan_headers(istream &infile,
     string &charset,
     string &transferenc,
     string &contentid,
+    string &returnpath,
     string &contentdisposition,
+    string &envelope_from,
+    ToSet  &original_to,
+    ToSet  &delivered_to,
+    ToSet  &envelope_to,
     BoundaryList &boundaries,
     Attachment &att)
 {
@@ -860,6 +984,12 @@ int EmailExtractor::scan_headers(istream &infile,
     regex e_trenc("^(Content-Transfer-Encoding:)(.*)");
     regex e_disp("^(Content-Disposition:)(.*)");
     regex e_contentid("^(Content-[Ii][Dd]:).*<(.*)>(.*)");
+    regex e_returnpath("^(Return-[Pp]ath:)(.*)");
+    regex e_envelope_from("(.*)(envelope-from[: =])([^ >;]+)[ >;](.*)");
+    regex e_original_to("^(X-Original-To:)(.*)");
+    regex e_delivered_to("^(Delivered-To:)(.*)");
+    regex e_envelope_to("^(X-Envelope-To:)(.*)");
+
     regex e_nexthdr("^([^ \t]+)(.*)");
     smatch sm;
 
@@ -893,6 +1023,51 @@ int EmailExtractor::scan_headers(istream &infile,
         regex_match(s, sm, e_contentid);
         if (!contentid.length() && sm.size() > 0)
             contentid = sm[2];
+
+        regex_match(s, sm, e_returnpath);
+        if (!returnpath.length() && sm.size() > 0)
+        {
+            returnpath = sm[2];
+            trim(returnpath);
+            strip_anglebrackets(returnpath);
+        }
+
+        regex_match(s, sm, e_envelope_from);
+        if (!envelope_from.length() && sm.size() > 0)
+        {
+            string v = sm[3];
+            trim(v);
+            strip_anglebrackets(v);
+            envelope_from = v;
+        }
+
+        regex_match(s, sm, e_original_to);
+        if (sm.size() > 0)
+        {
+            string v = sm[2];
+            trim(v);
+            strip_anglebrackets(v);
+            original_to.insert(v);
+        }
+
+        regex_match(s, sm, e_delivered_to);
+        if (sm.size() > 0)
+        {
+            string v = sm[2];
+            trim(v);
+            strip_anglebrackets(v);
+            delivered_to.insert(v);
+        }
+
+        regex_match(s, sm, e_envelope_to);
+        if (sm.size() > 0)
+        {
+            string v = sm[2];
+            trim(v);
+            strip_anglebrackets(v);
+            envelope_to.insert(v);
+        }
+
 
         if (in_multiline_to)
         {
@@ -1041,7 +1216,12 @@ int EmailExtractor::scan_headers(const string fname,
     string &charset,
     string &transferenc,
     string &contentid,
+    string &returnpath,
     string &contentdisposition,
+    string &envelope_from,
+    ToSet  &original_to,
+    ToSet  &delivered_to,
+    ToSet  &envelope_to,
     BoundaryList &boundaries,
     Attachment &att)
 {
@@ -1049,7 +1229,8 @@ int EmailExtractor::scan_headers(const string fname,
 
     msgid = to = from = subject = date = contenttype = charset = transferenc = "";
 
-    scan_headers(infile, msgid, to, from, subject, date, contenttype, charset, transferenc, contentid, contentdisposition, boundaries, att);
+    scan_headers(infile, msgid, to, from, subject, date, contenttype, charset, transferenc, contentid, returnpath, contentdisposition,
+        envelope_from, original_to, delivered_to, envelope_to, boundaries, att);
 
     infile.close();
     return 0;

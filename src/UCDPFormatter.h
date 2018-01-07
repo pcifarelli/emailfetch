@@ -27,6 +27,7 @@ class UCDPFormatter: public S3Downloader::Formatter
 public:
     UCDPFormatter(
         Aws::String workdir,
+        std::string email_addr,
         std::string ip,
         std::string snihostname,
         unsigned short port,
@@ -72,6 +73,7 @@ private:
     std::string m_trclientid;
     std::string m_trfeedid;
     std::string m_trmessagetype;
+    std::string m_to;
 };
 
 #endif /* SRC_UCDPFORMATTER_H_ */
