@@ -230,14 +230,16 @@ string SMTPSender::pick(string                &to,
 
     if (returnpath.length())
         env_from = returnpath;
-    else if (envelope_from.length())
-        env_from = envelope_from;
-    else if (from.length())
+    else
     {
-        // We could not deduce the envelope-from from more reliable sources.
-        // In this case we need to use the From: as the envelope header and set the Return-Path
-        env_from = from;
-        new_headers += "Return-Path: <" + env_from + ">\n";
+        if (envelope_from.length())
+            env_from = envelope_from;
+        else if (from.length())
+            env_from = from;
+
+        // if we can deduce the envelope-from, we should add the Return-Path
+        if (env_from.length())
+            new_headers += "Return-Path: <" + env_from + ">\r\n";
     }
 
     // Now pick the best envelope to
@@ -288,8 +290,7 @@ int SMTPSender::forwardFile(string fname)
         str.reserve(infile.tellg());
         infile.seekg(0, std::ios::beg);
 
-        str.assign((std::istreambuf_iterator<char>(infile)),
-                    std::istreambuf_iterator<char>());
+        str.assign((std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
 
         string email = new_headers + str;
         for (auto &t : env_to)
@@ -362,8 +363,7 @@ int SMTPSender::forwardFile(string fname, string to)
         str.reserve(infile.tellg());
         infile.seekg(0, std::ios::beg);
 
-        str.assign((std::istreambuf_iterator<char>(infile)),
-                    std::istreambuf_iterator<char>());
+        str.assign((std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
 
         string email = new_headers + str;
         send(email, to, env_from);
