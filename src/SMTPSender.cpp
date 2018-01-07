@@ -12,7 +12,6 @@
 #include <curl/curl.h>
 
 #include "SMTPSender.h"
-#include "EmailExtractor.h"
 
 using namespace std;
 
@@ -54,7 +53,7 @@ size_t SMTPSender::read_callback(void *dest, size_t size, size_t nmemb, void *us
     return 0; /* no more data left to deliver */
 }
 
-int SMTPSender::send(string email, string to, string from)
+int SMTPSender::send(string &email, string to, string from)
 {
     CURL *curl;
     struct curl_slist *recipients = NULL;
@@ -166,9 +165,12 @@ int SMTPSender::sendFile(string fname, string to, string from)
          * to the address in the reverse-path which triggered them. Otherwise, they
          * could cause an endless loop. See RFC 5321 Section 4.5.5 for more details.
          */
-        m_curl_status = curl_easy_setopt(curl, CURLOPT_MAIL_FROM, from.c_str());
-        if (m_curl_status != CURLE_OK)
-            cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+        if (from.length())
+        {
+            m_curl_status = curl_easy_setopt(curl, CURLOPT_MAIL_FROM, from.c_str());
+            if (m_curl_status != CURLE_OK)
+                cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+        }
 
         /* Note that the CURLOPT_MAIL_RCPT takes a list, not a char array.  */
         recipients = curl_slist_append(recipients, to.c_str());
@@ -214,24 +216,162 @@ int SMTPSender::sendFile(string fname, string to, string from)
 }
 
 
-int SMTPSender::forward(string email, string to)
+string SMTPSender::pick(string                &to,
+                        EmailExtractor::ToSet &original_to,
+                        EmailExtractor::ToSet &delivered_to,
+                        EmailExtractor::ToSet &envelope_to,
+                        string                &returnpath,
+                        string                &envelope_from,
+                        string                &from,
+                        string                &env_from,
+                        EmailExtractor::ToSet &env_to)
+{
+    string new_headers = "";
+
+    if (returnpath.length())
+        env_from = returnpath;
+    else if (envelope_from.length())
+        env_from = envelope_from;
+    else if (from.length())
+    {
+        // We could not deduce the envelope-from from more reliable sources.
+        // In this case we need to use the From: as the envelope header and set the Return-Path
+        env_from = from;
+        new_headers += "Return-Path: <" + env_from + ">\n";
+    }
+
+    // Now pick the best envelope to
+    EmailExtractor::ToSet derived_from_to_header;
+    if (original_to.size())
+        env_to = original_to;
+    else if (envelope_to.size())
+        env_to = envelope_to;
+    else if (delivered_to.size())
+        env_to = delivered_to;
+    else
+    {
+        // Use the To list
+        // We print a warning because this is not always reliable.
+        cout << "Forwarding to the To header list - this is not always reliable" << endl;
+        istringstream iss(to);
+
+        // tokenize by comma
+        string s;
+        while (getline(iss, s, ','))
+        {
+            EmailExtractor::trim(s);
+            if (s != "")
+                env_to.insert(s);
+        }
+    }
+
+    return new_headers;
+}
+
+int SMTPSender::forwardFile(string fname)
+{
+    string dummy, to, from, returnpath, envelope_from;
+    EmailExtractor::ToSet original_to, delivered_to, envelope_to;
+    string new_headers;
+    string env_from;
+    EmailExtractor::ToSet env_to;
+
+    EmailExtractor::scan_headers(fname, dummy, to, from, dummy, dummy, dummy, dummy, dummy, returnpath, envelope_from, original_to, delivered_to, envelope_to);
+    new_headers = pick(to, original_to, delivered_to, envelope_to, returnpath, envelope_from, from, env_from, env_to);
+
+    if (new_headers.length())
+    {
+        ifstream infile(fname, ifstream::in);
+        string str;
+
+        infile.seekg(0, std::ios::end);
+        str.reserve(infile.tellg());
+        infile.seekg(0, std::ios::beg);
+
+        str.assign((std::istreambuf_iterator<char>(infile)),
+                    std::istreambuf_iterator<char>());
+
+        string email = new_headers + str;
+        for (auto &t : env_to)
+            send(email, t, env_from);
+
+        return 0;
+    }
+
+    for (auto &t : env_to)
+        sendFile(fname, t, env_from);
+
+    return 0;
+}
+
+int SMTPSender::forward(string &email)
+{
+    string dummy, to, from, returnpath, envelope_from;
+    EmailExtractor::ToSet original_to, delivered_to, envelope_to;
+    string new_headers;
+    string env_from;
+    EmailExtractor::ToSet env_to;
+    istringstream in(email);
+
+    EmailExtractor::scan_headers(in, dummy, to, from, dummy, dummy, dummy, dummy, dummy, returnpath, envelope_from, original_to, delivered_to, envelope_to);
+    new_headers = pick(to, original_to, delivered_to, envelope_to, returnpath, envelope_from, from, env_from, env_to);
+
+    if (new_headers.length())
+        email = new_headers + email;
+
+    for (auto &t : env_to)
+        send(email, t, env_from);
+
+    return 0;
+}
+
+int SMTPSender::forward(string &email, string to)
 {
     string dummy, from, returnpath, envelope_from;
-    EmailExtractor::ToSet original_to, delivered_to, envelope_to;
-    stringstream estrm(email);
+    EmailExtractor::ToSet original_to, delivered_to, envelope_to, env_to;
+    string new_headers;
+    string env_from;
 
-    EmailExtractor::scan_headers(estrm, dummy, dummy, from, dummy, dummy, dummy, dummy, dummy, returnpath, envelope_from, original_to, delivered_to, envelope_to);
-    if (!returnpath.length())
-    {
-        // there was no Return-Path header.  In this case we need to use the From: as the envelope header and set the Return-Path
-        // We print a warning because this is not always reliable.
-    }
+    EmailExtractor::scan_headers(email, dummy, dummy, from, dummy, dummy, dummy, dummy, dummy, returnpath, envelope_from, original_to, delivered_to, envelope_to);
+    new_headers = pick(to, original_to, delivered_to, envelope_to, returnpath, envelope_from, from, env_from, env_to);
+
+    if (new_headers.length())
+        email = new_headers + email;
+
+    send(email, to, env_from);
 
     return 0;
 }
 
 int SMTPSender::forwardFile(string fname, string to)
 {
+    string dummy, from, returnpath, envelope_from;
+    EmailExtractor::ToSet original_to, delivered_to, envelope_to, env_to;
+    string new_headers;
+    string env_from;
+
+    EmailExtractor::scan_headers(fname, dummy, dummy, from, dummy, dummy, dummy, dummy, dummy, returnpath, envelope_from, original_to, delivered_to, envelope_to);
+    new_headers = pick(to, original_to, delivered_to, envelope_to, returnpath, envelope_from, from, env_from, env_to);
+
+    if (new_headers.length())
+    {
+        ifstream infile(fname, ifstream::in);
+        string str;
+
+        infile.seekg(0, std::ios::end);
+        str.reserve(infile.tellg());
+        infile.seekg(0, std::ios::beg);
+
+        str.assign((std::istreambuf_iterator<char>(infile)),
+                    std::istreambuf_iterator<char>());
+
+        string email = new_headers + str;
+        send(email, to, env_from);
+
+        return 0;
+    }
+
+    sendFile(fname, to, env_from);
 
     return 0;
 }
