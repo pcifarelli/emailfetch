@@ -24,8 +24,10 @@ namespace S3Downloader
 class Formatter
 {
 public:
-    Formatter();
-    Formatter(Aws::String dir);
+    Formatter(int verbose = 0);
+    Formatter(std::vector<std::string> mxservers, int verbose = 0);
+    Formatter(Aws::String dir, int verbose = 0);
+    Formatter(Aws::String dir, std::vector<std::string> mxservers, int verbose = 0);
     virtual ~Formatter();
 
     virtual void open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
@@ -57,6 +59,9 @@ public:
     {
     }
 
+    virtual void do_forwarding(std::string fullpath);                  // guess at the envelope "to" based on the headers in the email
+    virtual void do_forwarding(std::string fullpath, std::string to);  // explicit envelope "to"
+
     // getKey is used to create a map of what we've already downloaded.  The key is the thing you want to use for comparisons.
     // you are passed the object and the filename to construct the key from
     // currently, it is not templated, because the only existing use cases are string keys
@@ -70,6 +75,10 @@ public:
 
 private:
     std::stringstream m_ostream;
+    int m_verbose;
+    bool m_forward;
+    std::vector<std::string> m_mxservers;
+    double random_number();
 
 protected:
     Aws::OFStream m_local_file;

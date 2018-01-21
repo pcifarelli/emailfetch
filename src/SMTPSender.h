@@ -11,6 +11,7 @@
 #define SRC_SMTPSENDER_H_
 
 #include <string>
+#include <curl/curl.h>
 #include "EmailExtractor.h"
 
 class SMTPSender

@@ -46,8 +46,9 @@ struct location_type
     } rest;
 };
 typedef std::list<location_type> location_list;
-typedef std::vector<std::string> mxservers_list;
-typedef std::list<mxservers_list> forwarding_list;
+typedef std::vector<std::string> mxservers_vector;
+typedef std::map<int, mxservers_vector> mxbyprio;
+typedef std::map<std::string, mxbyprio> domain_forwarding_list;
 
 struct config_item
 {
@@ -58,7 +59,7 @@ struct config_item
     std::string topic_arn;            // the arn of the topic to wait on
     std::string bucket;               // the S3 bucket to download from
     S3Downloader::Downloader *pdownl; // the downloader object that does the downloading
-    forwarding_list forward_servers;  // a list of MX servers that also handle mail for this domain to forward all emails to
+    mxbyprio forward_servers;         // a vector of MX servers that also handle mail for this domain to forward all emails to
     bool enable_forwarding;           // enable forwarding to the forwarding_servers (one MX server chosen randomly for each entry in the list)
     bool has_nonslot_workflow;        // are any of the locations email workflow destinations?
     bool enabled;                     // is this mailbox enabled in the configuration
@@ -89,7 +90,7 @@ struct program_defaults
         int         trmessageprio;
     } UCDP_defaults;
 
-    forwarding_list forwarding_servers_default;
+    domain_forwarding_list forwarding_servers;
 };
 
 extern program_defaults defaults;

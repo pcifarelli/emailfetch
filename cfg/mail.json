@@ -22,7 +22,43 @@
      "trfeedid"            : "news_eapfe",
      "trmessagetype"       : "EmailML",
      "workdir"             : "./vmail/slot/%f/%a"
-   }
+   },
+   "MX_forwarding_servers" : [
+      { 
+        "domain" : "testaws.pcifarelli.net", 
+        "mx" : [
+            { "pref" : 20, "server" : "mx-caprica.easydns.com." }
+         ] 
+      },
+      { 
+         "domain" : "allreleases.net",
+         "mx" : [
+            { "pref" : 1, "server" : "ar01.emailrecord001.com." },
+            { "pref" : 1, "server" : "ar02.ebuc3.com." },
+            { "pref" : 1, "server" : "ar03.emailrecord002.com." },
+            { "pref" : 1, "server" : "ar04.emailrecord003.com." },
+            { "pref" : 10, "server" : "ar05.emailrecord004.com." },
+            { "pref" : 10, "server" : "ar06.ebuc3.com." },
+            { "pref" : 10, "server" : "ar07.emailrecord001.com." },
+            { "pref" : 10, "server" : "ar08.emailrecord002.com." },
+            { "pref" : 20, "server" : "ar09.emailrecord01.com." },
+            { "pref" : 20, "server" : "ar10.emsure.com." }
+         ] 
+      },
+      { 
+         "domain" : "news.reuters.com",
+         "mx" : [
+            { "pref" : 10, "server" : "news05.emailrecord002.com." },
+            { "pref" : 10, "server" : "news04.emsure.com." },
+            { "pref" : 10, "server" : "news03.emailrecord001.com." },
+            { "pref" : 10, "server" : "news02.emailrecord002.com." },
+            { "pref" : 10, "server" : "news01.emailrecord001.com." },
+            { "pref" : 10, "server" : "news08.emsure.com." },
+            { "pref" : 10, "server" : "news07.emailrecord004.com." },
+            { "pref" : 10, "server" : "news06.emailrecord003.com." }
+         ] 
+      }
+   ]
 },
 "mailbox" : 
    [

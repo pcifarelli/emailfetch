@@ -17,21 +17,40 @@
 #include <aws/core/Aws.h>
 #include <string>
 #include <cstddef>
+#include <climits>
+#include <fcntl.h>
 #include "Formatter.h"
+#include "SMTPSender.h"
 
 namespace S3Downloader
 {
 
 mode_t Formatter::m_newdirs_mode = 0700;
 
-Formatter::Formatter() :
-    m_dir(""), m_local_file(NULL), m_fullpath("")
+Formatter::Formatter(int verbose) :
+    m_forward(false), m_dir(""), m_local_file(NULL), m_fullpath(""), m_verbose(verbose)
 {
 }
 
-Formatter::Formatter(Aws::String dir) :
-    m_dir(dir), m_local_file(NULL), m_fullpath("")
+Formatter::Formatter(Aws::String dir, int verbose) :
+    m_forward(false), m_dir(dir), m_local_file(NULL), m_fullpath(""), m_verbose(verbose)
 {
+    mkdirs(m_dir.c_str(), m_newdirs_mode);
+}
+
+Formatter::Formatter(std::vector<std::string> mxservers, int verbose) :
+    m_forward(true), m_mxservers(mxservers), m_dir(""), m_local_file(NULL), m_fullpath(""), m_verbose(verbose)
+{
+    if (!m_mxservers.size())
+        m_forward = false; // sorry, can't forward if there are no mxservers
+}
+
+Formatter::Formatter(Aws::String dir, std::vector<std::string> mxservers, int verbose) :
+    m_forward(true), m_mxservers(mxservers), m_dir(dir), m_local_file(NULL), m_fullpath(""), m_verbose(verbose)
+{
+    if (!m_mxservers.size())
+        m_forward = false; // sorry, can't forward if there are no mxservers
+
     mkdirs(m_dir.c_str(), m_newdirs_mode);
 }
 
@@ -39,6 +58,57 @@ Formatter::~Formatter()
 {
     close();
 }
+
+// Pick 1 random MX server from the list and forward the file to that server
+void Formatter::do_forwarding(std::string fullpath)
+{
+    if (m_forward)
+    {
+        int server_number = random_number() * m_mxservers.size();
+        std::string server = m_mxservers[server_number];
+        SMTPSender smtpsender(server);
+        if (m_verbose >=3)
+            std::cout << "Forwarding " << fullpath << " to MX server " << server << std::endl;
+
+        smtpsender.forwardFile(fullpath);
+        if (smtpsender.status() != CURLE_OK)
+            std::cout << "Error forwarding " << fullpath << " to MX server " << server << std::endl;
+    }
+}
+
+// Pick 1 random MX server from the list and forward the file to that server
+void Formatter::do_forwarding(std::string fullpath, std::string to)
+{
+    if (m_forward)
+    {
+        int server_number = random_number() * m_mxservers.size();
+        std::string server = m_mxservers[server_number];
+        SMTPSender smtpsender(server);
+        if (m_verbose >=3)
+            std::cout << "Forwarding " << fullpath << " to MX server " << server << std::endl;
+
+        smtpsender.forwardFile(fullpath, to);
+        if (smtpsender.status() != CURLE_OK)
+            std::cout << "Error forwarding " << fullpath << " to MX server " << server << std::endl;
+    }
+}
+
+double Formatter::random_number()
+{
+    unsigned long ur;
+    int fd;
+    if (!(fd = ::open("/dev/urandom", O_RDONLY | O_NONBLOCK)))
+        std::cout << "Unable to get random number" << std::endl;
+    else
+    {
+        if (::read(fd, (void *) &ur, sizeof(ur)) != sizeof(ur))
+            std::cout << "Could not read a whole random number: " << ur << std::endl;
+        ::close(fd);
+    }
+
+    return (double) ur / (double) ULONG_MAX;
+}
+
 
 void Formatter::close()
 {

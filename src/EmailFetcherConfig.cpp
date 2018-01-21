@@ -133,6 +133,43 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
         if (ucdpdefaults.ValueExists("validate_json"))
             defaults.UCDP_defaults.validate_json = ucdpdefaults.GetString("validate_json").c_str();
     }
+    if (jdefaults.ValueExists("MX_forwarding_servers"))
+    {
+        Utils::Array<Utils::Json::JsonValue> domain_arr = jdefaults.GetArray("MX_forwarding_servers");
+        cout << "DOMAINARR LEN=" << domain_arr.GetLength() << endl;
+        for (int i = 0; i < domain_arr.GetLength(); i++)
+        {
+            string domain = domain_arr[i].GetString("domain").c_str();
+            Utils::Array<Utils::Json::JsonValue> mx_arr = domain_arr[i].GetArray("mx");
+
+            if (defaults.forwarding_servers.find(domain) == defaults.forwarding_servers.end())
+            {
+                mxbyprio m;
+                std::pair<std::string, mxbyprio> ent(domain, m);
+                defaults.forwarding_servers.insert(ent);
+            }
+
+            for (int j = 0; j < mx_arr.GetLength(); j++)
+            {
+                if (mx_arr[j].ValueExists("pref") && mx_arr[j].ValueExists("server"))
+                {
+                    int pref = mx_arr[j].GetInteger("pref");
+                    string server = mx_arr[j].GetString("server").c_str();
+                    auto mxent = defaults.forwarding_servers[domain].find(pref);
+                    if (mxent != defaults.forwarding_servers[domain].end())
+                        mxent->second.push_back(server);
+                    else
+                    {
+                        mxservers_vector mxservers;
+                        mxservers.push_back(server);
+
+                        std::pair<int, mxservers_vector> ent(pref, mxservers);
+                        defaults.forwarding_servers[domain].insert(ent);
+                    }
+                }
+            }
+        }
+    }
 }
 
 string replace_all(string str, const string &from, const string &to)
@@ -409,6 +446,20 @@ int get_config(const string location, program_defaults &defaults, config_list &c
 
 void print_config(config_list &mailboxconfig)
 {
+    cout << "MX FORWARDING LIST:" << endl;
+    // print the forwarding list
+    for (auto &mxservers : defaults.forwarding_servers)
+    {
+        cout << "   DOMAIN: " << mxservers.first << endl;
+        for (auto &mxent : mxservers.second)
+        {
+            cout << "      PREF: " << mxent.first << endl;
+            for (auto &server : mxent.second)
+                cout << "         MXSERVER: " << server << endl;
+        }
+    }
+
+    // print the mailboxes
     for (auto &item : mailboxconfig)
     {
         cout << "CONFIG: " << item.description << endl;
