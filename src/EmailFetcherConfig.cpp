@@ -136,7 +136,6 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
     if (jdefaults.ValueExists("MX_forwarding_servers"))
     {
         Utils::Array<Utils::Json::JsonValue> domain_arr = jdefaults.GetArray("MX_forwarding_servers");
-        cout << "DOMAINARR LEN=" << domain_arr.GetLength() << endl;
         for (int i = 0; i < domain_arr.GetLength(); i++)
         {
             string domain = domain_arr[i].GetString("domain").c_str();
@@ -413,6 +412,14 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
         }
 
         item.enabled = arr[i].GetBool("enabled");
+
+        item.enable_forwarding = false;
+        if (arr[i].ValueExists("forward"))
+        {
+            item.enable_forwarding = arr[i].GetBool("forward");
+            item.forward_servers = defaults.forwarding_servers.find(item.domainname)->second;
+        }
+
         config.push_back(item);
     }
 }
@@ -448,16 +455,16 @@ void print_config(config_list &mailboxconfig)
 {
     cout << "MX FORWARDING LIST:" << endl;
     // print the forwarding list
-    for (auto &mxservers : defaults.forwarding_servers)
-    {
-        cout << "   DOMAIN: " << mxservers.first << endl;
-        for (auto &mxent : mxservers.second)
-        {
-            cout << "      PREF: " << mxent.first << endl;
-            for (auto &server : mxent.second)
-                cout << "         MXSERVER: " << server << endl;
-        }
-    }
+    //for (auto &mxservers : defaults.forwarding_servers)
+    //{
+    //    cout << "   DOMAIN: " << mxservers.first << endl;
+    //    for (auto &mxent : mxservers.second)
+    //    {
+    //        cout << "      PREF: " << mxent.first << endl;
+    //        for (auto &server : mxent.second)
+    //            cout << "         MXSERVER: " << server << endl;
+    //    }
+    //}
 
     // print the mailboxes
     for (auto &item : mailboxconfig)
@@ -468,6 +475,19 @@ void print_config(config_list &mailboxconfig)
         cout << (item.has_nonslot_workflow ? " and has non-slot workflow\n" : "\n");
         cout << "CONFIG:    " << "S3 Bucket:     " << item.bucket << endl;
         cout << "CONFIG:    " << "SNS Topic ARN: " << item.topic_arn << endl;
+        if (item.enable_forwarding)
+        {
+            cout << "CONFIG:    Forwarding enabled" << endl;
+            cout << "CONFIG:       MX Servers:" << endl;
+            for (auto &mxent : item.forward_servers)
+            {
+                cout << "CONFIG:       PREF: " << mxent.first << endl;
+                for (auto &server : mxent.second)
+                    cout << "CONFIG:          MXSERVER: " << server << endl;
+            }
+        }
+        else
+            cout << "CONFIG:    Forwarding disabled" << endl;
         cout << "CONFIG:    " << "Locations:" << endl;
         int i = 0;
         for (auto &loc : item.locations)
