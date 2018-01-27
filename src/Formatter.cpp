@@ -117,7 +117,7 @@ void Formatter::close()
 }
 
 std::string Formatter::mkname(const Aws::S3::Model::Object obj) const
-    {
+{
     return obj.GetKey().c_str();
 }
 
@@ -147,7 +147,7 @@ Aws::OStream &Formatter::getStream(void *buf, size_t sz)
 }
 
 Aws::String Formatter::getKey(Aws::String filename) const
-    {
+{
     return filename;
 }
 
