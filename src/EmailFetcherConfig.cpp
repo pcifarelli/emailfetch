@@ -417,7 +417,14 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
         if (arr[i].ValueExists("mxforward"))
         {
             item.enable_mxforwarding = arr[i].GetBool("mxforward");
-            item.forward_servers = defaults.forwarding_servers.find(item.domainname)->second;
+            if (item.enable_mxforwarding && (defaults.forwarding_servers.find(item.domainname) != defaults.forwarding_servers.end()))
+                item.forward_servers = defaults.forwarding_servers.find(item.domainname)->second;
+            else
+            {
+                // no mx forwarding servers defined for this domain; disable server forwarding
+                item.enable_mxforwarding = false;
+                cout << "CONFIG: Error: MX forwarding enabled for " << item.name << '@' << item.domainname << " without any MX servers defined for the domain" << std::endl;
+            }
         }
 
         config.push_back(item);
