@@ -76,7 +76,7 @@
          "bucket"      : "feed1-testaws-pcifarelli-net",
          "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
          "enabled"     : true,
-         "forward"     : true,
+         "mxforward"   : true,
          "locations"   : [ 
             { "mailbox" : true, "public" : true },
             { "mailbox" : true, "public" : false, "user" : "paul" },
@@ -95,14 +95,14 @@
       },
       { 
          "description"      : "Feed 2 Mailbox",
-         "email"       : "feed2@testaws.pcifarelli.net",
+         "email"     : "feed2@testaws.pcifarelli.net",
          "locations" : [ { "mailbox" : true, "workdir" : "./mail2" },
                          { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19", "validate_json" : false, "trmessagepriority" : 4 } 
          ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",
          "enabled"   : true,
-         "forward"   : true
+         "mxforward" : true
       } 
    ]
 }

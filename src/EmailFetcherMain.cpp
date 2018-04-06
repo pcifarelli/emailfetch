@@ -140,7 +140,7 @@ int main(int argc, char** argv)
                                 MaildirFormatter *mailfmt;
 
                                 Aws::String dir = loc.destination.c_str();
-                                if (item.enable_forwarding)
+                                if (item.enable_mxforwarding)
                                     mailfmt = new MaildirFormatter(dir, item.forward_servers, verbose);
                                 else
                                     mailfmt = new MaildirFormatter(dir, verbose);
@@ -158,9 +158,10 @@ int main(int argc, char** argv)
 
                                 Aws::String workdir = loc.rest.workdir.c_str();
 
-                                if (!item.enable_forwarding)
+                                if (item.enable_mxforwarding)
                                     ucdpfmt = new UCDPFormatter(
                                         workdir,
+                                        item.forward_servers,
                                         email,
                                         loc.destination,
                                         loc.rest.snihostname,
@@ -176,7 +177,6 @@ int main(int argc, char** argv)
                                 else
                                     ucdpfmt = new UCDPFormatter(
                                         workdir,
-                                        item.forward_servers,
                                         email,
                                         loc.destination,
                                         loc.rest.snihostname,

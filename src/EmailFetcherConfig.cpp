@@ -413,10 +413,10 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
 
         item.enabled = arr[i].GetBool("enabled");
 
-        item.enable_forwarding = false;
-        if (arr[i].ValueExists("forward"))
+        item.enable_mxforwarding = false;
+        if (arr[i].ValueExists("mxforward"))
         {
-            item.enable_forwarding = arr[i].GetBool("forward");
+            item.enable_mxforwarding = arr[i].GetBool("mxforward");
             item.forward_servers = defaults.forwarding_servers.find(item.domainname)->second;
         }
 
@@ -475,7 +475,7 @@ void print_config(config_list &mailboxconfig)
         cout << (item.has_nonslot_workflow ? " and has non-slot workflow\n" : "\n");
         cout << "CONFIG:    " << "S3 Bucket:     " << item.bucket << endl;
         cout << "CONFIG:    " << "SNS Topic ARN: " << item.topic_arn << endl;
-        if (item.enable_forwarding)
+        if (item.enable_mxforwarding)
         {
             cout << "CONFIG:    Forwarding enabled" << endl;
             cout << "CONFIG:       MX Servers:" << endl;
