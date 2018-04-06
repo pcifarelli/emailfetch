@@ -266,13 +266,15 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
         int nlocs = locations.GetLength();
         for (int j = 0; j < nlocs; j++)
         {
-            if (locations[j].ValueExists("mailbox"))
+            if (locations[j].ValueExists("type"))
             {
                 location_type loc;
-                bool is_mailbox = locations[j].GetBool("mailbox");
-                if (is_mailbox)
+                string type = "";
+
+                type = locations[j].GetString("type").c_str();
+                if (EmailExtractor::str_tolower(type) == "mailbox")
                 {
-                    loc.type = NONSLOT;
+                    loc.type = MAILBOX;
                     item.has_nonslot_workflow = true;
                     bool is_public = false;
                     string user = "";
@@ -312,11 +314,11 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                         }
                     }
                 }
-                else // it goes to a REST post
+                else if (EmailExtractor::str_tolower(type) == "ucdp")// it goes to a UCDP REST post
                 {
                     string addr = "";
 
-                    loc.type = SLOT;
+                    loc.type = UCDP;
                     // SNI is the default for UCDP, and UCDP is the default system to post to
                     if (locations[j].ValueExists("UCDP"))
                         loc.rest.UCDP = locations[j].GetBool("UCDP");
@@ -402,6 +404,23 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     else
                         loc.rest.workdir = create_location(defaults.UCDP_defaults.workdir, loc.mailbox.user, item.name,
                             item.domainname, addr);
+                }
+                else if (EmailExtractor::str_tolower(type) == "forward")// it goes to a UCDP REST post
+                {
+                    loc.type = FORWARD;
+                    loc.destination = locations[j].GetString("email").c_str();
+                    cout << "CONFIG: Warning: \"forward\" location type not yet implemented" << std::endl;
+                }
+                else if (EmailExtractor::str_tolower(type) == "url")// it goes to a UCDP REST post
+                {
+                    loc.type = URL;
+                    loc.destination = locations[j].GetString("url").c_str();
+                    cout << "CONFIG: Warning: \"url\" location type not yet implemented" << std::endl;
+                }
+                else
+                {
+                    loc.type = UNKNOWN;
+                    cout << "CONFIG: Error: unknown location type" << std::endl;
                 }
 
                 item.locations.push_back(loc);
@@ -500,34 +519,46 @@ void print_config(config_list &mailboxconfig)
         for (auto &loc : item.locations)
         {
             ++i;
-            if (loc.type == SLOT)
+            if (loc.type == UCDP)
             {
                 if (loc.rest.UCDP)
                 {
-                    cout << "CONFIG:       " << i << ". Type:     " << "SLOT: UCDP destination" << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   IP:            " << loc.destination << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   Port:          " << loc.rest.port << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   ClientId:      " << loc.rest.trclientid << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   SNIHostName:   " << loc.rest.snihostname << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   FeedId:        " << loc.rest.trfeedid << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   MessageType:   " << loc.rest.trmessagetype << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   MessagePrio:   " << loc.rest.trmessageprio << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   ValidateJson?: " << (loc.rest.validate_json?"true":"false") << endl;
+                    cout << "CONFIG:       " << i << ". Type:  " << "SLOT: UCDP destination" << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   IP:            " << loc.destination << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   Port:          " << loc.rest.port << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   ClientId:      " << loc.rest.trclientid << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   SNIHostName:   " << loc.rest.snihostname << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   FeedId:        " << loc.rest.trfeedid << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   MessageType:   " << loc.rest.trmessagetype << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   MessagePrio:   " << loc.rest.trmessageprio << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   ValidateJson?: " << (loc.rest.validate_json?"true":"false") << endl;
                 }
                 else
                 {
-                    cout << "CONFIG:       " << i << ". Slot:     " << "SLOT: REST URL destination" << endl;
-                    cout << "CONFIG:       " << i << ". Slot:     " << "   URL:         " << loc.destination << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "SLOT: REST URL destination" << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   URL:         " << loc.destination << endl;
                 }
-                cout << "CONFIG:       " << i << ". Slot:     " << "   workdir:     " << loc.rest.workdir << endl;
+                cout << "CONFIG:       " << i << ".    UCDP:  " << "   workdir:       " << loc.rest.workdir << endl;
+            }
+            else if (loc.type == MAILBOX)
+            {
+                cout << "CONFIG:       " << i << ". Type:  " << "NON-SLOT Mailbox Destination" << endl;
+                if (loc.mailbox.user != "")
+                    cout << "CONFIG:       " << i << ".    Mailbox:" << "  user:          " << loc.mailbox.user << endl;
+                cout << "CONFIG:       " << i << ".    Mailbox:" << "  destination:   " << loc.destination << endl;
+            }
+            else if (loc.type == URL)
+            {
+                cout << "CONFIG:       " << i << ". Type:  " << "URL Destination" << endl;
+                cout << "CONFIG:       " << i << ".    URL:   " << "   destination:   " << loc.destination << endl;
+            }
+            else if (loc.type == FORWARD)
+            {
+                cout << "CONFIG:       " << i << ". Type:  " << "Forward Email Destination" << endl;
+                cout << "CONFIG:       " << i << ".    Email: " << "   destination:   " << loc.destination << endl;
             }
             else
-            {
-                cout << "CONFIG:       " << i << ". Type:     " << "NON-SLOT Mailbox Destination" << endl;
-                if (loc.mailbox.user != "")
-                    cout << "CONFIG:       " << i << ". Non-slot: " << "   user:        " << loc.mailbox.user << endl;
-                cout << "CONFIG:       " << i << ". Non-slot: " << "   destination: " << loc.destination << endl;
-            }
+                cout << "CONFIG:       " << i << ". Type:  " << "UNKNOWN" << endl;
         }
     }
 }

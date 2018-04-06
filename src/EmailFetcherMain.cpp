@@ -133,7 +133,7 @@ int main(int argc, char** argv)
                 {
                     switch (loc.type)
                     {
-                        case NONSLOT:
+                        case MAILBOX:
                             {
                                 // a "Formatter" is responsible for providing services to stream and route the mail to a destination
                                 // a "MaildirFormatter" saves emails in maildir format to be served via imap
@@ -150,7 +150,7 @@ int main(int argc, char** argv)
                                     cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
                             }
                             break;
-                        case SLOT:
+                        case UCDP:
                             {
                                 // a "Formatter" is responsible for providing services to stream and route the mail to a destination
                                 // a "UCDPFormatter" formats in TR.JSON and posts the email to UCDP

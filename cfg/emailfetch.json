@@ -36,7 +36,7 @@
          "bucket"      : "feed1-testaws-pcifarelli-net",
          "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
          "enabled"     : true,
-         "locations"   : [ { "mailbox" : true, "public" : true } ]
+         "locations"   : [ { "type" : "mailbox", "public" : true } ]
       }, 
       { 
          "name"        : "feed2",
@@ -46,9 +46,9 @@
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
          "enabled"   : true,
          "locations" : [ 
-            { "mailbox" : true , "public" : false, "user" : "paul" },
-            { "mailbox" : true,  "public" : true },
-            { "mailbox" : false, "UCDP"   : true,   "ip" : "159.220.49.19" }
+            { "type" : "mailbox", "public" : false, "user" : "paul" },
+            { "type" : "mailbox", "public" : true },
+            { "type" : "UCDP", "ip" : "159.220.49.19" }
          ]
       },
       { 
@@ -56,8 +56,8 @@
          "domainname"  : "testaws.pcifarelli.net",
          "description" : "Email Feed 3",
          "locations" : [ 
-            { "mailbox" : false, "UCDP" : false, "url" : "https://10.51.13.4/ucdprest/publish" },
-            { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19" }
+            { "type" : "url",  "url" : "https://10.51.13.4/ucdprest/publish" },
+            { "type" : "ucdp", "ip" : "159.220.49.19" }
          ],
          "bucket"    : "paul-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",

@@ -77,9 +77,11 @@
          "enabled"     : true,
          "mxforward"   : true,
          "locations"   : [ 
-            { "mailbox" : true, "public" : true },
-            { "mailbox" : true, "public" : false, "user" : "paul" },
-            { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19" } 
+            { "type" : "mailbox", "public" : true },
+            { "type" : "mailbox", "public" : false, "user" : "paul" },
+            { "type" : "ucdp", "ip" : "159.220.49.19" } ,
+            { "type" : "url", "url" : "http://cifarelli.net/rest/endpoint" },
+            { "type" : "forward", "email" : "paul.cifarelli@thomsonreuters.com" }
          ]
       },
       {
@@ -89,14 +91,14 @@
          "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
          "enabled"     : true,
          "locations"   : [
-            { "mailbox" : true, "public" : false, "user" : "paul" }
+            { "type" : "mailbox", "public" : false, "user" : "paul" }
          ]
       },
       { 
          "description"      : "Feed 2 Mailbox",
          "email"     : "feed2@testaws.pcifarelli.net",
-         "locations" : [ { "mailbox" : true, "workdir" : "./mail2" },
-                         { "mailbox" : false, "UCDP" : true, "ip" : "159.220.49.19", "validate_json" : false, "trmessagepriority" : 4 } 
+         "locations" : [ { "type" : "mailbox", "workdir" : "./mail2" },
+                         { "type" : "ucdp", "ip" : "159.220.49.19", "validate_json" : false, "trmessagepriority" : 4 } 
          ],
          "bucket"    : "feed2-testaws-pcifarelli-net",
          "topic_arn" : "arn:aws:sns:us-east-1:331557686640:feed2-testaws-pcifarelli-net",

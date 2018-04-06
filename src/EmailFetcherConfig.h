@@ -13,14 +13,17 @@
 #include <iterator>
 #include "Downloader.h"
 #include "Formatter.h"
+#include "EmailExtractor.h" // str_tolower
 
 #include <aws/core/utils/json/JsonSerializer.h>
 
 enum workflow_type
 {
-    NONSLOT,   // send to fast email
-    SLOT,      // post to UCDP
-    BOTH       // sending to fast email and posting to UCDP
+    UNKNOWN,
+    MAILBOX,   // send to fast email
+    UCDP,      // post to UCDP
+    URL,       // post to a URL that is not UCDP (not SNI)
+    FORWARD    // forward to someone's email
 };
 
 struct location_type
