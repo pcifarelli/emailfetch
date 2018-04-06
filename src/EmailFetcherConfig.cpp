@@ -143,8 +143,8 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
 
             if (defaults.forwarding_servers.find(domain) == defaults.forwarding_servers.end())
             {
-                mxbyprio m;
-                std::pair<std::string, mxbyprio> ent(domain, m);
+                mxbypref m;
+                std::pair<std::string, mxbypref> ent(domain, m);
                 defaults.forwarding_servers.insert(ent);
             }
 

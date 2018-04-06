@@ -140,7 +140,11 @@ int main(int argc, char** argv)
                                 MaildirFormatter *mailfmt;
 
                                 Aws::String dir = loc.destination.c_str();
-                                mailfmt = new MaildirFormatter(dir, verbose);
+                                if (item.enable_forwarding)
+                                    mailfmt = new MaildirFormatter(dir, item.forward_servers, verbose);
+                                else
+                                    mailfmt = new MaildirFormatter(dir, verbose);
+
                                 item.pdownl->addFormatter(mailfmt);
                                 if (verbose)
                                     cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
@@ -153,20 +157,39 @@ int main(int argc, char** argv)
                                 UCDPFormatter *ucdpfmt;
 
                                 Aws::String workdir = loc.rest.workdir.c_str();
-                                ucdpfmt = new UCDPFormatter(
-                                    workdir,
-                                    email,
-                                    loc.destination,
-                                    loc.rest.snihostname,
-                                    loc.rest.port,
-                                    loc.rest.certificate,
-                                    loc.rest.certificatepassword,
-                                    loc.rest.trclientid,
-                                    loc.rest.trfeedid,
-                                    loc.rest.trmessagetype,
-                                    loc.rest.trmessageprio,
-                                    loc.rest.validate_json,
-                                    verbose);
+
+                                if (!item.enable_forwarding)
+                                    ucdpfmt = new UCDPFormatter(
+                                        workdir,
+                                        email,
+                                        loc.destination,
+                                        loc.rest.snihostname,
+                                        loc.rest.port,
+                                        loc.rest.certificate,
+                                        loc.rest.certificatepassword,
+                                        loc.rest.trclientid,
+                                        loc.rest.trfeedid,
+                                        loc.rest.trmessagetype,
+                                        loc.rest.trmessageprio,
+                                        loc.rest.validate_json,
+                                        verbose);
+                                else
+                                    ucdpfmt = new UCDPFormatter(
+                                        workdir,
+                                        item.forward_servers,
+                                        email,
+                                        loc.destination,
+                                        loc.rest.snihostname,
+                                        loc.rest.port,
+                                        loc.rest.certificate,
+                                        loc.rest.certificatepassword,
+                                        loc.rest.trclientid,
+                                        loc.rest.trfeedid,
+                                        loc.rest.trmessagetype,
+                                        loc.rest.trmessageprio,
+                                        loc.rest.validate_json,
+                                        verbose);
+
                                 item.pdownl->addFormatter(ucdpfmt);
                                 if (verbose)
                                     cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;

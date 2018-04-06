@@ -38,14 +38,14 @@ Formatter::Formatter(Aws::String dir, int verbose) :
     mkdirs(m_dir.c_str(), m_newdirs_mode);
 }
 
-Formatter::Formatter(std::vector<std::string> mxservers, int verbose) :
+Formatter::Formatter(mxbypref mxservers, int verbose) :
     m_forward(true), m_mxservers(mxservers), m_dir(""), m_local_file(NULL), m_fullpath(""), m_verbose(verbose)
 {
     if (!m_mxservers.size())
         m_forward = false; // sorry, can't forward if there are no mxservers
 }
 
-Formatter::Formatter(Aws::String dir, std::vector<std::string> mxservers, int verbose) :
+Formatter::Formatter(Aws::String dir, mxbypref mxservers, int verbose) :
     m_forward(true), m_mxservers(mxservers), m_dir(dir), m_local_file(NULL), m_fullpath(""), m_verbose(verbose)
 {
     if (!m_mxservers.size())
@@ -64,15 +64,37 @@ void Formatter::do_forwarding(std::string fullpath)
 {
     if (m_forward)
     {
-        int server_number = random_number() * m_mxservers.size();
-        std::string server = m_mxservers[server_number];
-        SMTPSender smtpsender(server);
-        if (m_verbose >=3)
-            std::cout << "Forwarding " << fullpath << " to MX server " << server << std::endl;
+        for (auto &mxent : m_mxservers)
+        {
+            int pref = mxent.first;
+            mxservers_vector mxservers = mxent.second; // make a copy of the mx servers list at this preference
+            bool success = false;
 
-        smtpsender.forwardFile(fullpath);
-        if (smtpsender.status() != CURLE_OK)
-            std::cout << "Error forwarding " << fullpath << " to MX server " << server << std::endl;
+            while (mxservers.size())
+            {
+                int server_number = random_number() * mxservers.size();
+                std::string server = mxservers[server_number];
+                SMTPSender smtpsender(server);
+                if (m_verbose >=3)
+                    std::cout << "Forwarding " << fullpath << " to MX server (pref " << pref << ") " << server << std::endl;
+
+                smtpsender.forwardFile(fullpath);
+                if (smtpsender.status() != CURLE_OK)
+                {
+                    std::cout << "Error forwarding " << fullpath << " to MX server (pref " << pref << ") " << server << std::endl;
+                    mxservers.erase( mxservers.begin() + server_number ); // remove the failed server
+                    std::cout << "Trying next server " << std::endl;
+                }
+                else
+                {
+                    success = true;
+                    break;
+                }
+            }
+
+            if (success)
+                break;
+        }
     }
 }
 
@@ -81,15 +103,37 @@ void Formatter::do_forwarding(std::string fullpath, std::string to)
 {
     if (m_forward)
     {
-        int server_number = random_number() * m_mxservers.size();
-        std::string server = m_mxservers[server_number];
-        SMTPSender smtpsender(server);
-        if (m_verbose >=3)
-            std::cout << "Forwarding " << fullpath << " to MX server " << server << std::endl;
+        for (auto &mxent : m_mxservers)
+        {
+            int pref = mxent.first;
+            mxservers_vector mxservers = mxent.second; // make a copy of the mx servers list at this preference
+            bool success = false;
 
-        smtpsender.forwardFile(fullpath, to);
-        if (smtpsender.status() != CURLE_OK)
-            std::cout << "Error forwarding " << fullpath << " to MX server " << server << std::endl;
+            while (mxservers.size())
+            {
+                int server_number = random_number() * mxservers.size();
+                std::string server = mxservers[server_number];
+                SMTPSender smtpsender(server);
+                if (m_verbose >=3)
+                    std::cout << "Forwarding " << fullpath << " to MX server (pref " << pref << ") " << server << std::endl;
+
+                smtpsender.forwardFile(fullpath, to);
+                if (smtpsender.status() != CURLE_OK)
+                {
+                    std::cout << "Error forwarding " << fullpath << " to MX server (pref " << pref << ") " << server << std::endl;
+                    mxservers.erase( mxservers.begin() + server_number ); // remove the failed server
+                    std::cout << "Trying next server " << std::endl;
+                }
+                else
+                {
+                    success = true;
+                    break;
+                }
+            }
+
+            if (success)
+                break;
+        }
     }
 }
 

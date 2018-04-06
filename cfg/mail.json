@@ -27,13 +27,13 @@
       { 
         "domain" : "testaws.pcifarelli.net", 
         "mx" : [
-            { "pref" : 0, "server" : "one.bad.server." },
-            { "pref" : 0, "server" : "two.bad.server." },
-            { "pref" : 0, "server" : "three.bad.server." },
             { "pref" : 10, "server" : "one.2bad.server." },
             { "pref" : 10, "server" : "two.2bad.server." },
             { "pref" : 10, "server" : "three.2bad.server." },
             { "pref" : 10, "server" : "four.2bad.server." },
+            { "pref" : 0, "server" : "one.bad.server." },
+            { "pref" : 0, "server" : "two.bad.server." },
+            { "pref" : 0, "server" : "three.bad.server." },
             { "pref" : 20, "server" : "mx-caprica.easydns.com." }
          ] 
       },

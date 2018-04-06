@@ -19,8 +19,21 @@
 
 unsigned int MaildirFormatter::m_q_sequence = 0;
 
+
 MaildirFormatter::MaildirFormatter(Aws::String dir, int verbose) :
-    Formatter(dir), m_isopen(false), m_verbose(verbose)
+    S3Downloader::Formatter(dir, verbose), m_isopen(false), m_verbose(verbose)
+{
+    init(dir);
+}
+
+MaildirFormatter::MaildirFormatter(Aws::String dir, mxbypref mxservers, int verbose) :
+    S3Downloader::Formatter(dir, mxservers, verbose), m_isopen(false), m_verbose(verbose)
+{
+    init(dir);
+}
+
+
+void MaildirFormatter::init(Aws::String dir)
 {
     char host[NI_MAXHOST];
 
@@ -48,7 +61,9 @@ MaildirFormatter::MaildirFormatter(Aws::String dir, int verbose) :
     mkdirs(m_curdir.c_str(), m_newdirs_mode);
     mkdirs(m_newdir.c_str(), m_newdirs_mode);
     mkdirs(m_tmpdir.c_str(), m_newdirs_mode);
+
 }
+
 
 MaildirFormatter::~MaildirFormatter()
 {

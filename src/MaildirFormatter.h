@@ -27,6 +27,7 @@ class MaildirFormatter: public S3Downloader::Formatter
 {
 public:
     MaildirFormatter(Aws::String dir, int verbose = 0);
+    MaildirFormatter(Aws::String dir, mxbypref mxservers, int verbose = 0);
     virtual ~MaildirFormatter();
 
     // open the file
@@ -51,6 +52,7 @@ public:
     void clean_up();
 
 private:
+    void init(Aws::String dir);
     int construct_name(Aws::S3::Model::Object obj, Aws::String key, std::string &name) const;
     static int extractHash(Aws::String name, Aws::String &hash);
 

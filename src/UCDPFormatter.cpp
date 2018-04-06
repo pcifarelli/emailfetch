@@ -50,7 +50,30 @@ UCDPFormatter::UCDPFormatter(
     int trmessageprio,
     bool validate_json,
     int verbose) :
-    Formatter(dir),
+    S3Downloader::Formatter(dir, verbose),
+        m_to(email_addr), m_ip(ip), m_certificate(certificate), m_certpassword(certpassword), m_snihostname(snihostname), m_port(port),
+        m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype), m_trmessageprio(trmessageprio),
+        m_validate_json(validate_json),
+        m_verbose(verbose)
+{
+}
+
+UCDPFormatter::UCDPFormatter(
+    Aws::String dir,
+    mxbypref mxservers,
+    std::string email_addr,
+    std::string ip,
+    std::string snihostname,
+    unsigned short port,
+    std::string certificate,
+    std::string certpassword,
+    std::string trclientid,
+    std::string trfeedid,
+    std::string trmessagetype,
+    int trmessageprio,
+    bool validate_json,
+    int verbose) :
+    S3Downloader::Formatter(dir, mxservers, verbose),
         m_to(email_addr), m_ip(ip), m_certificate(certificate), m_certpassword(certpassword), m_snihostname(snihostname), m_port(port),
         m_trclientid(trclientid), m_trfeedid(trfeedid), m_trmessagetype(trmessagetype), m_trmessageprio(trmessageprio),
         m_validate_json(validate_json),

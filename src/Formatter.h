@@ -18,6 +18,9 @@
 #include <iterator>
 #include <list>
 
+typedef std::vector<std::string> mxservers_vector;
+typedef std::map<int, mxservers_vector> mxbypref;   // we use a map (ordered) so that we iterate in order of the preference (which is the key)
+
 namespace S3Downloader
 {
 
@@ -25,9 +28,9 @@ class Formatter
 {
 public:
     Formatter(int verbose = 0);
-    Formatter(std::vector<std::string> mxservers, int verbose = 0);
+    Formatter(mxbypref mxservers, int verbose = 0);
     Formatter(Aws::String dir, int verbose = 0);
-    Formatter(Aws::String dir, std::vector<std::string> mxservers, int verbose = 0);
+    Formatter(Aws::String dir, mxbypref mxservers, int verbose = 0);
     virtual ~Formatter();
 
     virtual void open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
@@ -77,7 +80,7 @@ private:
     std::stringstream m_ostream;
     int m_verbose;
     bool m_forward;
-    std::vector<std::string> m_mxservers;
+    mxbypref m_mxservers;
     double random_number();
 
 protected:

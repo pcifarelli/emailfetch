@@ -39,6 +39,22 @@ public:
         int trmessageprio,
         bool validate_json,
         int verbose = 0);
+    UCDPFormatter(
+        Aws::String workdir,
+        mxbypref    mxservers,
+        std::string email_addr,
+        std::string ip,
+        std::string snihostname,
+        unsigned short port,
+        std::string certificate,
+        std::string certpassword,
+        std::string trclientid,
+        std::string trfeedid,
+        std::string trmessagetype,
+        int trmessageprio,
+        bool validate_json,
+        int verbose = 0);
+
     virtual ~UCDPFormatter();
     virtual void open(const Aws::S3::Model::Object obj, const std::ios_base::openmode mode = std::ios::out | std::ios::binary);
     virtual void clean_up();

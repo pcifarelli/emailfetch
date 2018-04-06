@@ -157,6 +157,7 @@ void Downloader::saveNewObjects(Tracker &trkr)
                     std::pair<std::string, FileTracker> hashent(key.c_str(), ft);
                     trkr.filemap->insert(hashent);
                     trkr.fmt->clean_up();
+                    trkr.fmt->do_forwarding(fullpath);
                 }
             }
         }
