@@ -26,6 +26,16 @@ enum workflow_type
     FORWARD    // forward to someone's email
 };
 
+struct outgoing_mail_server
+{
+    std::string    server;
+    std::string    username;
+    std::string    password;
+    unsigned short port;
+    bool           tls;
+};
+
+
 struct location_type
 {
     workflow_type type;
@@ -48,9 +58,13 @@ struct location_type
         std::string trmessagetype;
         int         trmessageprio;
     } rest;
+    outgoing_mail_server forwarder;
 };
 typedef std::list<location_type> location_list;
 typedef std::map<std::string, mxbypref> domain_forwarding_list;
+
+// map<domain, server>
+typedef std::map<std::string, outgoing_mail_server> outgoing_mail_servers;
 
 struct config_item
 {
@@ -92,6 +106,7 @@ struct program_defaults
         int         trmessageprio;
     } UCDP_defaults;
 
+    outgoing_mail_servers  mailout_servers;
     domain_forwarding_list forwarding_servers;
 };
 

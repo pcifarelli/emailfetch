@@ -169,6 +169,41 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
             }
         }
     }
+    if (jdefaults.ValueExists("mailout_servers"))
+    {
+        Utils::Array<Utils::Json::JsonValue> mailout_arr = jdefaults.GetArray("mailout_servers");
+        for (int i = 0; i < mailout_arr.GetLength(); i++)
+        {
+            outgoing_mail_server oms;
+
+            string domain = "";
+            if (mailout_arr[i].ValueExists("domain"))
+                domain = mailout_arr[i].GetString("domain").c_str();
+
+            oms.server = "";
+            if (mailout_arr[i].ValueExists("server"))
+                oms.server = mailout_arr[i].GetString("server").c_str();
+
+            oms.username = "";
+            if (mailout_arr[i].ValueExists("username"))
+                oms.username = mailout_arr[i].GetString("username").c_str();
+
+            oms.password = "";
+            if (mailout_arr[i].ValueExists("password"))
+                oms.password = mailout_arr[i].GetString("password").c_str();
+
+            oms.port = 587;
+            if (mailout_arr[i].ValueExists("port"))
+                oms.port = mailout_arr[i].GetInteger("port");
+
+            oms.tls = true;
+            if (mailout_arr[i].ValueExists("tls"))
+                oms.tls = mailout_arr[i].GetBool("tls");
+
+            std::pair<std::string, outgoing_mail_server> ent(domain, oms);
+            defaults.mailout_servers.insert(ent);
+        }
+    }
 }
 
 string replace_all(string str, const string &from, const string &to)
@@ -408,8 +443,36 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                 else if (EmailExtractor::str_tolower(type) == "forward")// it goes to a UCDP REST post
                 {
                     loc.type = FORWARD;
-                    loc.destination = locations[j].GetString("email").c_str();
-                    cout << "CONFIG: Warning: \"forward\" location type not yet implemented" << std::endl;
+                    map<string,outgoing_mail_server>::iterator it = defaults.mailout_servers.find(item.domainname);
+                    outgoing_mail_server oms = {"", "", "", 587, true};
+
+                    if (it != defaults.mailout_servers.end())
+                        oms = it->second;
+
+                    if (locations[j].ValueExists("email")) // otherwise we are wasting our time
+                    {
+                        string fmt = locations[j].GetString("email").c_str();
+                        loc.destination = create_location(fmt, loc.mailbox.user, item.name, item.domainname, "");
+
+                        loc.forwarder = oms;
+                        if (locations[j].ValueExists("server"))
+                            loc.forwarder.server = locations[j].GetString("server").c_str();
+
+                        if (locations[j].ValueExists("username"))
+                            loc.forwarder.username = locations[j].GetString("username").c_str();
+
+                        if (locations[j].ValueExists("password"))
+                            loc.forwarder.password = locations[j].GetString("password").c_str();
+
+                        if (locations[j].ValueExists("port"))
+                            loc.forwarder.port = locations[j].GetInteger("port");
+
+                        if (locations[j].ValueExists("tls"))
+                            loc.forwarder.tls = locations[j].GetBool("tls");
+
+                    }
+                    else
+                        cout << "CONFIG: Warning: \"forwarder\" location type specified without a forwarding email address" << std::endl;
                 }
                 else if (EmailExtractor::str_tolower(type) == "url")// it goes to a UCDP REST post
                 {
@@ -479,7 +542,7 @@ int get_config(const string location, program_defaults &defaults, config_list &c
 
 void print_config(config_list &mailboxconfig)
 {
-    cout << "MX FORWARDING LIST:" << endl;
+    //cout << "MX FORWARDING LIST:" << endl;
     // print the forwarding list
     //for (auto &mxservers : defaults.forwarding_servers)
     //{
@@ -490,6 +553,17 @@ void print_config(config_list &mailboxconfig)
     //        for (auto &server : mxent.second)
     //            cout << "         MXSERVER: " << server << endl;
     //    }
+    //}
+
+    //cout << "DEFAULT OUTGOING MAILSERVERS" << endl;
+    //for (auto &serverdetails : defaults.mailout_servers)
+    //{
+    //    cout << "   DOMAIN: " << serverdetails.first << endl;
+    //    cout << "   SERVER: " << serverdetails.second.server << endl;
+    //    cout << "   USER:   " << serverdetails.second.username << endl;
+    //    cout << "   PASSWD: " << serverdetails.second.password << endl;
+    //    cout << "   PORT:   " << serverdetails.second.port << endl;
+    //    cout << "   TLS?:   " << (serverdetails.second.tls? "YES" : "NO") << endl;
     //}
 
     // print the mailboxes
@@ -550,12 +624,17 @@ void print_config(config_list &mailboxconfig)
             else if (loc.type == URL)
             {
                 cout << "CONFIG:       " << i << ". Type:  " << "URL Destination" << endl;
-                cout << "CONFIG:       " << i << ".    URL:   " << "   destination:   " << loc.destination << endl;
+                cout << "CONFIG:       " << i << ".    URL:   " << loc.destination << endl;
             }
             else if (loc.type == FORWARD)
             {
                 cout << "CONFIG:       " << i << ". Type:  " << "Forward Email Destination" << endl;
-                cout << "CONFIG:       " << i << ".    Email: " << "   destination:   " << loc.destination << endl;
+                cout << "CONFIG:       " << i << ".    Email:    " << loc.destination << endl;
+                cout << "CONFIG:       " << i << ".    Username: " << loc.forwarder.username << endl;
+                //cout << "CONFIG:       " << i << ".    Password: " << loc.forwarder.password << endl;
+                cout << "CONFIG:       " << i << ".    Server:   " << loc.forwarder.server << endl;
+                cout << "CONFIG:       " << i << ".    Port:     " << loc.forwarder.port << endl;
+                cout << "CONFIG:       " << i << ".    TLS?:     " << (loc.forwarder.tls ? "Yes" : "No") << endl;
             }
             else
                 cout << "CONFIG:       " << i << ". Type:  " << "UNKNOWN" << endl;

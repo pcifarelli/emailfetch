@@ -64,7 +64,29 @@
             { "pref" : 10, "server" : "news06.emailrecord003.com." }
          ] 
       }
-   ]
+   ],
+   "mailout_servers" : [
+      {
+         "domain"   : "testaws.pcifarelli.net",
+         "server"   : "mailout.easydns.com",
+         "username" : "cifarelli.net",
+         "password" : "ipiwubi7",
+         "port"     : 587,
+         "tls"      : true
+      },
+      {
+         "domain"   : "np.allreleases.net",
+         "server"   : "mailout1-tr.thomsonreuters.com",
+         "port"     : 25,
+         "tls"      : false
+      },
+      {
+         "domain"   : "np.news.reuters.com",
+         "server"   : "mailout1-tr.thomsonreuters.com",
+         "port"     : 25,
+         "tls"      : false
+      }
+    ]
 },
 "mailbox" : 
    [
