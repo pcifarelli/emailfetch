@@ -62,8 +62,8 @@ public:
     {
     }
 
-    virtual void do_forwarding(std::string fullpath);                  // guess at the envelope "to" based on the headers in the email
-    virtual void do_forwarding(std::string fullpath, std::string to);  // explicit envelope "to"
+    virtual void do_relay_forwarding(std::string fullpath);                  // guess at the envelope "to" based on the headers in the email
+    virtual void do_relay_forwarding(std::string fullpath, std::string to);  // explicit envelope "to"
 
     // getKey is used to create a map of what we've already downloaded.  The key is the thing you want to use for comparisons.
     // you are passed the object and the filename to construct the key from

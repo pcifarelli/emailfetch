@@ -60,7 +60,7 @@ Formatter::~Formatter()
 }
 
 // Pick 1 random MX server from the list and forward the file to that server
-void Formatter::do_forwarding(std::string fullpath)
+void Formatter::do_relay_forwarding(std::string fullpath)
 {
     if (m_forward)
     {
@@ -99,7 +99,7 @@ void Formatter::do_forwarding(std::string fullpath)
 }
 
 // Pick 1 random MX server from the list and forward the file to that server
-void Formatter::do_forwarding(std::string fullpath, std::string to)
+void Formatter::do_relay_forwarding(std::string fullpath, std::string to)
 {
     if (m_forward)
     {
