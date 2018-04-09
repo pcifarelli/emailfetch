@@ -103,7 +103,11 @@
             { "type" : "mailbox", "public" : false, "user" : "paul" },
             { "type" : "ucdp", "ip" : "159.220.49.19" } ,
             { "type" : "url", "url" : "http://cifarelli.net/rest/endpoint" },
-            { "type" : "forward", "email" : "paul.cifarelli@thomsonreuters.com" }
+            { "type" : "forward", "email" : "paul.cifarelli@thomsonreuters.com" },
+            { "type" : "forward", "email" : "paulc2@optonline.net", "server" : "mailout.optonline.net", "username" : "" },
+            { "type" : "forward", "email" : "paul.cifarelli@tr.com" },
+            { "type" : "forward", "email" : "pifarelli1@optonline.net" },
+            { "type" : "forward", "email" : "paul.cifarelli@gmail.com", "server" : "mail.google.com" }
          ]
       },
       {

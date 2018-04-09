@@ -19,6 +19,7 @@
 #include "S3Get.h"
 #include "MaildirFormatter.h"
 #include "UCDPFormatter.h"
+#include "EmailForwarderFormatter.h"
 #include "UCDPCurlPoster.h"
 
 #include "config.h"
@@ -126,6 +127,7 @@ int main(int argc, char** argv)
             if (item.enabled)
             {
                 string email = item.name + "@" + item.domainname;
+                bool relay_forwarding_configured = false;          // only 1 location per item should be configured with relay_forwarding
 
                 // instantiating a Downloader and calling "start()" results in a new thread that waits on the notification
                 item.pdownl = new Downloader(DAYS_TO_CHECK, item.topic_arn.c_str(), item.bucket.c_str(), verbose);
@@ -139,15 +141,18 @@ int main(int argc, char** argv)
                                 // a "MaildirFormatter" saves emails in maildir format to be served via imap
                                 MaildirFormatter *mailfmt;
 
-                                Aws::String dir = loc.destination.c_str();
-                                if (item.enable_mxforwarding)
+                                Aws::String dir = loc.mailbox.destination.c_str();
+                                if (item.enable_mxforwarding && !relay_forwarding_configured)
+                                {
                                     mailfmt = new MaildirFormatter(dir, item.forward_servers, verbose);
+                                    relay_forwarding_configured = true;
+                                }
                                 else
                                     mailfmt = new MaildirFormatter(dir, verbose);
 
                                 item.pdownl->addFormatter(mailfmt);
                                 if (verbose)
-                                    cout << "Location " << loc.destination << " of type NONSLOT added to " << item.name << endl;
+                                    cout << "Location " << loc.mailbox.destination << " of type NONSLOT added to " << item.name << endl;
                             }
                             break;
                         case UCDP:
@@ -158,12 +163,13 @@ int main(int argc, char** argv)
 
                                 Aws::String workdir = loc.rest.workdir.c_str();
 
-                                if (item.enable_mxforwarding)
+                                if (item.enable_mxforwarding && !relay_forwarding_configured)
+                                {
                                     ucdpfmt = new UCDPFormatter(
                                         workdir,
                                         item.forward_servers,
                                         email,
-                                        loc.destination,
+                                        loc.rest.destination,
                                         loc.rest.snihostname,
                                         loc.rest.port,
                                         loc.rest.certificate,
@@ -174,11 +180,13 @@ int main(int argc, char** argv)
                                         loc.rest.trmessageprio,
                                         loc.rest.validate_json,
                                         verbose);
+                                    relay_forwarding_configured = true;
+                                }
                                 else
                                     ucdpfmt = new UCDPFormatter(
                                         workdir,
                                         email,
-                                        loc.destination,
+                                        loc.rest.destination,
                                         loc.rest.snihostname,
                                         loc.rest.port,
                                         loc.rest.certificate,
@@ -192,12 +200,22 @@ int main(int argc, char** argv)
 
                                 item.pdownl->addFormatter(ucdpfmt);
                                 if (verbose)
-                                    cout << "Location " << loc.destination << " of type SLOT added to " << item.name << endl;
+                                    cout << "Location " << loc.rest.destination << " of type SLOT added to " << item.name << endl;
+                            }
+                            break;
+                        case FORWARD:
+                            {
+                                EmailForwarderFormatter *fwdfmt;
+                                if (item.enable_mxforwarding && !relay_forwarding_configured)
+                                {
+
+                                    relay_forwarding_configured = true;
+                                }
                             }
                             break;
 
                         default:
-                            cout << "Location type invalid for " << item.name << " location " << loc.destination << " - ignoring" << endl;
+                            cout << "Location type (" << loc.type << ") invalid for " << item.name << " - ignoring" << endl;
                     }
                 }
                 // start the thread

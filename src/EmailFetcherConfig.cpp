@@ -323,13 +323,13 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                         workdir = locations[j].GetString("workdir").c_str();
 
                     if (is_public)
-                        loc.destination = create_public_mailbox_location(defaults, item.name, item.domainname);
+                        loc.mailbox.destination = create_public_mailbox_location(defaults, item.name, item.domainname);
                     else
                     {
                         if (user != "")
                         {
                             loc.mailbox.user = user;
-                            loc.destination = create_user_mailbox_location(defaults, loc.mailbox.user, item.name, item.domainname);
+                            loc.mailbox.destination = create_user_mailbox_location(defaults, loc.mailbox.user, item.name, item.domainname);
                         }
                         else
                         {
@@ -337,7 +337,7 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                             {
                                 string fmt = workdir;
                                 loc.mailbox.user = "";
-                                loc.destination = create_location(fmt, user, item.name, item.domainname, "");
+                                loc.mailbox.destination = create_location(fmt, user, item.name, item.domainname, "");
                             }
                             else
                             {
@@ -364,20 +364,20 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     {
                         string fmt = locations[j].GetString("url").c_str();
                         string user = "";
-                        loc.destination = create_location(fmt, user, item.name, item.domainname, "");
+                        loc.rest.destination = create_location(fmt, user, item.name, item.domainname, "");
 
                         // extract the ip or host from the url, for substitutions
                         std::smatch sm;
                         std::regex e_addr("^(http[s]?:)//([^/]+)/(.*)");
-                        std::regex_match(loc.destination, sm, e_addr);
+                        std::regex_match(loc.rest.destination, sm, e_addr);
                         if (sm.size() > 0)
                             addr = sm[2];
 
                     }
                     else if (loc.rest.UCDP && locations[j].ValueExists("ip"))  // these are the minimum required params for SNI
                     {
-                        loc.destination = locations[j].GetString("ip").c_str();
-                        addr = loc.destination;
+                        loc.rest.destination = locations[j].GetString("ip").c_str();
+                        addr = loc.rest.destination;
 
                         if (locations[j].ValueExists("certificate"))
                             loc.rest.certificate = locations[j].GetString("certificate").c_str();
@@ -452,32 +452,35 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     if (locations[j].ValueExists("email")) // otherwise we are wasting our time
                     {
                         string fmt = locations[j].GetString("email").c_str();
-                        loc.destination = create_location(fmt, loc.mailbox.user, item.name, item.domainname, "");
+                        string destination = create_location(fmt, loc.mailbox.user, item.name, item.domainname, "");
+                        email_list_element forwarder_destination;
 
-                        loc.forwarder = oms;
+                        forwarder_destination.destination = destination;
+
+                        forwarder_destination.server_info = oms;
                         if (locations[j].ValueExists("server"))
-                            loc.forwarder.server = locations[j].GetString("server").c_str();
+                            forwarder_destination.server_info.server = locations[j].GetString("server").c_str();
 
                         if (locations[j].ValueExists("username"))
-                            loc.forwarder.username = locations[j].GetString("username").c_str();
+                            forwarder_destination.server_info.username = locations[j].GetString("username").c_str();
 
                         if (locations[j].ValueExists("password"))
-                            loc.forwarder.password = locations[j].GetString("password").c_str();
+                            forwarder_destination.server_info.password = locations[j].GetString("password").c_str();
 
                         if (locations[j].ValueExists("port"))
-                            loc.forwarder.port = locations[j].GetInteger("port");
+                            forwarder_destination.server_info.port = locations[j].GetInteger("port");
 
                         if (locations[j].ValueExists("tls"))
-                            loc.forwarder.tls = locations[j].GetBool("tls");
+                            forwarder_destination.server_info.tls = locations[j].GetBool("tls");
 
+                        loc.email_destinations.push_back(forwarder_destination);
                     }
                     else
-                        cout << "CONFIG: Warning: \"forwarder\" location type specified without a forwarding email address" << std::endl;
+                        cout << "CONFIG: Warning: \"forwarder\" location type specified without any forwarding email addresses" << std::endl;
                 }
                 else if (EmailExtractor::str_tolower(type) == "url")// it goes to a UCDP REST post
                 {
                     loc.type = URL;
-                    loc.destination = locations[j].GetString("url").c_str();
                     cout << "CONFIG: Warning: \"url\" location type not yet implemented" << std::endl;
                 }
                 else
@@ -598,7 +601,7 @@ void print_config(config_list &mailboxconfig)
                 if (loc.rest.UCDP)
                 {
                     cout << "CONFIG:       " << i << ". Type:  " << "SLOT: UCDP destination" << endl;
-                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   IP:            " << loc.destination << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   IP:            " << loc.rest.destination << endl;
                     cout << "CONFIG:       " << i << ".    UCDP:  " << "   Port:          " << loc.rest.port << endl;
                     cout << "CONFIG:       " << i << ".    UCDP:  " << "   ClientId:      " << loc.rest.trclientid << endl;
                     cout << "CONFIG:       " << i << ".    UCDP:  " << "   SNIHostName:   " << loc.rest.snihostname << endl;
@@ -610,7 +613,7 @@ void print_config(config_list &mailboxconfig)
                 else
                 {
                     cout << "CONFIG:       " << i << ".    UCDP:  " << "SLOT: REST URL destination" << endl;
-                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   URL:         " << loc.destination << endl;
+                    cout << "CONFIG:       " << i << ".    UCDP:  " << "   URL:         " << loc.rest.destination << endl;
                 }
                 cout << "CONFIG:       " << i << ".    UCDP:  " << "   workdir:       " << loc.rest.workdir << endl;
             }
@@ -619,22 +622,25 @@ void print_config(config_list &mailboxconfig)
                 cout << "CONFIG:       " << i << ". Type:  " << "NON-SLOT Mailbox Destination" << endl;
                 if (loc.mailbox.user != "")
                     cout << "CONFIG:       " << i << ".    Mailbox:" << "  user:          " << loc.mailbox.user << endl;
-                cout << "CONFIG:       " << i << ".    Mailbox:" << "  destination:   " << loc.destination << endl;
+                cout << "CONFIG:       " << i << ".    Mailbox:" << "  destination:   " << loc.mailbox.destination << endl;
             }
             else if (loc.type == URL)
             {
                 cout << "CONFIG:       " << i << ". Type:  " << "URL Destination" << endl;
-                cout << "CONFIG:       " << i << ".    URL:   " << loc.destination << endl;
+                cout << "CONFIG:       " << i << ".    URL:   " << loc.mailbox.destination << endl;
             }
             else if (loc.type == FORWARD)
             {
                 cout << "CONFIG:       " << i << ". Type:  " << "Forward Email Destination" << endl;
-                cout << "CONFIG:       " << i << ".    Email:    " << loc.destination << endl;
-                cout << "CONFIG:       " << i << ".    Username: " << loc.forwarder.username << endl;
-                //cout << "CONFIG:       " << i << ".    Password: " << loc.forwarder.password << endl;
-                cout << "CONFIG:       " << i << ".    Server:   " << loc.forwarder.server << endl;
-                cout << "CONFIG:       " << i << ".    Port:     " << loc.forwarder.port << endl;
-                cout << "CONFIG:       " << i << ".    TLS?:     " << (loc.forwarder.tls ? "Yes" : "No") << endl;
+                for (auto &email : loc.email_destinations)
+                {
+                    cout << "CONFIG:       " << i << ".    Email:    " << email.destination << endl;
+                    cout << "CONFIG:       " << i << ".    Username: " << email.server_info.username << endl;
+                    //cout << "CONFIG:       " << i << ".    Password: " << email.password << endl;
+                    cout << "CONFIG:       " << i << ".    Server:   " << email.server_info.server << endl;
+                    cout << "CONFIG:       " << i << ".    Port:     " << email.server_info.port << endl;
+                    cout << "CONFIG:       " << i << ".    TLS?:     " << (email.server_info.tls ? "Yes" : "No") << endl;
+                }
             }
             else
                 cout << "CONFIG:       " << i << ". Type:  " << "UNKNOWN" << endl;

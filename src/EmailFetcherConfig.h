@@ -35,17 +35,24 @@ struct outgoing_mail_server
     bool           tls;
 };
 
+struct email_list_element
+{
+    std::string destination;
+    outgoing_mail_server server_info;
+};
+typedef std::list<email_list_element> email_list;
 
 struct location_type
 {
     workflow_type type;
-    std::string destination;
     struct
     {
+        std::string destination;
         std::string user;
     } mailbox;
     struct
     {
+        std::string destination;
         bool validate_json;
         std::string workdir;
         bool UCDP;
@@ -58,7 +65,8 @@ struct location_type
         std::string trmessagetype;
         int         trmessageprio;
     } rest;
-    outgoing_mail_server forwarder;
+
+    email_list           email_destinations;
 };
 typedef std::list<location_type> location_list;
 typedef std::map<std::string, mxbypref> domain_forwarding_list;
