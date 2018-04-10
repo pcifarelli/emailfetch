@@ -12,12 +12,14 @@
 
 #include <string>
 #include <curl/curl.h>
+#include "EmailFetcherConfig.h"
 #include "EmailExtractor.h"
 
 class SMTPSender
 {
 public:
     SMTPSender(std::string smtpserver);
+    SMTPSender(outgoing_mail_server smtpserver_info);
     virtual ~SMTPSender();
 
     int send(std::string &email, std::string to, std::string from);
@@ -41,6 +43,10 @@ public:
 
 private:
     std::string m_smtpserver;
+    std::string m_username;
+    std::string m_password;
+    unsigned short m_port;
+    bool m_tls;
     std::string m_smtpurl;
     std::string m_result;
 
