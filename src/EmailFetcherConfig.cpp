@@ -169,6 +169,14 @@ void get_program_defaults(Utils::Json::JsonValue &jv, program_defaults &defaults
             }
         }
     }
+    if (jdefaults.ValueExists("Forwarder"))
+    {
+        Utils::Json::JsonValue fwddefaults = jdefaults.GetObject("Forwarder");
+        if (fwddefaults.ValueExists("workdir"))
+            defaults.Forwarder_defaults.workdir = fwddefaults.GetString("workdir").c_str();
+        if (fwddefaults.ValueExists("from"))
+            defaults.Forwarder_defaults.from = fwddefaults.GetString("from").c_str();
+    }
     if (jdefaults.ValueExists("mailout_servers"))
     {
         Utils::Array<Utils::Json::JsonValue> mailout_arr = jdefaults.GetArray("mailout_servers");
@@ -449,31 +457,47 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
                     if (it != defaults.mailout_servers.end())
                         oms = it->second;
 
+                    loc.forwarder.server_info = oms;
+                    if (locations[j].ValueExists("server"))
+                        loc.forwarder.server_info.server = locations[j].GetString("server").c_str();
+
+                    if (locations[j].ValueExists("username"))
+                        loc.forwarder.server_info.username = locations[j].GetString("username").c_str();
+
+                    if (locations[j].ValueExists("password"))
+                        loc.forwarder.server_info.password = locations[j].GetString("password").c_str();
+
+                    if (locations[j].ValueExists("port"))
+                        loc.forwarder.server_info.port = locations[j].GetInteger("port");
+
+                    if (locations[j].ValueExists("tls"))
+                        loc.forwarder.server_info.tls = locations[j].GetBool("tls");
+
+                    string dummy = "";
+                    loc.forwarder.workdir = create_location(defaults.Forwarder_defaults.workdir, dummy, item.name, item.domainname, "");
+                    loc.forwarder.from = create_location(defaults.Forwarder_defaults.from, dummy, item.name, item.domainname, "");
+
+                    if (locations[j].ValueExists("workdir"))
+                    {
+                        string fmt = locations[j].GetString("workdir").c_str();
+                        loc.forwarder.workdir = create_location(fmt, dummy, item.name, item.domainname, "");
+                    }
+                    if (locations[j].ValueExists("from"))
+                    {
+                        string fmt = locations[j].GetString("from").c_str();
+                        loc.forwarder.from = create_location(fmt, dummy, item.name, item.domainname, "");
+                    }
                     if (locations[j].ValueExists("email")) // otherwise we are wasting our time
                     {
-                        string fmt = locations[j].GetString("email").c_str();
-                        string destination = create_location(fmt, loc.mailbox.user, item.name, item.domainname, "");
-                        email_list_element forwarder_destination;
+                        Utils::Array<Utils::Json::JsonValue> emails = locations[j].GetArray("email");
 
-                        forwarder_destination.destination = destination;
+                        for (int k=0; k < emails.GetLength(); k++)
+                        {
+                            string fmt = emails[k].AsString().c_str();
+                            string destination = create_location(fmt, loc.mailbox.user, item.name, item.domainname, "");
 
-                        forwarder_destination.server_info = oms;
-                        if (locations[j].ValueExists("server"))
-                            forwarder_destination.server_info.server = locations[j].GetString("server").c_str();
-
-                        if (locations[j].ValueExists("username"))
-                            forwarder_destination.server_info.username = locations[j].GetString("username").c_str();
-
-                        if (locations[j].ValueExists("password"))
-                            forwarder_destination.server_info.password = locations[j].GetString("password").c_str();
-
-                        if (locations[j].ValueExists("port"))
-                            forwarder_destination.server_info.port = locations[j].GetInteger("port");
-
-                        if (locations[j].ValueExists("tls"))
-                            forwarder_destination.server_info.tls = locations[j].GetBool("tls");
-
-                        loc.email_destinations.push_back(forwarder_destination);
+                            loc.forwarder.email_destinations.push_back(destination);
+                        }
                     }
                     else
                         cout << "CONFIG: Warning: \"forwarder\" location type specified without any forwarding email addresses" << std::endl;
@@ -632,14 +656,15 @@ void print_config(config_list &mailboxconfig)
             else if (loc.type == FORWARD)
             {
                 cout << "CONFIG:       " << i << ". Type:  " << "Forward Email Destination" << endl;
-                for (auto &email : loc.email_destinations)
+                cout << "CONFIG:       " << i << ".    Workdir:  " << loc.forwarder.workdir << endl;
+                cout << "CONFIG:       " << i << ".    Username: " << loc.forwarder.server_info.username << endl;
+                //cout << "CONFIG:       " << i << ".    Password: " << loc.forwarder.password << endl;
+                cout << "CONFIG:       " << i << ".    Server:   " << loc.forwarder.server_info.server << endl;
+                cout << "CONFIG:       " << i << ".    Port:     " << loc.forwarder.server_info.port << endl;
+                cout << "CONFIG:       " << i << ".    TLS?:     " << (loc.forwarder.server_info.tls ? "Yes" : "No") << endl;
+                for (auto &email : loc.forwarder.email_destinations)
                 {
-                    cout << "CONFIG:       " << i << ".    Email:    " << email.destination << endl;
-                    cout << "CONFIG:       " << i << ".    Username: " << email.server_info.username << endl;
-                    //cout << "CONFIG:       " << i << ".    Password: " << email.password << endl;
-                    cout << "CONFIG:       " << i << ".    Server:   " << email.server_info.server << endl;
-                    cout << "CONFIG:       " << i << ".    Port:     " << email.server_info.port << endl;
-                    cout << "CONFIG:       " << i << ".    TLS?:     " << (email.server_info.tls ? "Yes" : "No") << endl;
+                    cout << "CONFIG:       " << i << ".    Email:    " << email << endl;
                 }
             }
             else

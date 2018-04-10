@@ -5,44 +5,44 @@
  *      Author: Paul Cifarelli
  */
 
+#include <unordered_set>
 #include "EmailForwarderFormatter.h"
 
 using namespace std;
 
-EmailForwarderFormatter::EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-    int verbose) :
-    S3Downloader::Formatter(verbose),
-    m_to(to.c_str()), m_from(from.c_str()), m_outgoingserver(outgoingserver.c_str()),m_username(username.c_str()), m_password(password.c_str()), m_port(port), m_tls(tls),
-    m_verbose(verbose)
-{
-}
-
-EmailForwarderFormatter::EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-    mxbypref mxservers, int verbose) :
-    S3Downloader::Formatter(mxservers, verbose),
-    m_to(to.c_str()), m_from(from.c_str()), m_outgoingserver(outgoingserver.c_str()), m_username(username.c_str()), m_password(password.c_str()), m_port(port), m_tls(tls),
-    m_verbose(verbose)
-{
-}
-
-EmailForwarderFormatter::EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-    Aws::String dir, int verbose) :
+EmailForwarderFormatter::EmailForwarderFormatter(string from, email_list destinations, Aws::String dir, int verbose) :
     S3Downloader::Formatter(dir, verbose),
-    m_to(to.c_str()), m_from(from.c_str()), m_outgoingserver(outgoingserver.c_str()), m_username(username.c_str()), m_password(password.c_str()), m_port(port), m_tls(tls),
-    m_verbose(verbose)
+    m_from(from), m_destinations(destinations), m_verbose(verbose)
 {
 }
 
-EmailForwarderFormatter::EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-    Aws::String dir, mxbypref mxservers, int verbose) :
+EmailForwarderFormatter::EmailForwarderFormatter(string from, email_list destinations, Aws::String dir, mxbypref mxservers, int verbose) :
     S3Downloader::Formatter(dir, mxservers, verbose),
-    m_to(to.c_str()), m_from(from.c_str()), m_outgoingserver(outgoingserver.c_str()), m_username(username.c_str()), m_password(password.c_str()), m_port(port), m_tls(tls),
-    m_verbose(verbose)
+    m_from(from), m_destinations(destinations), m_verbose(verbose)
 {
+    init();
 }
 
 EmailForwarderFormatter::~EmailForwarderFormatter()
 {
+    init();
+}
+
+void EmailForwarderFormatter::init()
+{
+    // remove any duplicates
+    unordered_set<string> email_set;
+
+    for (auto &email : m_destinations)
+        email_set.insert(email);
+
+    m_destinations.clear();
+    auto it = email_set.begin();
+    while (it != email_set.end())
+    {
+        m_destinations.push_back(*it);
+        it++;
+    }
 }
 
 void EmailForwarderFormatter::clean_up()

@@ -4,7 +4,7 @@
 {
    "user"  : "vmail",
    "group" : "vmail",
-   "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname",
+   "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname, %a = ipaddress",
     "mailbox" :
     {
         "publicdir"  : "./vmail/public/.%f",
@@ -22,6 +22,11 @@
      "trfeedid"            : "news_eapfe",
      "trmessagetype"       : "EmailML",
      "workdir"             : "./vmail/slot/%f/%a"
+   },
+   "Forwarder" :
+   {
+     "workdir"             : "./vmail/forwarder/%f@%d/",
+     "from"                : "fastemail@%d"
    },
    "MX_forwarding_servers" : [
       { 
@@ -103,11 +108,16 @@
             { "type" : "mailbox", "public" : false, "user" : "paul" },
             { "type" : "ucdp", "ip" : "159.220.49.19" } ,
             { "type" : "url", "url" : "http://cifarelli.net/rest/endpoint" },
-            { "type" : "forward", "email" : "paul.cifarelli@thomsonreuters.com" },
-            { "type" : "forward", "email" : "paulc2@optonline.net", "server" : "mailout.optonline.net", "username" : "" },
-            { "type" : "forward", "email" : "paul.cifarelli@tr.com" },
-            { "type" : "forward", "email" : "pifarelli1@optonline.net" },
-            { "type" : "forward", "email" : "paul.cifarelli@gmail.com", "server" : "mail.google.com" }
+            { "type" : "forward",
+                 "workdir" : "hello/%u@%d",
+                 "email" : [ 
+                     "paul.cifarelli@thomsonreuters.com",
+                     "paulc2@optonline.net",
+                     "paul.cifarelli@tr.com",
+                     "pifarelli1@optonline.net",
+                     "paul.cifarelli@gmail.com",
+                     "paulc2@optonline.net"
+                  ]
          ]
       },
       {
@@ -117,7 +127,8 @@
          "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:paul-testaws-pcifarelli-net",
          "enabled"     : true,
          "locations"   : [
-            { "type" : "mailbox", "public" : false, "user" : "paul" }
+            { "type" : "mailbox", "public" : false, "user" : "paul" },
+            { "type" : "forward", "email" : [ "paul@cifarelli.net" ] }
          ]
       },
       { 

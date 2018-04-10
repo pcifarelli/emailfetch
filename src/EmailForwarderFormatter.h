@@ -13,32 +13,24 @@
 #include <stdlib.h>
 #include <aws/core/Aws.h>
 #include <aws/s3/model/Object.h>
+#include "EmailFetcherConfig.h"
 #include "Formatter.h"
 #include "SMTPSender.h"
 
 class EmailForwarderFormatter: public S3Downloader::Formatter
 {
 public:
-    EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-        int verbose = 0);
-    EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-        mxbypref mxservers, int verbose = 0);
-    EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-        Aws::String dir, int verbose = 0);
-    EmailForwarderFormatter(Aws::String to, Aws::String from, Aws::String outgoingserver, Aws::String username, Aws::String password, unsigned short port, bool tls,
-        Aws::String dir, mxbypref mxservers, int verbose = 0);
+    EmailForwarderFormatter(std::string from, email_list destinations, Aws::String dir, int verbose = 0);
+    EmailForwarderFormatter(std::string from, email_list destinations, Aws::String dir, mxbypref mxservers, int verbose = 0);
     virtual ~EmailForwarderFormatter();
 
     virtual void clean_up();
 
 private:
-    std::string m_to;
+    void init();
+
     std::string m_from;
-    std::string m_outgoingserver;
-    std::string m_username;
-    std::string m_password;
-    unsigned short m_port;
-    bool m_tls;
+    email_list m_destinations;
     int m_verbose;
 };
 

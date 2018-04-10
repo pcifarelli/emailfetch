@@ -152,7 +152,7 @@ int main(int argc, char** argv)
 
                                 item.pdownl->addFormatter(mailfmt);
                                 if (verbose)
-                                    cout << "Location " << loc.mailbox.destination << " of type NONSLOT added to " << item.name << endl;
+                                    cout << "Location " << loc.mailbox.destination << " of type MAILBOX added to " << item.name << endl;
                             }
                             break;
                         case UCDP:
@@ -200,16 +200,35 @@ int main(int argc, char** argv)
 
                                 item.pdownl->addFormatter(ucdpfmt);
                                 if (verbose)
-                                    cout << "Location " << loc.rest.destination << " of type SLOT added to " << item.name << endl;
+                                    cout << "Location " << loc.rest.destination << " of type UCDP added to " << item.name << endl;
                             }
                             break;
                         case FORWARD:
                             {
                                 EmailForwarderFormatter *fwdfmt;
+                                // a "Formatter" is responsible for providing services to stream and route the mail to a destination
+                                // a "EmailForwarderFormatter" forwards a downloaded email to the list of destinations given by the email list
+                                Aws::String dir = loc.forwarder.workdir.c_str();
                                 if (item.enable_mxforwarding && !relay_forwarding_configured)
                                 {
-
+                                    fwdfmt = new EmailForwarderFormatter(loc.forwarder.from, loc.forwarder.email_destinations, dir, item.forward_servers, verbose);
                                     relay_forwarding_configured = true;
+                                }
+                                else
+                                    fwdfmt = new EmailForwarderFormatter(loc.forwarder.from, loc.forwarder.email_destinations, dir, verbose);
+
+                                item.pdownl->addFormatter(fwdfmt);
+                                if (verbose)
+                                {
+                                    cout << "Location " << email << " with type FORWARDER added to " << item.name;
+                                    if (verbose > 2)
+                                    {
+                                        cout << " with destinations:" << endl;
+                                        for (auto &email : loc.forwarder.email_destinations)
+                                            cout << "   " << email << endl;
+                                    }
+                                    else
+                                        cout << endl;
                                 }
                             }
                             break;
