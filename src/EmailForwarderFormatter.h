@@ -28,6 +28,10 @@ public:
 
 private:
     void init();
+    void formatFile(std::string to, std::string fullpath, std::string formattedFile);
+    void forwardFile(std::string to, std::string formattedFile);
+
+    static std::string date();
 
     std::string m_from;
     email_list m_destinations;

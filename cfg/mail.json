@@ -109,7 +109,6 @@
             { "type" : "ucdp", "ip" : "159.220.49.19" } ,
             { "type" : "url", "url" : "http://cifarelli.net/rest/endpoint" },
             { "type" : "forward",
-                 "workdir" : "hello/%u@%d",
                  "email" : [ 
                      "paul.cifarelli@thomsonreuters.com",
                      "paulc2@optonline.net",
