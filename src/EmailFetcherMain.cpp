@@ -209,13 +209,14 @@ int main(int argc, char** argv)
                                 // a "Formatter" is responsible for providing services to stream and route the mail to a destination
                                 // a "EmailForwarderFormatter" forwards a downloaded email to the list of destinations given by the email list
                                 Aws::String dir = loc.forwarder.workdir.c_str();
+                                outgoing_mail_server si = loc.forwarder.server_info;
                                 if (item.enable_mxforwarding && !relay_forwarding_configured)
                                 {
-                                    fwdfmt = new EmailForwarderFormatter(loc.forwarder.from, loc.forwarder.email_destinations, dir, item.forward_servers, verbose);
+                                    fwdfmt = new EmailForwarderFormatter(loc.forwarder.from, loc.forwarder.email_destinations, si, dir, item.forward_servers, verbose);
                                     relay_forwarding_configured = true;
                                 }
                                 else
-                                    fwdfmt = new EmailForwarderFormatter(loc.forwarder.from, loc.forwarder.email_destinations, dir, verbose);
+                                    fwdfmt = new EmailForwarderFormatter(loc.forwarder.from, loc.forwarder.email_destinations, si, dir, verbose);
 
                                 item.pdownl->addFormatter(fwdfmt);
                                 if (verbose)

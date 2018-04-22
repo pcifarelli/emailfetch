@@ -27,17 +27,26 @@ SMTPSender::SMTPSender(const string smtpserver) : m_smtpserver(smtpserver), m_po
         cout << "curl_global_init() failed: " << curl_easy_strerror(m_curl_status) << endl;
 }
 
-SMTPSender::SMTPSender(const outgoing_mail_server smtpserver_info) :
+SMTPSender::SMTPSender(const string domain, const outgoing_mail_server smtpserver_info) :
     m_smtpserver(smtpserver_info.server),
     m_username(smtpserver_info.username),
     m_password(smtpserver_info.password),
     m_port(smtpserver_info.port),
     m_tls(smtpserver_info.tls)
 {
-    string smtpurl = "smtp://" + m_smtpserver + ":";
+    string smtpurl;
+
+    if (m_tls)
+        smtpurl = "smtps://" + m_smtpserver + ":";
+    else
+        smtpurl = "smtp://" + m_smtpserver + ":";
+
     ostringstream s_out;
     s_out << smtpurl << m_port;
     m_smtpurl = s_out.str();
+
+    if (m_tls)
+        m_smtpurl += "/" + domain;
 
     /* In windows, this will init the winsock stuff */
     m_curl_status = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -93,23 +102,43 @@ int SMTPSender::send(string &email, string to, string from)
         if (m_curl_status != CURLE_OK)
             cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
 
-        m_curl_status = curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L); //0 disable messages
+        m_curl_status = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); //0 disable messages
         if (m_curl_status != CURLE_OK)
             cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
 
+        cout << "SMTPServer: username is " << m_username << endl;
+        if (m_username != "")
+        {
+            m_curl_status = curl_easy_setopt(curl, CURLOPT_USERNAME, m_username.c_str());
+            if (m_curl_status != CURLE_OK)
+                cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+        }
+
+        cout << "SMTPServer: password is " << m_password << endl;
+        if (m_password != "")
+        {
+            m_curl_status = curl_easy_setopt(curl, CURLOPT_PASSWORD, m_password.c_str());
+            if (m_curl_status != CURLE_OK)
+                cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+        }
+
         /* This is the URL for your mailserver */
+        cout << "SMTPServer: url is " << m_smtpurl << endl;
         m_curl_status = curl_easy_setopt(curl, CURLOPT_URL, m_smtpurl.c_str());
         if (m_curl_status != CURLE_OK)
             cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
 
         if (m_tls)
-            curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
+        {
+            m_curl_status = curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
+            if (m_curl_status != CURLE_OK)
+                cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
+        }
 
-        if (m_username != "")
-            curl_easy_setopt(curl, CURLOPT_USERNAME, m_username.c_str());
-
-        if (m_password != "")
-            curl_easy_setopt(curl, CURLOPT_PASSWORD, m_password.c_str());
+        // shortcut, intended just for test
+        //m_curl_status = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        //if (m_curl_status != CURLE_OK)
+        //    cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
 
         /* Note that this option isn't strictly required, omitting it will result in
          * libcurl sending the MAIL FROM command with no sender data. All

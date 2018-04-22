@@ -20,21 +20,25 @@
 class EmailForwarderFormatter: public S3Downloader::Formatter
 {
 public:
-    EmailForwarderFormatter(std::string from, email_list destinations, Aws::String dir, int verbose = 0);
-    EmailForwarderFormatter(std::string from, email_list destinations, Aws::String dir, mxbypref mxservers, int verbose = 0);
+    EmailForwarderFormatter(std::string from, email_list destinations, outgoing_mail_server server_info, Aws::String dir, int verbose = 0);
+    EmailForwarderFormatter(std::string from, email_list destinations, outgoing_mail_server server_info, Aws::String dir, mxbypref mxservers, int verbose = 0);
     virtual ~EmailForwarderFormatter();
 
     virtual void clean_up();
 
 private:
     void init();
-    void formatFile(std::string to, std::string fullpath, std::string formattedFile);
-    void forwardFile(std::string to, std::string formattedFile);
+    std::string formatFile(std::string to, std::string fullpath);
+    void forwardFile(std::string env_to, std::string email);
+
+    std::string newBoundary();
 
     static std::string date();
 
     std::string m_from;
+    std::string m_domain;
     email_list m_destinations;
+    outgoing_mail_server m_server_info;
     int m_verbose;
 };
 

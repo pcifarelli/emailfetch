@@ -19,7 +19,7 @@ class SMTPSender
 {
 public:
     SMTPSender(std::string smtpserver);
-    SMTPSender(outgoing_mail_server smtpserver_info);
+    SMTPSender(std::string domain, outgoing_mail_server smtpserver_info);
     virtual ~SMTPSender();
 
     int send(std::string &email, std::string to, std::string from);
