@@ -81,9 +81,10 @@ private:
     int m_verbose;
     bool m_forward;
     mxbypref m_mxservers;
-    double random_number();
 
 protected:
+    double random_number();
+
     Aws::OFStream m_local_file;
     Aws::String m_name;		  // this is just the name of the file
     Aws::String m_fullpath;	  // this is the fullpath, including the filename
