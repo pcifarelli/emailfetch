@@ -93,6 +93,16 @@ string EmailExtractor::Body::asBase64()
     return m_body;
 }
 
+string EmailExtractor::Body::asBase64(int column_limit)
+{
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
+
+    string body = asBase64();
+    return (EmailExtractor::columnize(body, column_limit));
+}
+
+
 string EmailExtractor::Body::asUtf8()
 {
     string body;
@@ -228,6 +238,18 @@ const int EmailExtractor::Attachment::size()
 {
     return m_size;
 }
+const string &EmailExtractor::Attachment::contentID()
+{
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
+    return m_contentid;
+}
+const string &EmailExtractor::Attachment::contentdisposition()
+{
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
+    return m_contentdisposition;
+}
 
 string EmailExtractor::Attachment::asBase64()
 {
@@ -247,6 +269,16 @@ string EmailExtractor::Attachment::asBase64()
 
     return m_attachment;
 }
+
+string EmailExtractor::Attachment::asBase64(int column_limit)
+{
+    m_str_error = "";
+    m_error = EmailExtractor::NO_ERROR;
+
+    string att = asBase64();
+    return (EmailExtractor::columnize(att, column_limit));
+}
+
 
 // Save the attachment in the specified directory
 void EmailExtractor::Attachment::save_attachment(string dirname)
@@ -540,7 +572,11 @@ int EmailExtractor::scan_attachment_headers(istream &infile,
     {
         contentdisposition = a_contentdisposition;
         if (str_tolower(contentdisposition) == "attachment" || str_tolower(contentdisposition) == "inline")
+        {
             att = a_att;
+            att.m_contentdisposition = str_tolower(contentdisposition);
+            att.m_contentid = contentid;
+        }
     }
 
     return 0;
@@ -563,6 +599,8 @@ bool EmailExtractor::extract_all(istream &infile, string contenttype, string cha
             att.m_contenttype = a_contenttype;
             att.m_charset = str_tolower(a_charset);
             att.m_transferenc = str_tolower(a_transferenc);
+            att.m_contentdisposition = str_tolower(contentdisposition);
+            att.m_contentid = contentid;
 
             m_attachments.push_back(att);
         }
@@ -1234,6 +1272,32 @@ int EmailExtractor::scan_headers(const string fname,
 
     infile.close();
     return 0;
+}
+
+string EmailExtractor::columnize(string str, int column_limit)
+{
+    string ret = "";
+    int i = str.length();
+    auto c = str.begin();
+    while (i)
+    {
+         if (i > column_limit)
+         {
+             ret.append(c, c + column_limit);
+             c += column_limit;
+             i -= column_limit;
+         }
+         else
+         {
+             ret.append(c, c + i);
+             c += i;
+             i = 0;
+         }
+
+         ret.append("\r\n");
+    }
+
+    return ret;
 }
 
 int EmailExtractor::base64_encode(const vector<unsigned char> &input, vector<unsigned char> &output, bool preserve_crlf)

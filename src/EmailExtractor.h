@@ -46,6 +46,7 @@ public:
         const std::string &transferenc();
         const std::string &contentID();
         std::string asBase64();
+        std::string asBase64(int column_limit);
         std::string asUtf8();
         // beware using this on text/html as it may have embedded charset definitions
         std::string asUtf8Base64();
@@ -75,9 +76,12 @@ public:
         const std::string &contenttype();
         const std::string &charset();
         const std::string &transferenc();
+        const std::string &contentID();
+        const std::string &contentdisposition();
         const int size();
         void save_attachment(std::string path);
         std::string asBase64();
+        std::string asBase64(int column_limit);
         int error() const;
         std::string str_error() const;
 
@@ -89,6 +93,8 @@ public:
         std::string m_contenttype;
         std::string m_charset;
         std::string m_transferenc;
+        std::string m_contentid;
+        std::string m_contentdisposition;
         int m_size;
         std::string m_str_error;
         int m_error;
@@ -123,6 +129,7 @@ public:
     int error() const;
     std::string str_error() const;
 
+    static std::string columnize(std::string str, int column_limit);
     static int base64_decode(const std::string &input, std::string &output);
     static int base64_encode(const std::string &input, std::string &output);
     static int base64_decode(const std::string &input, std::vector<unsigned char> &output);
