@@ -157,6 +157,8 @@ string EmailForwarderFormatter::formatFile(string to, string fullpath)
 
     email += "--" + boundary + "--\r\n";
 
+    infile.close();
+
     return email;
 }
 
