@@ -15,7 +15,7 @@
 
 using namespace std;
 
-SMTPSender::SMTPSender(const string smtpserver) : m_smtpserver(smtpserver), m_port(25), m_username(""), m_password(""), m_tls(false)
+SMTPSender::SMTPSender(const string smtpserver, int verbose) : m_smtpserver(smtpserver), m_port(25), m_username(""), m_password(""), m_tls(false), m_verbose(verbose)
 {
     m_smtpurl = "smtp://" + smtpserver;
 
@@ -27,12 +27,13 @@ SMTPSender::SMTPSender(const string smtpserver) : m_smtpserver(smtpserver), m_po
         cout << "curl_global_init() failed: " << curl_easy_strerror(m_curl_status) << endl;
 }
 
-SMTPSender::SMTPSender(const string domain, const outgoing_mail_server smtpserver_info) :
+SMTPSender::SMTPSender(const string domain, const outgoing_mail_server smtpserver_info, int verbose) :
     m_smtpserver(smtpserver_info.server),
     m_username(smtpserver_info.username),
     m_password(smtpserver_info.password),
     m_port(smtpserver_info.port),
-    m_tls(smtpserver_info.tls)
+    m_tls(smtpserver_info.tls),
+    m_verbose(verbose)
 {
     string smtpurl;
 
@@ -102,11 +103,16 @@ int SMTPSender::send(string &email, string to, string from)
         if (m_curl_status != CURLE_OK)
             cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
 
-        m_curl_status = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); //0 disable messages
+        if (m_verbose > 3)
+            m_curl_status = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); //1 enable messages
+        else
+            m_curl_status = curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L); //0 disable messages
+
         if (m_curl_status != CURLE_OK)
             cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
 
-        cout << "SMTPServer: username is " << m_username << endl;
+        if (m_verbose > 3)
+            cout << "SMTPServer: username is " << m_username << endl;
         if (m_username != "")
         {
             m_curl_status = curl_easy_setopt(curl, CURLOPT_USERNAME, m_username.c_str());
@@ -114,7 +120,6 @@ int SMTPSender::send(string &email, string to, string from)
                 cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
         }
 
-        cout << "SMTPServer: password is " << m_password << endl;
         if (m_password != "")
         {
             m_curl_status = curl_easy_setopt(curl, CURLOPT_PASSWORD, m_password.c_str());
@@ -123,7 +128,9 @@ int SMTPSender::send(string &email, string to, string from)
         }
 
         /* This is the URL for your mailserver */
-        cout << "SMTPServer: url is " << m_smtpurl << endl;
+        if (m_verbose > 3)
+            cout << "SMTPServer: url is " << m_smtpurl << endl;
+
         m_curl_status = curl_easy_setopt(curl, CURLOPT_URL, m_smtpurl.c_str());
         if (m_curl_status != CURLE_OK)
             cout << "curl_easy_setopt() failed: " << curl_easy_strerror(m_curl_status) << endl;
@@ -312,7 +319,8 @@ string SMTPSender::pick(string                &to,
     {
         // Use the To list
         // We print a warning because this is not always reliable.
-        cout << "Forwarding to the To header list - this is not always reliable" << endl;
+        if (m_verbose > 1)
+            cout << "Forwarding to the To header list - this is not always reliable" << endl;
         istringstream iss(to);
 
         // tokenize by comma

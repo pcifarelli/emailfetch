@@ -18,8 +18,8 @@
 class SMTPSender
 {
 public:
-    SMTPSender(std::string smtpserver);
-    SMTPSender(std::string domain, outgoing_mail_server smtpserver_info);
+    SMTPSender(std::string smtpserver, int verbose = 0);
+    SMTPSender(std::string domain, outgoing_mail_server smtpserver_info, int verbose = 0);
     virtual ~SMTPSender();
 
     int send(std::string &email, std::string to, std::string from);
@@ -49,6 +49,7 @@ private:
     bool m_tls;
     std::string m_smtpurl;
     std::string m_result;
+    int m_verbose;
 
     CURLcode m_curl_status;
     

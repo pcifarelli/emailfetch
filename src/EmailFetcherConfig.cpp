@@ -531,8 +531,11 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
             else
             {
                 // no mx forwarding servers defined for this domain; disable server forwarding
-                item.enable_mxforwarding = false;
-                cout << "CONFIG: Error: MX forwarding enabled for " << item.name << '@' << item.domainname << " without any MX servers defined for the domain" << std::endl;
+                if (item.enable_mxforwarding)
+                {
+                    item.enable_mxforwarding = false;
+                    cout << "CONFIG: Error: MX forwarding enabled for " << item.name << '@' << item.domainname << " without any MX servers defined for the domain" << std::endl;
+                }
             }
         }
 

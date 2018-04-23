@@ -54,7 +54,8 @@ void EmailForwarderFormatter::init()
     if (n != std::string::npos)
         m_domain = m_from.substr(n+1);
 
-    cout << "DOMAIN is " << m_domain << endl;
+    if (m_verbose > 3)
+        cout << "DOMAIN is " << m_domain << endl;
 }
 
 void EmailForwarderFormatter::clean_up()
@@ -174,7 +175,7 @@ void EmailForwarderFormatter::forwardFile(string env_to, string email)
     if (m_verbose >= 3)
         cout << "Forwarding email to " << env_to << " using outgoing mail server " << m_server_info.server << ", username " << m_server_info.username << endl;
 
-    SMTPSender sender(m_domain, m_server_info);
+    SMTPSender sender(m_domain, m_server_info, m_verbose);
     sender.send(email, env_to, m_from);
 }
 

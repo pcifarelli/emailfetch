@@ -74,7 +74,7 @@ void Formatter::do_relay_forwarding(std::string fullpath)
             {
                 int server_number = random_number() * mxservers.size();
                 std::string server = mxservers[server_number];
-                SMTPSender smtpsender(server);
+                SMTPSender smtpsender(server, m_verbose);
                 if (m_verbose >=3)
                     std::cout << "Forwarding " << fullpath << " to MX server (pref " << pref << ") " << server << std::endl;
 
@@ -113,7 +113,7 @@ void Formatter::do_relay_forwarding(std::string fullpath, std::string to)
             {
                 int server_number = random_number() * mxservers.size();
                 std::string server = mxservers[server_number];
-                SMTPSender smtpsender(server);
+                SMTPSender smtpsender(server, m_verbose);
                 if (m_verbose >=3)
                     std::cout << "Forwarding " << fullpath << " to MX server (pref " << pref << ") " << server << std::endl;
 
