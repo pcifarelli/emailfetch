@@ -253,6 +253,9 @@ string create_user_mailbox_location(program_defaults &defaults, string &user, st
 
 void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
 {
+    if (!jv.ValueExists("mailbox"))
+        return;
+
     Utils::Array<Utils::Json::JsonValue> arr = jv.GetArray("mailbox");
 
     for (int i = 0; i < arr.GetLength(); i++)
@@ -543,13 +546,20 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
     }
 }
 
-int get_config(const string location, program_defaults &defaults, config_list &config)
+int get_config(const string config_file, const string mailbox_file, program_defaults &defaults, config_list &config)
 {
     string jstr;
 
-    ifstream infile(location, ifstream::in);
+    ifstream infile(config_file, ifstream::in);
     streamsize n;
     char buf[512];
+
+    if (!infile.good())
+    {
+        cout << "ERROR: No Config File specified, nothing configured so exitting..." << endl;
+        exit(0);
+    }
+
     do
     {
         n = infile.readsome(buf, 511);
@@ -561,11 +571,44 @@ int get_config(const string location, program_defaults &defaults, config_list &c
     istringstream inp(jstr);
     Utils::Json::JsonValue jv(inp);
 
-    // program defaults
-    get_program_defaults(jv, defaults);
+    if (jv.WasParseSuccessful())
+    {
+        // program defaults (can only be specified in the primary config file)
+        get_program_defaults(jv, defaults);
 
-    // mailbox config
-    get_mailbox_config(jv, config);
+        // mailbox config - mailboxes can be specified in both the config file and in a separate mailbox config
+        get_mailbox_config(jv, config);
+    }
+    else
+    {
+        cout << "ERROR: config file " << config_file << " fails to parse as json, exiting" << endl;
+        exit(0);
+    }
+
+    if (mailbox_file != "")
+    {
+        ifstream mfile(mailbox_file, ifstream::in);
+        jstr.clear();
+        if (mfile.good())
+        {
+            do
+            {
+                n = mfile.readsome(buf, 511);
+                buf[n] = '\0';
+                jstr += buf;
+            } while (mfile.good() && n);
+            mfile.close();
+
+            istringstream minp(jstr);
+            Utils::Json::JsonValue mjv(minp);
+
+            if (mjv.WasParseSuccessful())
+                // mailbox config - mailboxes can be specified in both the config file and in a separate mailbox config
+                get_mailbox_config(mjv, config);
+            else
+                cout << "ERROR: Mailbox config file " << mailbox_file << " fails to parse as json, exiting" << endl;
+        }
+    }
 
     return 0;
 }

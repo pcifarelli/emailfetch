@@ -1,0 +1,23 @@
+{
+"mailbox" : 
+   [
+      { 
+         "__comment"   : "you can specify email, or name & domainname.  If you specify both, email takes precedence",
+         "description" : "Feed 1 Mailbox",
+         "email"       : "feed1@testaws.pcifarelli.net",
+         "bucket"      : "feed1-testaws-pcifarelli-net",
+         "topic_arn"   : "arn:aws:sns:us-east-1:331557686640:feed1-testaws-pcifarelli-net",
+         "enabled"     : true,
+         "mxforward"   : false,
+         "locations"   : [ 
+            { "type" : "mailbox", "public" : true },
+            { "type" : "forward",
+                 "email" : [ 
+                     "paul.cifarelli@thomsonreuters.com",
+                     "paulc2@optonline.net"
+                  ]
+            }
+         ]
+      }
+   ]
+}

@@ -44,13 +44,16 @@ void usage()
 {
     cout << "Usage: emailfetch [-f <config file>] [-vN] [-h]" << endl
         << "   where -f <config file>\tprovide alternative config file (default is ./cfg/emailfetch.cfg)" << endl
+        << "         -m <mailbox file>\tmailbox config file" << endl
         << "         -vN\t\t\tverbose output level, N=1,2,3 or 4" << endl << "         -h\t\t\tthis help" << endl;
+    cout << "NOTE: mailboxes can be defined in both the main config file and in a separate mailbox config file" << endl;
     exit(0);
 }
 
 int main(int argc, char** argv)
 {
     const char *config_file = default_config_file;
+    const char *mailbox_file = NULL;
 
     // read the command line options
     int option_char;
@@ -59,6 +62,9 @@ int main(int argc, char** argv)
         {
             case 'f':
                 config_file = optarg;
+                break;
+            case 'm':
+                mailbox_file = optarg;
                 break;
             case 'v':
                 if (!strncmp(optarg, "1", 1))
@@ -78,11 +84,19 @@ int main(int argc, char** argv)
         }
 
     if (verbose)
+    {
         cout << "Using " << config_file << " for configuration" << endl;
+        if (mailbox_file)
+            cout << "Using " << mailbox_file << " for mailbox configuration" << endl;
+    }
 
     list<config_item> mailboxconfig; // this is our mailbox configuration
     // NOTE that this means we must have read permission in the account that the program is started in (we don't know what our euid/guid should be yet)
-    get_config(config_file, defaults, mailboxconfig);
+    if (mailbox_file)
+        get_config(config_file, mailbox_file, defaults, mailboxconfig);
+    else
+        get_config(config_file, "", defaults, mailboxconfig);
+
     if (verbose)
         print_config(mailboxconfig);
 

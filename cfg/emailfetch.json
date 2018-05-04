@@ -1,32 +1,4 @@
 {
-"__comment" : "This is the config for email feeds that use AWS SES",
-
-"defaults"  :
-{
-   "user"  : "vmail",
-   "group" : "vmail",
-   "__comment"  : "substitutions: %f = feedname, %u = user, %d = domainname, %a = destination ip address",
-    "mailbox" :
-    {
-        "publicdir"  : "/vmail/public/.%f",
-        "userdir"    : "/vmail/%d/%u@%d/Maildir"
-    },
-   "UCDP"  : 
-   {
-   	"port"                : 8301,
-     	"snihostname"         : "eapfastemail.ucdp.thomsonreuters.com",
-   	"certificate"         : "./cfg/ucdp_eapfastemail.pem",
-   	"certificatepassword" : "password",
-   	"trclientid"          : "eapfastemail",
-   	"trfeedid"            : "news_eapfe",
-   	"trmessagetype"       : "EmailML",
-     	"trmessagepriority"   : 3,
-   	"workdir"             : "/vmail/slot/%f/%a",
-     	"validate_json"       : true
-   }
-   
-},
-
 "mailbox"   : 
    [
       {
