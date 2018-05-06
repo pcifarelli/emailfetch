@@ -1,24 +1,24 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import pwd
 import grp
 import os
-from os.path import *
+#from os.path import *
 import base64
 import getopt
 import json
 import boto3
 
-mail_uid = 5000
-mail_gid = 5000
+mail_uid = 1000
+mail_gid = 1000
 location_fmtstr = "/vmail/public/.%s"
 
 #*********************************************************
 def main():
-   SESclient = boto3.client('ses')
-   SNSclient = boto3.client('sns')
-   S3client = boto3.client('s3')
+   SESclient = boto3.client('ses', 'us-east-1')
+   SNSclient = boto3.client('sns', 'us-east-1')
+   S3client = boto3.client('s3', 'us-east-1')
 
    # parse arguments
    if len(sys.argv) > 1:
@@ -42,9 +42,9 @@ def main():
    )
 
    if (response['ResponseMetadata']['HTTPStatusCode'] == 200):
-      print "Successfully created S3 bucket " + bucket_name
+      print("Successfully created S3 bucket " + bucket_name)
    else:
-      print "Failed to create S3 bucket: " + response
+      print("Failed to create S3 bucket: " + response)
 
    response = S3client.put_bucket_policy( 
       Bucket=bucket_name,
@@ -71,11 +71,11 @@ def main():
    )
 
    if (response['ResponseMetadata']['HTTPStatusCode'] == 204):
-      print "Successfully set S3 policy for " + bucket_name
+      print("Successfully set S3 policy for " + bucket_name)
    else:
-      print "Failed to set S3 bucket policy: " + response
+      print("Failed to set S3 bucket policy: " + response)
 
-   print response
+   print(response)
    # Create the topic
    response = SNSclient.create_topic(
       Name=topic_name
@@ -83,9 +83,9 @@ def main():
 
    topic_arn = response['TopicArn'];
    if (response['ResponseMetadata']['HTTPStatusCode'] == 200):
-      print "Successfully created SNS topic " + topic_name
+      print("Successfully created SNS topic " + topic_name)
    else:
-      print "Failed to create SNS topic: " + response
+      print("Failed to create SNS topic: " + response)
 
    # get the name of the last rule in the rule set
    response = SESclient.describe_active_receipt_rule_set()
@@ -118,9 +118,9 @@ def main():
    )
 
    if (response['ResponseMetadata']['HTTPStatusCode'] == 200):
-      print "Successfully created SES rule \"" + feed + "\""
+      print("Successfully created SES rule \"" + feed + "\"")
    else:
-      print "Failed to create SES rule: " + response
+      print("Failed to create SES rule: " + response)
 
    os.setegid(mail_gid)
    os.seteuid(mail_uid)
@@ -132,7 +132,7 @@ def main():
 
    new_mailbox = { "topic_arn" : topic_arn,
                    "bucket"    : bucket_name,
-                   "name"      : feed.title() + " Mailbox",
+                   "description"      : feed.title() + " Mailbox",
                    "enabled"   : True,
                    "location"  : location_fmtstr % feed }
    pos = len(config["mailbox"])
@@ -184,4 +184,5 @@ def parse_argv():
 
 
 #*********************************************************
-main()
+if __name__ == "__main__":
+   main()

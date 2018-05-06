@@ -9,12 +9,14 @@ import nntplib
 application_name = "Thomson Reuters FastEmail"
 default_port = 10285
 default_mailbox_config = "/vmail/cfg/mailbox.json"
+mail_uid = 5000
+mail_gid = 5000
 
 mailbox_config = default_mailbox_config
 service_port = default_port
 verbose = 0
 
-import os
+import os 
 import glob
 import time
 import sys
@@ -22,6 +24,10 @@ import syslog
 import getopt
 import requests
 import subprocess
+import pwd
+import grp
+import base64
+import boto3
 from flask import Flask, url_for
 from flask import Response
 from flask import request
@@ -54,7 +60,7 @@ def api_addmailbox():
 
 def parse_argv():
     try:
-       opts, args = getopt.getopt(sys.argv[1:], "hm:p:v", ["help", "mailboxfile=", "port=", "verbose"])
+       opts, args = getopt.getopt(sys.argv[1:], "hm:p:u:g:v", ["help", "mailboxfile=", "port=", "uid=", "gid=", "verbose"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err) # will print something like "option -a not recognized"
@@ -64,6 +70,8 @@ def parse_argv():
     mailboxfile = None
     port = None
     verbose = None
+    uid = None
+    gid = None
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
@@ -72,11 +80,15 @@ def parse_argv():
             mailboxfile = a
         elif o in ("-p", "--port"):
             port = a
+        elif o in ("-g", "--gid"):
+            gid = a
+        elif o in ("-u", "--uid"):
+            uid = a
         elif o in ("-v", "--verbose"):
-            verbose = a
+            verbose = True
         else:
             assert False, "unhandled option"
-    return { "mailboxfile":mailboxfile, "verbose":verbose, "port":port }
+    return { "mailboxfile":mailboxfile, "verbose":verbose, "port":port, "gid":gid, "uid":uid }
 
 def usage():
    print("""Usage: fastemail_REST.py [-m|--mailboxfile=<mailboxfile>] [-p|--port=<port>""")
@@ -88,6 +100,10 @@ if len(sys.argv) > 1:
         hostsfile = opts["mailboxfile"]
     if opts["port"] != None:
         port = opt["port"]
+    if opts["uid"] != None:
+        mail_uid = opt["uid"]
+    if opts["gid"] != None:
+        mail_gid = opt["gid"]
     if opts["verbose"] != None:
         verbose=True
 
