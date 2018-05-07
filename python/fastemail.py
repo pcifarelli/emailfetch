@@ -16,9 +16,11 @@ location_fmtstr = "/vmail/public/.%s"
 
 #*********************************************************
 class FastEmail:
-    def __init__(self, feedname, domainname, config_file, mailrootdir, awsregion = "us-east-1", mail_uid = 5000, mail_gid = 5000):
-        self._feed = feedname
-        self._domain = domainname
+    def __init__(self, email, config_file, mailrootdir, awsregion = "us-east-1", description = "", mail_uid = 5000, mail_gid = 5000):
+        self._recipient = email
+        email_parts = email.split('@')
+        self._feed = email_parts[0]
+        self._domain = email_parts[1]
         self._config = config_file
         self._region = awsregion
         self._uid = mail_uid
@@ -27,23 +29,32 @@ class FastEmail:
             self._mailroot = mailrootdir[:-1]
         else:
             self._mailroot = mailrootdir
+            
+        if (description == ""):
+            self._description = feed.title() + " Mailbox"
+        else:
+            self._description = description
         
         self._SESclient = boto3.client('ses', self._region)
         self._SNSclient = boto3.client('sns', self._region)
         self._S3client = boto3.client('s3', self._region)
 
-    def add_imap_mailbox(self, public = False):
+    def add_imap_mailbox(self, public = False, ruleset = "default-rule-set"):
         bucket_name = self._feed + "-" + self._domain.replace(".", "-")
         topic_name = bucket_name
-        recipient = self._feed + '@' + self._domain
+        
         if (public):
             imap_dir = self._mailroot + "/public/." + feed
         else:
-            imap_dir = self._mailroot + "/" + self._domain + "/" + recipient
+            imap_dir = self._mailroot + "/" + self._domain + "/" + self._recipient
+            
+        self.create_bucket(bucket_name)
+        topic_arn = self.create_topic(topic_name)
+        self.create_ses_rule(self._feed, self._recipient, topic_arn, bucket_name, ruleset)
 
     def create_bucket(self, bucket_name):
         # Create the bucket
-        response = S3client.create_bucket(
+        response = self._S3client.create_bucket(
             ACL='private',
             Bucket=bucket_name
             )
@@ -55,8 +66,7 @@ class FastEmail:
 
         response = self._S3client.put_bucket_policy( 
             Bucket=bucket_name,
-            Policy="""
-            {
+            Policy="""{
                 "Version": "2012-10-17",
                 "Statement": 
                 [
@@ -102,11 +112,11 @@ class FastEmail:
     
     def create_ses_rule(self, feed, recipient, topic_arn, bucket_name, ruleset = "default-rule-set"):
         # get the name of the last rule in the rule set
-        response = SESclient.describe_active_receipt_rule_set()
+        response = self._SESclient.describe_active_receipt_rule_set()
         last_rule_name = response['Rules'][len(response['Rules']) - 1]['Name']
 
         # Create the SES Rule in the default-rule-set
-        response = SESclient.create_receipt_rule(
+        response = self._SESclient.create_receipt_rule(
             RuleSetName=ruleset,
             After=last_rule_name,
             Rule={
@@ -153,7 +163,7 @@ class FastEmail:
         new_mailbox = {"topic_arn"   : topic_arn,
                        "bucket"      : bucket_name,
                        "email"       : recipient,
-                       "description" : feed.title() + " Mailbox",
+                       "description" : self._description,
                        "enabled"     : enabled,
                        "locations"   : [] }
         
