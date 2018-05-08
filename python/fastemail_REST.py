@@ -56,8 +56,13 @@ def api_addmailbox():
         print (json.dumps(msg))
         
     fe = FastEmail(msg["email"], mailbox_config, mailrootdir, msg["ses_region"], msg["description"], mail_uid, mail_gid)
-    fe.add_imap_mailbox()
-                
+    fe.lock()
+    config = fe.read_local_config()
+    fe.add_local_config(msg["enabled"])
+    fe.add_locations(msg["locations"])
+    fe.write_local_config()
+    fe.unlock() 
+               
     data = { 'success' : '1' }
     js = json.dumps(data)
     resp = Response(js, status=200, mimetype='application/json')

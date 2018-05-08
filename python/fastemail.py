@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys
+import fcntl
 import pwd
 import grp
 import os
@@ -11,17 +12,18 @@ import boto3
 from email._header_value_parser import Domain
 from setuptools.command.setopt import config_file
 from cairo._cairo import Region
+from pip._internal import locations
 
 location_fmtstr = "/vmail/public/.%s"
 
 #*********************************************************
 class FastEmail:
-    def __init__(self, email, config_file, mailrootdir, awsregion = "us-east-1", description = "", mail_uid = 5000, mail_gid = 5000):
+    def __init__(self, email, config_file, mailrootdir, awsregion = "us-east-1", description = "", mail_uid = 5000, mail_gid = 5000, ruleset = "default-rule-set"):
         self._recipient = email
         email_parts = email.split('@')
         self._feed = email_parts[0]
         self._domain = email_parts[1]
-        self._config = config_file
+        self._config_file = config_file
         self._region = awsregion
         self._uid = mail_uid
         self._gid = mail_gid
@@ -34,23 +36,22 @@ class FastEmail:
             self._description = feed.title() + " Mailbox"
         else:
             self._description = description
+            
+        self._bucket_name = self._feed + "-" + self._domain.replace(".", "-")
+        topic_name = self._bucket_name
         
         self._SESclient = boto3.client('ses', self._region)
         self._SNSclient = boto3.client('sns', self._region)
         self._S3client = boto3.client('s3', self._region)
+        self._ECSclient = boto3.client('ecs', self._region)
 
-    def add_imap_mailbox(self, public = False, ruleset = "default-rule-set"):
-        bucket_name = self._feed + "-" + self._domain.replace(".", "-")
-        topic_name = bucket_name
         
-        if (public):
-            imap_dir = self._mailroot + "/public/." + feed
-        else:
-            imap_dir = self._mailroot + "/" + self._domain + "/" + self._recipient
-            
-        self.create_bucket(bucket_name)
-        topic_arn = self.create_topic(topic_name)
-        self.create_ses_rule(self._feed, self._recipient, topic_arn, bucket_name, ruleset)
+        # Create the bucket
+        self.create_bucket(self._bucket_name)
+        # Create the topic
+        self._topic_arn = self.create_topic(topic_name)
+        # Create the receipt rule
+        self.create_ses_rule(self._feed, self._recipient, self._topic_arn, self._bucket_name, ruleset)            
 
     def create_bucket(self, bucket_name):
         # Create the bucket
@@ -115,7 +116,13 @@ class FastEmail:
         response = self._SESclient.describe_active_receipt_rule_set()
         last_rule_name = response['Rules'][len(response['Rules']) - 1]['Name']
 
-        # Create the SES Rule in the default-rule-set
+        for i in range(0, len(response['Rules'])):
+            if (response['Rules'][i]['Name'] == feed):
+                for j in range(0, len(response['Rules'][i]['Actions'])):
+                    if response['Rules'][i]['Actions'][j]['S3Action'] != None:
+                        print ("Rule " + feed + " already exists with an S3Action")
+                        return
+        
         response = self._SESclient.create_receipt_rule(
             RuleSetName=ruleset,
             After=last_rule_name,
@@ -143,64 +150,100 @@ class FastEmail:
         else:
             print("Failed to create SES rule: " + response)
 
-    def read_local_config(self, config_file):
-        os.setegid(self._gid)
-        os.seteuid(self._uid)
-        f = open(config_file, "r")
-        cfg = f.read()
-        f.close()
-        config = json.loads( cfg )
-        return (config)
-
-    def write_local_config(self, config, config_file):
-        os.setegid(self._gid)
-        os.seteuid(self._uid)
-        f = open(config_file, "w")
-        jstr = json.dump(config, f, indent=4, separators=(',', ': '), ensure_ascii=False)
-        f.close()
-       
-    def add_local_config(self, config, feed, recipient, topic_arn, bucket_name, enabled = True):
-        new_mailbox = {"topic_arn"   : topic_arn,
-                       "bucket"      : bucket_name,
-                       "email"       : recipient,
+    def add_local_config(self, enabled = True):
+        new_mailbox = {"topic_arn"   : self._topic_arn,
+                       "bucket"      : self._bucket_name,
+                       "email"       : self._recipient,
                        "description" : self._description,
                        "enabled"     : enabled,
                        "locations"   : [] }
         
-        pos = len(config["mailbox"])
-        config["mailbox"].insert(pos, new_mailbox)
+        self._config["mailbox"].extend( [new_mailbox] )
 
-    def add_local_config_mailbox_location(self, config, email, public = False):
+    def add_location(self, location):
+        # find the mailbox in question (match the email entry)
+        found = False
+        for i in range(0, len(self._config["mailbox"])):
+            if (self._config["mailbox"][i]["email"] == self._recipient):
+                found = True
+                self._config["mailbox"][i]["locations"].extend([location])
+                
+        if (not found):        
+            return False
+        return True
+    
+    def add_locations(self, locations):
+        for location in locations:
+            self.add_location(location)
+        
+    def add_forwarder(self, email, forward_email):
+        found = False
+        for i in range(0, len(config["mailbox"])):
+            if (self._config["mailbox"][i]["email"] == email):
+                found = True
+                # Now see if we already have a forwarder type for this location
+                forward_found = False
+                for j in range(0, len(self._config["mailbox"][i]["locations"])):
+                    if (self._config["mailbox"][i]["locations"][j]["type"] == "forward"):
+                        forward_found = True
+                        self._config["mailbox"][i]["locations"][j]["email"].extend([forward_email])
+                if (not forward_found):
+                    location = {"type":"forward", "email":[ forward_email ]}
+                    self._config["mailbox"][i]["locations"].extend([location])
+                
+        if (not found):        
+            return False
+        return True
+       
+        
+    def add_mailbox_location(self, email, public = False):
         location = { "type" : "mailbox", "public" : public }
-        for i in range(0, len(config["mailbox"])):
-            if (config["mailbox"][i]["email"] == email):
-                config["mailbox"][i]["locations"].insert(0, location)
+        return self.add_location(email, location)
 
-
-    def add_local_config_UCDP_location(self, email, ip):
+    def add_UCDP_location(self, email, ip):
         location = { "type" : "UCDP", "ip" : ip }
-        for i in range(0, len(config["mailbox"])):
-            if (config["mailbox"][i]["email"] == email):
-                config["mailbox"][i]["locations"].insert(0, location)
+        return self.add_location(email, location)
 
+    def read_local_config(self):
+        os.setegid(self._gid)
+        os.seteuid(self._uid)
+        f = open(self._config_file, "r")
+        cfg = f.read()
+        f.close()
+        self._config = json.loads( cfg )
 
-    def add_local_config_forwarder_location(self, email, emaillist):
-        location = { "type" : "forward", "email" : emaillist }
-        for i in range(0, len(config["mailbox"])):
-            if (config["mailbox"][i]["email"] == email):
-                config["mailbox"][i]["locations"].insert(0, location)
-
-
+    def write_local_config(self):
+        os.setegid(self._gid)
+        os.seteuid(self._uid)
+        f = open(self._config_file, "w")
+        jstr = json.dump(self._config, f, indent=4, separators=(',', ': '), ensure_ascii=False)
+        f.close()
+    
+    # TODO: Need more thought in how to restart the service
     def restart_service(self):
         # Restart the emailfetch-from-s3 task
-        ECSclient = boto3.client('ecs')
-        response = ECSclient.describe_clusters( clusters=[ 'emailfetch-demo-cluster' ] )
+        response = self._ECSclient.describe_clusters( clusters=[ 'emailfetch-demo-cluster' ] )
         cluster_arn = response['clusters'][0]['clusterArn']
-        response = ECSclient.list_tasks( cluster=cluster_arn, 
-                                         serviceName='emailfetch-from-s3' )
+        response = self._ECSclient.list_tasks( cluster=cluster_arn, 
+                                               serviceName='emailfetch-from-s3' )
         task_arn = response['taskArns'][0]
         ECSclient.stop_task( cluster=cluster_arn, task=task_arn )
         # the service will restart the task
+
+    def lock_file(self, fullpath):
+        fname = fullpath[:fullpath.rfind('/')+1] + "." + fullpath[fullpath.rfind('/')+1:]
+        handle = open (fname, "w")
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        return handle
+
+    def unlock_file(self, handle):
+        handle.close()
+
+    def lock(self):
+        self._lock_handle = self.lock_file(self._config_file)
+
+    def unlock(self):
+        self.unlock_file(self._lock_handle)
 
 #*********************************************************
 def usage():
