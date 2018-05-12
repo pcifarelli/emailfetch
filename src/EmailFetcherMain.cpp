@@ -103,12 +103,6 @@ int main(int argc, char** argv)
         if (verbose)
             print_config(mailboxconfig);
 
-        //*********************************************
-        // shutdown the AWS SDK
-        ShutdownAPI(options);
-        return 0;
-        //*********************************************
-
         // try to set the effective userid and group id
         if (setegid(defaults.egroup))
         {
