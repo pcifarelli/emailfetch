@@ -452,7 +452,7 @@ void UCDPFormatter::postToUCDP(string msgid, string date, EmailExtractor *email,
     string trmsgid;
     string result;
     ostringstream o;
-    UCDPCurlPoster poster(m_ip, m_certificate, m_certpassword, m_snihostname, m_port, true, m_trclientid, m_trfeedid, m_trmessagetype);
+    CurlPoster poster(m_ip, m_certificate, m_certpassword, m_snihostname, m_port, true, m_trclientid, m_trfeedid, m_trmessagetype);
 
     trmsgid = formatMessage1(o, msgid, date, email, validate);
     poster.post(m_trmessageprio, trmsgid, o.str());

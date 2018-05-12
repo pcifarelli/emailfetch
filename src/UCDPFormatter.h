@@ -18,8 +18,9 @@
 #include <sstream>
 #include <iomanip>
 #include <regex>
+
+#include "CurlPoster.h"
 #include "Formatter.h"
-#include "UCDPCurlPoster.h"
 #include "EmailExtractor.h"
 
 class UCDPFormatter: public S3Downloader::Formatter

@@ -16,18 +16,18 @@
 #include <fstream>
 #include <ios>
 #include <sstream>
-#include "UCDPCurlPoster.h"
+#include "CurlPoster.h"
 using namespace std;
 
 
-UCDPCurlPoster::UCDPCurlPoster(std::string url, bool chunked) :
+CurlPoster::CurlPoster(std::string url, bool chunked) :
     m_url(url), m_curl(NULL), m_opts(NULL), m_resolve(NULL), m_curl_status(CURLE_OK), m_chunked(chunked),
         m_trclientid(""), m_trfeedid(""), m_trmessagetype("")
 {
     init();
 }
 
-UCDPCurlPoster::UCDPCurlPoster(string ip,
+CurlPoster::CurlPoster(string ip,
     string certificate,
     string password,
     string hostname,
@@ -44,14 +44,14 @@ UCDPCurlPoster::UCDPCurlPoster(string ip,
     set_Certificate(certificate, password);
 }
 
-void UCDPCurlPoster::setProxy(std::string proxy)
+void CurlPoster::setProxy(std::string proxy)
 {
     if (m_curl)
         m_curl_status = curl_easy_setopt(m_curl, CURLOPT_PROXY, proxy.c_str());
 
 }
 
-void UCDPCurlPoster::set_ServerNameIndication(string hostname, unsigned short port, string ip)
+void CurlPoster::set_ServerNameIndication(string hostname, unsigned short port, string ip)
 {
     if (m_curl)
     {
@@ -85,7 +85,7 @@ void UCDPCurlPoster::set_ServerNameIndication(string hostname, unsigned short po
     }
 }
 
-void UCDPCurlPoster::set_Certificate(string certificate, string password)
+void CurlPoster::set_Certificate(string certificate, string password)
 {
     if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_SSLCERTTYPE, "PEM")) != CURLE_OK)
         return;
@@ -101,19 +101,19 @@ void UCDPCurlPoster::set_Certificate(string certificate, string password)
         return;
 }
 
-void UCDPCurlPoster::setVerboseOutput()
+void CurlPoster::setVerboseOutput()
 {
     if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L)) != CURLE_OK)
         return;
 }
 
-void UCDPCurlPoster::setQuietOutput()
+void CurlPoster::setQuietOutput()
 {
     if ((m_curl_status = curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L)) != CURLE_OK)
         return;
 }
 
-void UCDPCurlPoster::init()
+void CurlPoster::init()
 {
     CURLcode res;
 
@@ -147,7 +147,7 @@ void UCDPCurlPoster::init()
     }
 }
 
-void UCDPCurlPoster::setHeaders(long msglength, int messageprio, std::string trmessageid)
+void CurlPoster::setHeaders(long msglength, int messageprio, std::string trmessageid)
 {
     std::string hdr = "";
     /*
@@ -215,7 +215,7 @@ void UCDPCurlPoster::setHeaders(long msglength, int messageprio, std::string trm
 
 }
 
-UCDPCurlPoster::~UCDPCurlPoster()
+CurlPoster::~CurlPoster()
 {
     if (m_opts)
         curl_slist_free_all(m_opts);
@@ -229,7 +229,7 @@ UCDPCurlPoster::~UCDPCurlPoster()
     curl_global_cleanup();
 }
 
-size_t UCDPCurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *userp)
+size_t CurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void *userp)
 {
     struct WriteThis *wt = (struct WriteThis *) userp;
     size_t buffer_size = size * nmemb;
@@ -250,21 +250,21 @@ size_t UCDPCurlPoster::read_callback(void *dest, size_t size, size_t nmemb, void
     return 0; /* no more data left to deliver */
 }
 
-size_t UCDPCurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+size_t CurlPoster::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-    UCDPCurlPoster *thisObj = (UCDPCurlPoster *) userp;
+    CurlPoster *thisObj = (CurlPoster *) userp;
 
     thisObj->m_result.assign((char *) buffer, size * nmemb);
     return size * nmemb;
 }
 
-void UCDPCurlPoster::post(int messageprio, std::string trmessageid, std::string jstr)
+void CurlPoster::post(int messageprio, std::string trmessageid, std::string jstr)
 {
     setHeaders((long) jstr.length(), messageprio, trmessageid);
     postIt(m_url.c_str(), jstr.c_str(), jstr.length());
 }
 
-int UCDPCurlPoster::postIt(const char *url, const char *data, int sz)
+int CurlPoster::postIt(const char *url, const char *data, int sz)
 {
     CURL *curl;
     CURLcode res;

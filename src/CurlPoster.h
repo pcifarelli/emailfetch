@@ -1,14 +1,14 @@
 /*
- * UCDPCurlPoster.h
+ * CurlPoster.h
  *
  *  Created on: Oct 28, 2017
  *      Author: Paul Cifarelli
  *
- *      The UCDPCurlPoster is responsible for posting a json string to UCDP, as its name implies
+ *      The CurlPoster is responsible for posting a json string to UCDP, as its name implies
  */
 
-#ifndef SRC_UCDPCURLPOSTER_H_
-#define SRC_UCDPCURLPOSTER_H_
+#ifndef SRC_CurlPoster_H_
+#define SRC_CurlPoster_H_
 
 #include <sys/types.h>
 #include <string>
@@ -19,11 +19,11 @@
 #include <iostream>
 
 
-class UCDPCurlPoster
+class CurlPoster
 {
 public:
-    UCDPCurlPoster(std::string url, bool chunked = false);
-    UCDPCurlPoster(
+    CurlPoster(std::string url, bool chunked = false);
+    CurlPoster(
         std::string ip,                                                       // the ip to post to
         std::string certificate,                                              // the certificate filename
         std::string certpassword,                                             // the certificate password
@@ -33,7 +33,7 @@ public:
         std::string trclientid = "eapfastemail",                              // the TR client id
         std::string trfeedid = "news_eapfe",                                  // the TR feed id
         std::string trmessagetype = "EmailML");                               // the UCDP message type (format of the content)
-    virtual ~UCDPCurlPoster();
+    virtual ~CurlPoster();
 
     void setProxy(std::string proxy);
     void setNoProxy()
@@ -87,4 +87,4 @@ private:
 
 
 
-#endif /* SRC_UCDPCURLPOSTER_H_ */
+#endif /* SRC_CurlPoster_H_ */

@@ -10,6 +10,7 @@
 #include <aws/core/Aws.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/CreateBucketRequest.h>
+#include <CurlPoster.h>
 
 #include <iterator>
 #include <pwd.h>
@@ -20,8 +21,6 @@
 #include "MaildirFormatter.h"
 #include "UCDPFormatter.h"
 #include "EmailForwarderFormatter.h"
-#include "UCDPCurlPoster.h"
-
 #include "config.h"
 
 #define DAYS_TO_CHECK 60
@@ -90,50 +89,56 @@ int main(int argc, char** argv)
             cout << "Using " << mailbox_file << " for mailbox configuration" << endl;
     }
 
-    list<config_item> mailboxconfig; // this is our mailbox configuration
-    // NOTE that this means we must have read permission in the account that the program is started in (we don't know what our euid/guid should be yet)
-    if (mailbox_file)
-        get_config(config_file, mailbox_file, defaults, mailboxconfig);
-    else
-        get_config(config_file, "", defaults, mailboxconfig);
-
-    if (verbose)
-        print_config(mailboxconfig);
-
-    // try to set the effective userid and group id
-    if (setegid(defaults.egroup))
-    {
-        int lerrno = errno;
-        char buf[1024], *p;
-        if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
-            cout << "Unable to set effective gid to " << defaults.egroup << " (" << p << ")" << endl;
-        else
-            cout << "Unable to set effective gid to " << defaults.egroup << " errno (" << lerrno << ")" << endl;
-    }
-
-    if (seteuid(defaults.euser))
-    {
-        int lerrno = errno;
-        char buf[1024], *p;
-        if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
-            cout << "Unable to set effective uid to " << defaults.euser << " (" << p << ")" << endl;
-        else
-            cout << "Unable to set effective uid to " << defaults.euser << " errno (" << lerrno << ")" << endl;
-    }
-
-    // setup the signal handler for TERM
-    struct sigaction termaction;
-    termaction.sa_sigaction = term_sigaction;
-    termaction.sa_flags = SA_SIGINFO;
-    sigemptyset(&termaction.sa_mask);
-    sigaction(SIGTERM, &termaction, 0);
-    sigaction(SIGINT, &termaction, 0);
-    sigaction(SIGQUIT, &termaction, 0);
-
     // setup the AWS SDK
     SDKOptions options;
     InitAPI(options);
     {
+        list<config_item> mailboxconfig; // this is our mailbox configuration
+        // NOTE that this means we must have read permission in the account that the program is started in (we don't know what our euid/guid should be yet)
+        if (mailbox_file)
+            get_config_by_file(config_file, mailbox_file, defaults, mailboxconfig);
+        else
+            get_config_by_file(config_file, "", defaults, mailboxconfig);
+
+        if (verbose)
+            print_config(mailboxconfig);
+
+        //*********************************************
+        // shutdown the AWS SDK
+        ShutdownAPI(options);
+        return 0;
+        //*********************************************
+
+        // try to set the effective userid and group id
+        if (setegid(defaults.egroup))
+        {
+            int lerrno = errno;
+            char buf[1024], *p;
+            if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
+                cout << "Unable to set effective gid to " << defaults.egroup << " (" << p << ")" << endl;
+            else
+                cout << "Unable to set effective gid to " << defaults.egroup << " errno (" << lerrno << ")" << endl;
+        }
+
+        if (seteuid(defaults.euser))
+        {
+            int lerrno = errno;
+            char buf[1024], *p;
+            if (lerrno && (p = strerror_r(lerrno, buf, 1024)))
+                cout << "Unable to set effective uid to " << defaults.euser << " (" << p << ")" << endl;
+            else
+                cout << "Unable to set effective uid to " << defaults.euser << " errno (" << lerrno << ")" << endl;
+        }
+
+        // setup the signal handler for TERM
+        struct sigaction termaction;
+        termaction.sa_sigaction = term_sigaction;
+        termaction.sa_flags = SA_SIGINFO;
+        sigemptyset(&termaction.sa_mask);
+        sigaction(SIGTERM, &termaction, 0);
+        sigaction(SIGINT, &termaction, 0);
+        sigaction(SIGQUIT, &termaction, 0);
+
         S3Downloader::FormatterList fmtlist;
 
         for (auto &item : mailboxconfig)

@@ -23,6 +23,10 @@
 #include <grp.h>
 #include <errno.h>
 
+#include <aws/email/SESClient.h>
+#include <aws/email/SESRequest.h>
+#include <aws/email/model/DescribeReceiptRuleSetRequest.h>
+
 #include "EmailFetcherConfig.h"
 
 #include "config.h"
@@ -546,7 +550,8 @@ void get_mailbox_config(Utils::Json::JsonValue &jv, config_list &config)
     }
 }
 
-int get_config(const string config_file, const string mailbox_file, program_defaults &defaults, config_list &config)
+
+int get_config_by_file(const string config_file, const string mailbox_file, program_defaults &defaults, config_list &config)
 {
     string jstr;
 
@@ -611,6 +616,59 @@ int get_config(const string config_file, const string mailbox_file, program_defa
     }
 
     return 0;
+}
+
+int get_config_by_consul_and_aws(std::string consul_server, program_defaults &defaults, config_list &config)
+{
+    get_receipt_rules("default-rule-set");
+}
+
+void get_receipt_rules(string rule_set)
+{
+    Aws::SES::SESClient sesclient;
+    Aws::SES::Model::DescribeReceiptRuleSetRequest request;
+    Aws::SES::Model::DescribeReceiptRuleSetOutcome outc;
+    Aws::SES::Model::DescribeReceiptRuleSetResult result;
+    Aws::Vector<Aws::SES::Model::ReceiptRule> rulesv;
+
+    request.SetRuleSetName(rule_set.c_str());
+    outc = sesclient.DescribeReceiptRuleSet(request);
+
+    result = outc.GetResult();
+
+    rulesv = result.GetRules();
+
+    for (auto &rule : rulesv)
+    {
+        if (rule.GetEnabled())
+        {
+            cout << "Name: " << rule.GetName() << endl;
+            Aws::Vector<Aws::String> recipients = rule.GetRecipients();
+            for (auto &recipient : recipients)
+                cout << "Recipient: " << recipient.c_str() << endl;
+
+            Aws::Vector<Aws::SES::Model::ReceiptAction> actions;
+            actions = rule.GetActions();
+            for (auto &action : actions)
+            {
+                Aws::SES::Model::S3Action s3action = action.GetS3Action();
+                Aws::SES::Model::SNSAction snsaction = action.GetSNSAction();
+
+                Aws::String bucket = s3action.GetBucketName();
+                Aws::String topic_arn = s3action.GetTopicArn();
+
+                if (topic_arn == "")
+                    topic_arn = snsaction.GetTopicArn();
+
+                cout << "bucket name: " << bucket.c_str() << endl;
+
+                if (topic_arn == "")
+                    cout << "ERROR: topic_arn not set for rule " << rule.GetName() << " action S3 with bucket " << bucket << endl;
+                else
+                    cout << "topic arn:   " << topic_arn.c_str() << endl;
+            }
+        }
+    }
 }
 
 void print_config(config_list &mailboxconfig)

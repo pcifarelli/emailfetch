@@ -125,7 +125,9 @@ struct program_defaults
 
 extern program_defaults defaults;
 
-int get_config(const std::string config_file, const std::string mailbox_file, program_defaults &defaults, config_list &config);
+int get_config_by_file(const std::string config_file, const std::string mailbox_file, program_defaults &defaults, config_list &config);
+int get_config_by_consul_and_aws(std::string consul_server, program_defaults &defaults, config_list &config);
 void print_config(config_list &mailboxconfig);
+void get_receipt_rules(std::string rule_set);
 
 #endif /* SRC_EMAILFETCHERCONFIG_H_ */

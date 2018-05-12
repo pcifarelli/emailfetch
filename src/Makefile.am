@@ -10,7 +10,8 @@ AWS_LIBS = \
 	-laws-cpp-sdk-core \
 	-laws-cpp-sdk-s3 \
 	-laws-cpp-sdk-sqs \
-	-laws-cpp-sdk-sns
+	-laws-cpp-sdk-sns \
+	-laws-cpp-sdk-email
 
 # in case we are building on a UCDP machine.  If not, these do no harm
 CURLINC = -I/data/ucdp/local/curl/include
@@ -36,7 +37,7 @@ emailfetch_SOURCES = EmailFetcherMain.cpp \
 	Formatter.cpp \
 	Downloader.cpp \
 	SMTPSender.cpp \
-	UCDPCurlPoster.cpp
+	CurlPoster.cpp
 
 emailfetch_LDADD = ${CURLLIB} -L$(AWS_SDK_PATH)/${AWS_LIBDIR} $(AWS_LIBS)
 
